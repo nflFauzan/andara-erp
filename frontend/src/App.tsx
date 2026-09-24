@@ -18,6 +18,12 @@ import { PenawaranDetailPage } from '@/pages/PenawaranDetailPage';
 import { InvoiceListPage } from '@/pages/InvoiceListPage';
 import { InvoiceFormPage } from '@/pages/InvoiceFormPage';
 import { InvoiceDetailPage } from '@/pages/InvoiceDetailPage';
+import { PaymentListPage } from '@/pages/PaymentListPage';
+import { PaymentFormPage } from '@/pages/PaymentFormPage';
+import { PaymentDetailPage } from '@/pages/PaymentDetailPage';
+import { DepositListPage } from '@/pages/DepositListPage';
+import { ReceiptListPage } from '@/pages/ReceiptListPage';
+import { ReceiptDetailPage } from '@/pages/ReceiptDetailPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,9 +68,12 @@ export const App: React.FC = () => {
               <Route path="faktur" element={<InvoiceListPage />} />
               <Route path="faktur/create" element={<InvoiceFormPage />} />
               <Route path="faktur/:id" element={<InvoiceDetailPage />} />
-              <Route path="faktur/:id/edit" element={<InvoiceFormPage />} />
-              <Route path="pembayaran" element={<div className="p-8 text-slate-500 font-medium bg-white rounded-xl border border-slate-200">Modul Pembayaran & Alokasi / Deposit (Tahap Fase 7-8)</div>} />
-              <Route path="kwitansi" element={<div className="p-8 text-slate-500 font-medium bg-white rounded-xl border border-slate-200">Modul Kwitansi / Receipt (Tahap Fase 9)</div>} />
+              <Route path="pembayaran" element={<PaymentListPage />} />
+              <Route path="pembayaran/create" element={<PaymentFormPage />} />
+              <Route path="pembayaran/:id" element={<PaymentDetailPage />} />
+              <Route path="deposits" element={<DepositListPage />} />
+              <Route path="kwitansi" element={<ReceiptListPage />} />
+              <Route path="kwitansi/:id" element={<ReceiptDetailPage />} />
               <Route path="rekap" element={<div className="p-8 text-slate-500 font-medium bg-white rounded-xl border border-slate-200">Modul Rekap & Laporan Keuangan (Tahap Fase 11)</div>} />
             </Route>
 

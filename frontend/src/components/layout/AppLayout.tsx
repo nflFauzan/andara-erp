@@ -7,6 +7,7 @@ import {
   FileText,
   Receipt,
   CreditCard,
+  Wallet,
   FileSpreadsheet,
   Activity,
   Hash,
@@ -44,6 +45,11 @@ export const AppLayout: React.FC = () => {
       href: '/pembayaran', 
       icon: CreditCard,
       operatorOnly: true
+    },
+    { 
+      name: 'Deposit Customer', 
+      href: '/deposits', 
+      icon: Wallet 
     },
     { name: 'Kwitansi', href: '/kwitansi', icon: Receipt },
     { name: 'Penomoran', href: '/numbering', icon: Hash },

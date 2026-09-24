@@ -47,4 +47,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
             @Param("endDate") LocalDate endDate,
             Pageable pageable
     );
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT inv FROM Invoice inv WHERE inv.id = :id")
+    Optional<Invoice> findByIdForUpdate(@Param("id") Long id);
 }
