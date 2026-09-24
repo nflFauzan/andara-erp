@@ -15,13 +15,19 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/attachments")
+@RequestMapping({"/api/attachments", "/api/files"})
 public class AttachmentController {
 
     private final AttachmentService attachmentService;
 
     public AttachmentController(AttachmentService attachmentService) {
         this.attachmentService = attachmentService;
+    }
+
+    @GetMapping("/{id}")
+    public ApiResponse<AttachmentDTO> getAttachmentById(@PathVariable Long id) {
+        Attachment attachment = attachmentService.getAttachmentEntity(id);
+        return ApiResponse.success(AttachmentDTO.fromEntity(attachment));
     }
 
     @PostMapping("/upload")

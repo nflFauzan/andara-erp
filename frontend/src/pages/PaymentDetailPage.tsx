@@ -17,6 +17,7 @@ import { receiptApi } from '../api/receiptApi';
 import { Payment } from '../types/payment';
 import { Receipt as ReceiptType } from '../types/receipt';
 import { useAuth } from '../context/AuthContext';
+import { AttachmentSection } from '../components/common/AttachmentSection';
 
 export const PaymentDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -375,6 +376,15 @@ export const PaymentDetailPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Bukti Pembayaran & Lampiran (Cloudflare R2 / Object Storage) */}
+      <AttachmentSection
+        referenceType="PAYMENT"
+        referenceId={payment.id}
+        title="Bukti Transfer & Lampiran Pembayaran"
+        description="Bukti pembayaran sah, resi transfer bank, atau warkat giro yang tersimpan di Cloudflare R2 / object storage."
+        readOnly={!isOperator || isCancelled}
+      />
 
       {/* Confirmation Modal for Cancellation */}
       {showCancelModal && (

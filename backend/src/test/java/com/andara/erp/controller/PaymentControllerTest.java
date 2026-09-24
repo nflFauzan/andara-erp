@@ -60,6 +60,9 @@ class PaymentControllerTest {
     @Autowired
     private DepositTransactionRepository depositTransactionRepository;
 
+    @Autowired
+    private com.andara.erp.repository.ReceiptRepository receiptRepository;
+
     private Customer testCustomer;
     private Invoice testInvoice;
 
@@ -70,6 +73,11 @@ class PaymentControllerTest {
             paymentAllocationRepository.deleteAll(allocs);
             invoiceRepository.deleteById(testInvoice.getId());
         }
+        List<com.andara.erp.entity.Receipt> testReceipts = receiptRepository.findAll().stream()
+                .filter(r -> r.getId() > 1)
+                .toList();
+        receiptRepository.deleteAll(testReceipts);
+
         List<Payment> testPayments = paymentRepository.findAll().stream()
                 .filter(p -> p.getId() > 1)
                 .toList();

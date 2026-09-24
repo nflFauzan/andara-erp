@@ -77,6 +77,28 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- AWS SDK v2 S3 for Cloudflare R2 Object Storage Compatibility -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>2.25.64</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>netty-nio-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>apache-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>url-connection-client</artifactId>
+            <version>2.25.64</version>
+        </dependency>
+
         <!-- Testing Dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

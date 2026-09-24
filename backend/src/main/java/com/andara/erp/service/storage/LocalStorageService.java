@@ -17,8 +17,12 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
+@ConditionalOnProperty(name = "app.storage.type", havingValue = "local", matchIfMissing = true)
 public class LocalStorageService implements StorageService {
 
     private static final Logger log = LoggerFactory.getLogger(LocalStorageService.class);

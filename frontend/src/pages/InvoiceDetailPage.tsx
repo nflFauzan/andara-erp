@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { invoiceApi } from '../api/invoiceApi';
 import { Invoice, InvoiceStatus, InvoicePaymentStatus } from '../types/invoice';
+import { AttachmentSection } from '../components/common/AttachmentSection';
 
 const STATUS_CONFIG: Record<InvoiceStatus, { label: string; bg: string; text: string; icon: React.ComponentType<{ className?: string }> }> = {
   DRAFT: {
@@ -475,6 +476,16 @@ export const InvoiceDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Lampiran Berita Acara & Dokumen Pendukung (no-print) */}
+      <div className="no-print mt-6 max-w-4xl mx-auto">
+        <AttachmentSection
+          referenceType="INVOICE"
+          referenceId={invoice.id}
+          title="Lampiran Berita Acara & Dokumen Pendukung Faktur"
+          description="Unggah berkas BAST, surat jalan, atau rincian lampiran pekerjaan proyek (tersimpan di Cloudflare R2 / storage)."
+        />
       </div>
     </div>
   );
