@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -12,16 +12,25 @@ import {
   Menu,
   X,
   ShieldCheck,
-  Building2
+  Building2,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 
 export const AppLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  // Default role display for scaffolding
-  const userRole = 'OPERATOR';
-  const userName = 'Administrator / Operator';
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login', { replace: true });
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+  };
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -100,18 +109,30 @@ export const AppLayout: React.FC = () => {
           ))}
         </nav>
 
-        {/* User Card & Role Info */}
-        <div className="p-4 border-t border-slate-800 bg-slate-900/60">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-200">
-              <ShieldCheck className="w-5 h-5 text-emerald-400" />
+        {/* User Card & Role Info with Logout Button */}
+        <div className="p-3 border-t border-slate-800 bg-slate-900/60">
+          <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-800/40 border border-slate-800">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-200 shrink-0">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-white truncate">
+                  {user?.fullName || user?.username || 'Pengguna'}
+                </p>
+                <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 uppercase tracking-wider">
+                  {user?.role || 'USER'}
+                </span>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-white truncate">{userName}</p>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-400">
-                {userRole}
-              </span>
-            </div>
+
+            <button
+              onClick={handleLogout}
+              title="Keluar (Logout)"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition shrink-0"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </aside>
@@ -129,14 +150,21 @@ export const AppLayout: React.FC = () => {
             </button>
             <div className="hidden sm:block">
               <h2 className="text-sm font-semibold text-slate-800">Sistem Manajemen Operasional & Transaksi</h2>
-              <p className="text-xs text-slate-500">CV. ANDARA • Baseline Engineering Phase 0</p>
+              <p className="text-xs text-slate-500">CV. ANDARA • Keuangan & Operasional Terpadu</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              Fase 0: Foundation
+              Sesi Aktif: {user?.role}
             </span>
+            <button
+              onClick={handleLogout}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 transition"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Keluar
+            </button>
           </div>
         </header>
 

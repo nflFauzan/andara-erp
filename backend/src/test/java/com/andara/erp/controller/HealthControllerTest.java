@@ -12,9 +12,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:postgresql://localhost:5432/test_db",
-        "spring.flyway.enabled=false",
-        "spring.jpa.hibernate.ddl-auto=none"
+        "spring.datasource.url=jdbc:postgresql://localhost:5432/andara_erp",
+        "spring.datasource.username=andara_user",
+        "spring.datasource.password=andara_dev_password_123"
 })
 @AutoConfigureMockMvc
 class HealthControllerTest {
