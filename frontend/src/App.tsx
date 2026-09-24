@@ -11,6 +11,13 @@ import { CustomerListPage } from '@/pages/CustomerListPage';
 import { CustomerDetailPage } from '@/pages/CustomerDetailPage';
 import { KegiatanListPage } from '@/pages/KegiatanListPage';
 import { KegiatanDetailPage } from '@/pages/KegiatanDetailPage';
+import { NumberingPage } from '@/pages/NumberingPage';
+import { PenawaranListPage } from '@/pages/PenawaranListPage';
+import { PenawaranFormPage } from '@/pages/PenawaranFormPage';
+import { PenawaranDetailPage } from '@/pages/PenawaranDetailPage';
+import { InvoiceListPage } from '@/pages/InvoiceListPage';
+import { InvoiceFormPage } from '@/pages/InvoiceFormPage';
+import { InvoiceDetailPage } from '@/pages/InvoiceDetailPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,8 +54,15 @@ export const App: React.FC = () => {
               <Route path="customers/:id" element={<CustomerDetailPage />} />
               <Route path="kegiatan" element={<KegiatanListPage />} />
               <Route path="kegiatan/:id" element={<KegiatanDetailPage />} />
-              <Route path="penawaran" element={<div className="p-8 text-slate-500 font-medium bg-white rounded-xl border border-slate-200">Modul Penawaran / Quotation (Tahap Fase 5)</div>} />
-              <Route path="faktur" element={<div className="p-8 text-slate-500 font-medium bg-white rounded-xl border border-slate-200">Modul Faktur Penjualan / Invoicing (Tahap Fase 6)</div>} />
+              <Route path="numbering" element={<NumberingPage />} />
+              <Route path="penawaran" element={<PenawaranListPage />} />
+              <Route path="penawaran/create" element={<PenawaranFormPage />} />
+              <Route path="penawaran/:id" element={<PenawaranDetailPage />} />
+              <Route path="penawaran/:id/edit" element={<PenawaranFormPage />} />
+              <Route path="faktur" element={<InvoiceListPage />} />
+              <Route path="faktur/create" element={<InvoiceFormPage />} />
+              <Route path="faktur/:id" element={<InvoiceDetailPage />} />
+              <Route path="faktur/:id/edit" element={<InvoiceFormPage />} />
               <Route path="pembayaran" element={<div className="p-8 text-slate-500 font-medium bg-white rounded-xl border border-slate-200">Modul Pembayaran & Alokasi / Deposit (Tahap Fase 7-8)</div>} />
               <Route path="kwitansi" element={<div className="p-8 text-slate-500 font-medium bg-white rounded-xl border border-slate-200">Modul Kwitansi / Receipt (Tahap Fase 9)</div>} />
               <Route path="rekap" element={<div className="p-8 text-slate-500 font-medium bg-white rounded-xl border border-slate-200">Modul Rekap & Laporan Keuangan (Tahap Fase 11)</div>} />

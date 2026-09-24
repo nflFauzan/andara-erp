@@ -9,6 +9,7 @@ import {
   CreditCard,
   FileSpreadsheet,
   Activity,
+  Hash,
   Menu,
   X,
   ShieldCheck,
@@ -45,6 +46,7 @@ export const AppLayout: React.FC = () => {
       operatorOnly: true
     },
     { name: 'Kwitansi', href: '/kwitansi', icon: Receipt },
+    { name: 'Penomoran', href: '/numbering', icon: Hash },
     { name: 'Rekap & Laporan', href: '/rekap', icon: FileSpreadsheet },
     { name: 'Koneksi & Status', href: '/status', icon: Activity },
   ];
