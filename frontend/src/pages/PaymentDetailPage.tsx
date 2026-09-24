@@ -10,7 +10,8 @@ import {
   Wallet,
   ArrowUpRight,
   Receipt,
-  AlertTriangle
+  AlertTriangle,
+  History
 } from 'lucide-react';
 import { paymentApi } from '../api/paymentApi';
 import { receiptApi } from '../api/receiptApi';
@@ -18,6 +19,7 @@ import { Payment } from '../types/payment';
 import { Receipt as ReceiptType } from '../types/receipt';
 import { useAuth } from '../context/AuthContext';
 import { AttachmentSection } from '../components/common/AttachmentSection';
+import { AuditHistoryModal } from '../components/audit/AuditHistoryModal';
 
 export const PaymentDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +36,7 @@ export const PaymentDetailPage: React.FC = () => {
   // Cancellation Modal State
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [showAuditModal, setShowAuditModal] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -167,6 +170,15 @@ export const PaymentDetailPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setShowAuditModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold transition shadow-xs"
+            title="Lihat riwayat audit pembayaran ini"
+          >
+            <History className="w-4 h-4 text-slate-500" />
+            <span>Audit Trail</span>
+          </button>
+
           {receipt ? (
             <button
               onClick={() => navigate(`/kwitansi/${receipt.id}`)}
@@ -430,6 +442,17 @@ export const PaymentDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Audit History Modal */}
+      {payment && (
+        <AuditHistoryModal
+          isOpen={showAuditModal}
+          onClose={() => setShowAuditModal(false)}
+          entityType="PAYMENT"
+          entityId={payment.id}
+          title={`Audit Trail - Pembayaran ${payment.number}`}
+        />
       )}
     </div>
   );

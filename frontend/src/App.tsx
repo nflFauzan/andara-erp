@@ -24,6 +24,7 @@ import { PaymentDetailPage } from '@/pages/PaymentDetailPage';
 import { DepositListPage } from '@/pages/DepositListPage';
 import { ReceiptListPage } from '@/pages/ReceiptListPage';
 import { ReceiptDetailPage } from '@/pages/ReceiptDetailPage';
+import { RekapPage } from '@/pages/RekapPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -74,7 +75,7 @@ export const App: React.FC = () => {
               <Route path="deposits" element={<DepositListPage />} />
               <Route path="kwitansi" element={<ReceiptListPage />} />
               <Route path="kwitansi/:id" element={<ReceiptDetailPage />} />
-              <Route path="rekap" element={<div className="p-8 text-slate-500 font-medium bg-white rounded-xl border border-slate-200">Modul Rekap & Laporan Keuangan (Tahap Fase 11)</div>} />
+              <Route path="rekap" element={<RekapPage />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

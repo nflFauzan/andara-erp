@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +22,20 @@ public interface PenawaranRepository extends JpaRepository<Penawaran, Long> {
     boolean existsByNumber(String number);
 
     List<Penawaran> findByCustomerIdOrderByDateDesc(Long customerId);
+
+    long countByCustomerId(Long customerId);
+
+    @Query("SELECT COUNT(p) FROM Penawaran p WHERE p.status != 'CANCELLED' AND p.date BETWEEN :startDate AND :endDate")
+    long countActiveByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COUNT(p) FROM Penawaran p WHERE p.customer.id = :customerId AND p.status != 'CANCELLED' AND p.date BETWEEN :startDate AND :endDate")
+    long countActiveByCustomerIdAndDateRange(@Param("customerId") Long customerId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COALESCE(SUM(p.totalAmount), 0) FROM Penawaran p WHERE p.status != 'CANCELLED' AND p.date BETWEEN :startDate AND :endDate")
+    BigDecimal sumTotalAmountActiveByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COALESCE(SUM(p.totalAmount), 0) FROM Penawaran p WHERE p.customer.id = :customerId AND p.status != 'CANCELLED' AND p.date BETWEEN :startDate AND :endDate")
+    BigDecimal sumTotalAmountActiveByCustomerIdAndDateRange(@Param("customerId") Long customerId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     @Query("SELECT p FROM Penawaran p " +
             "JOIN p.customer c " +

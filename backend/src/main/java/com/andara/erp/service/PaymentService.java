@@ -32,6 +32,7 @@ public class PaymentService {
     private final CustomerRepository customerRepository;
     private final NumberingService numberingService;
     private final DepositService depositService;
+    private final AuditLogService auditLogService;
 
     public PaymentService(
             PaymentRepository paymentRepository,
@@ -39,7 +40,8 @@ public class PaymentService {
             InvoiceRepository invoiceRepository,
             CustomerRepository customerRepository,
             NumberingService numberingService,
-            DepositService depositService
+            DepositService depositService,
+            AuditLogService auditLogService
     ) {
         this.paymentRepository = paymentRepository;
         this.paymentAllocationRepository = paymentAllocationRepository;
@@ -47,6 +49,7 @@ public class PaymentService {
         this.customerRepository = customerRepository;
         this.numberingService = numberingService;
         this.depositService = depositService;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
@@ -190,6 +193,13 @@ public class PaymentService {
         }
 
         Payment finalPayment = paymentRepository.save(savedPayment);
+        auditLogService.log(
+                "CREATE_PAYMENT",
+                "PAYMENT",
+                finalPayment.getId(),
+                null,
+                "Pembayaran kas dibuat: " + finalPayment.getNumber() + " nominal Rp" + finalPayment.getAmount() + " (Alokasi: Rp" + totalAllocated + ", Surplus Deposit: Rp" + excess + ")"
+        );
         return mapToDTO(finalPayment);
     }
 
@@ -242,6 +252,13 @@ public class PaymentService {
         payment.setUpdatedAt(OffsetDateTime.now());
 
         Payment saved = paymentRepository.save(payment);
+        auditLogService.log(
+                "CANCEL_PAYMENT",
+                "PAYMENT",
+                saved.getId(),
+                "Status: CONFIRMED, Amount: Rp" + saved.getAmount(),
+                "Status: CANCELLED oleh " + username
+        );
         return mapToDTO(saved);
     }
 

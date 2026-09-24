@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +25,38 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     List<Invoice> findByCustomerIdOrderByDateDesc(Long customerId);
 
     List<Invoice> findBySourcePenawaranId(Long sourcePenawaranId);
+
+    long countByCustomerId(Long customerId);
+
+    @Query("SELECT COUNT(inv) FROM Invoice inv WHERE inv.status != 'CANCELLED' AND inv.date BETWEEN :startDate AND :endDate")
+    long countActiveByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COUNT(inv) FROM Invoice inv WHERE inv.customer.id = :customerId AND inv.status != 'CANCELLED' AND inv.date BETWEEN :startDate AND :endDate")
+    long countActiveByCustomerIdAndDateRange(@Param("customerId") Long customerId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COALESCE(SUM(inv.totalAmount), 0) FROM Invoice inv WHERE inv.status != 'CANCELLED' AND inv.date BETWEEN :startDate AND :endDate")
+    BigDecimal sumTotalAmountActiveByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COALESCE(SUM(inv.totalAmount), 0) FROM Invoice inv WHERE inv.customer.id = :customerId AND inv.status != 'CANCELLED' AND inv.date BETWEEN :startDate AND :endDate")
+    BigDecimal sumTotalAmountActiveByCustomerIdAndDateRange(@Param("customerId") Long customerId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COALESCE(SUM(inv.totalAmount - inv.paidAmount), 0) FROM Invoice inv WHERE inv.status != 'CANCELLED' AND inv.paymentStatus != 'PAID' AND inv.date BETWEEN :startDate AND :endDate")
+    BigDecimal sumOutstandingActiveByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COALESCE(SUM(inv.totalAmount - inv.paidAmount), 0) FROM Invoice inv WHERE inv.customer.id = :customerId AND inv.status != 'CANCELLED' AND inv.paymentStatus != 'PAID' AND inv.date BETWEEN :startDate AND :endDate")
+    BigDecimal sumOutstandingActiveByCustomerIdAndDateRange(@Param("customerId") Long customerId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COUNT(inv) FROM Invoice inv WHERE inv.status != 'CANCELLED' AND inv.paymentStatus != 'PAID' AND inv.date BETWEEN :startDate AND :endDate")
+    long countUnpaidActiveByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COUNT(inv) FROM Invoice inv WHERE inv.customer.id = :customerId AND inv.status != 'CANCELLED' AND inv.paymentStatus != 'PAID' AND inv.date BETWEEN :startDate AND :endDate")
+    long countUnpaidActiveByCustomerIdAndDateRange(@Param("customerId") Long customerId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT inv FROM Invoice inv JOIN FETCH inv.customer c WHERE inv.status != 'CANCELLED' AND inv.paymentStatus != 'PAID' ORDER BY inv.dueDate ASC NULLS LAST, inv.date DESC")
+    List<Invoice> findRecentUnpaidInvoices(Pageable pageable);
+
+    @Query("SELECT inv FROM Invoice inv JOIN FETCH inv.customer c WHERE inv.customer.id = :customerId AND inv.status != 'CANCELLED' AND inv.paymentStatus != 'PAID' ORDER BY inv.dueDate ASC NULLS LAST, inv.date DESC")
+    List<Invoice> findRecentUnpaidInvoicesByCustomerId(@Param("customerId") Long customerId, Pageable pageable);
 
     @Query("SELECT inv FROM Invoice inv " +
             "JOIN inv.customer c " +

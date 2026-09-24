@@ -26,17 +26,20 @@ public class DepositService {
     private final CustomerRepository customerRepository;
     private final InvoiceRepository invoiceRepository;
     private final PaymentRepository paymentRepository;
+    private final AuditLogService auditLogService;
 
     public DepositService(
             DepositTransactionRepository depositTransactionRepository,
             CustomerRepository customerRepository,
             InvoiceRepository invoiceRepository,
-            PaymentRepository paymentRepository
+            PaymentRepository paymentRepository,
+            AuditLogService auditLogService
     ) {
         this.depositTransactionRepository = depositTransactionRepository;
         this.customerRepository = customerRepository;
         this.invoiceRepository = invoiceRepository;
         this.paymentRepository = paymentRepository;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
@@ -120,7 +123,15 @@ public class DepositService {
         customer.setDepositBalance(newBalance);
         customerRepository.save(customer);
 
-        return depositTransactionRepository.save(transaction);
+        DepositTransaction saved = depositTransactionRepository.save(transaction);
+        auditLogService.log(
+                "DEPOSIT_IN",
+                "DEPOSIT_TRANSACTION",
+                saved.getId(),
+                null,
+                "Penambahan deposit customer " + customer.getName() + " sebesar Rp" + amount + " (Saldo baru: Rp" + newBalance + ")"
+        );
+        return saved;
     }
 
     @Transactional
@@ -151,7 +162,15 @@ public class DepositService {
 
         customer.setDepositBalance(newBalance);
         customerRepository.save(customer);
-        return depositTransactionRepository.save(transaction);
+        DepositTransaction saved = depositTransactionRepository.save(transaction);
+        auditLogService.log(
+                "DEPOSIT_REFUND",
+                "DEPOSIT_TRANSACTION",
+                saved.getId(),
+                "Saldo: Rp" + currentBalance,
+                "Penarikan/Refund deposit customer " + customer.getName() + " sebesar Rp" + amount + " (Saldo baru: Rp" + newBalance + ")"
+        );
+        return saved;
     }
 
     @Transactional
@@ -214,6 +233,14 @@ public class DepositService {
         invoice.setPaidAmount(invoice.getPaidAmount().add(request.getAmount()));
         invoice.updatePaymentStatus();
         invoiceRepository.save(invoice);
+
+        auditLogService.log(
+                "DEPOSIT_USED",
+                "DEPOSIT_TRANSACTION",
+                savedTx.getId(),
+                "Saldo: Rp" + currentBalance,
+                "Penggunaan deposit Rp" + request.getAmount() + " untuk pelunasan Faktur " + invoice.getNumber() + " (Saldo baru: Rp" + newBalance + ")"
+        );
 
         return mapToDTO(savedTx);
     }

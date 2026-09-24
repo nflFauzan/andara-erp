@@ -30,6 +30,7 @@ public class InvoiceService {
     private final KegiatanRepository kegiatanRepository;
     private final KegiatanItemRepository kegiatanItemRepository;
     private final NumberingService numberingService;
+    private final AuditLogService auditLogService;
 
     public InvoiceService(
             InvoiceRepository invoiceRepository,
@@ -39,7 +40,8 @@ public class InvoiceService {
             PenawaranDetailRepository penawaranDetailRepository,
             KegiatanRepository kegiatanRepository,
             KegiatanItemRepository kegiatanItemRepository,
-            NumberingService numberingService
+            NumberingService numberingService,
+            AuditLogService auditLogService
     ) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceDetailRepository = invoiceDetailRepository;
@@ -49,6 +51,7 @@ public class InvoiceService {
         this.kegiatanRepository = kegiatanRepository;
         this.kegiatanItemRepository = kegiatanItemRepository;
         this.numberingService = numberingService;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
@@ -160,6 +163,13 @@ public class InvoiceService {
         buildDetails(invoice, request.getDetails(), null);
 
         Invoice saved = invoiceRepository.save(invoice);
+        auditLogService.log(
+                "CREATE_INVOICE",
+                "INVOICE",
+                saved.getId(),
+                null,
+                "Faktur dibuat: " + saved.getNumber() + " nominal Rp" + saved.getTotalAmount()
+        );
         return InvoiceDTO.fromEntity(saved, true);
     }
 
@@ -232,6 +242,13 @@ public class InvoiceService {
         invoice.setUpdatedAt(OffsetDateTime.now());
 
         Invoice saved = invoiceRepository.save(invoice);
+        auditLogService.log(
+                "UPDATE_STATUS_INVOICE",
+                "INVOICE",
+                saved.getId(),
+                "Status: " + currentStatus,
+                "Status: " + targetStatus
+        );
         return InvoiceDTO.fromEntity(saved, true);
     }
 
@@ -247,6 +264,13 @@ public class InvoiceService {
             );
         }
 
+        auditLogService.log(
+                "DELETE_INVOICE",
+                "INVOICE",
+                id,
+                "Faktur draft " + invoice.getNumber() + " dihapus",
+                null
+        );
         invoiceRepository.delete(invoice);
     }
 

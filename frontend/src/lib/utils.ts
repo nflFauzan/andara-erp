@@ -16,3 +16,34 @@ export function formatRupiah(amount: number | string | null | undefined): string
     maximumFractionDigits: 0,
   }).format(num);
 }
+
+// Alias for formatRupiah for consistent naming
+export const formatCurrency = formatRupiah;
+
+export function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '-';
+  try {
+    return new Date(dateStr).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+export function formatDateTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '-';
+  try {
+    return new Date(dateStr).toLocaleString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return dateStr;
+  }
+}

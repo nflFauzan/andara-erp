@@ -27,19 +27,22 @@ public class PenawaranService {
     private final KegiatanRepository kegiatanRepository;
     private final KegiatanItemRepository kegiatanItemRepository;
     private final NumberingService numberingService;
+    private final AuditLogService auditLogService;
 
     public PenawaranService(
             PenawaranRepository penawaranRepository,
             CustomerRepository customerRepository,
             KegiatanRepository kegiatanRepository,
             KegiatanItemRepository kegiatanItemRepository,
-            NumberingService numberingService
+            NumberingService numberingService,
+            AuditLogService auditLogService
     ) {
         this.penawaranRepository = penawaranRepository;
         this.customerRepository = customerRepository;
         this.kegiatanRepository = kegiatanRepository;
         this.kegiatanItemRepository = kegiatanItemRepository;
         this.numberingService = numberingService;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
@@ -179,6 +182,13 @@ public class PenawaranService {
         penawaran.setUpdatedAt(OffsetDateTime.now());
 
         Penawaran saved = penawaranRepository.save(penawaran);
+        auditLogService.log(
+                "UPDATE_STATUS_PENAWARAN",
+                "PENAWARAN",
+                saved.getId(),
+                "Status: " + currentStatus,
+                "Status: " + targetStatus + (request.getNotes() != null ? " (" + request.getNotes().trim() + ")" : "")
+        );
         return PenawaranDTO.fromEntity(saved, true);
     }
 
@@ -194,6 +204,13 @@ public class PenawaranService {
             );
         }
 
+        auditLogService.log(
+                "DELETE_PENAWARAN",
+                "PENAWARAN",
+                id,
+                "Penawaran draft " + penawaran.getNumber() + " dihapus",
+                null
+        );
         penawaranRepository.delete(penawaran);
     }
 

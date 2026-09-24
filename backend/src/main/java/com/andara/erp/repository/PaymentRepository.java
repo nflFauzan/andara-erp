@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -22,6 +23,20 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     boolean existsByNumber(String number);
 
     List<Payment> findByCustomerIdOrderByDateDesc(Long customerId);
+
+    long countByCustomerId(Long customerId);
+
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = 'CONFIRMED' AND p.date BETWEEN :startDate AND :endDate")
+    BigDecimal sumAmountConfirmedByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.customer.id = :customerId AND p.status = 'CONFIRMED' AND p.date BETWEEN :startDate AND :endDate")
+    BigDecimal sumAmountConfirmedByCustomerIdAndDateRange(@Param("customerId") Long customerId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT p FROM Payment p JOIN FETCH p.customer c WHERE p.status = 'CONFIRMED' ORDER BY p.date DESC, p.id DESC")
+    List<Payment> findRecentConfirmedPayments(Pageable pageable);
+
+    @Query("SELECT p FROM Payment p JOIN FETCH p.customer c WHERE p.customer.id = :customerId AND p.status = 'CONFIRMED' ORDER BY p.date DESC, p.id DESC")
+    List<Payment> findRecentConfirmedPaymentsByCustomerId(@Param("customerId") Long customerId, Pageable pageable);
 
     @Query("SELECT p FROM Payment p " +
             "JOIN p.customer c " +

@@ -27,4 +27,11 @@ public interface DepositTransactionRepository extends JpaRepository<DepositTrans
             "ELSE -dt.amount END), 0) " +
             "FROM DepositTransaction dt WHERE dt.customer.id = :customerId")
     BigDecimal calculateCurrentBalanceByCustomerId(@Param("customerId") Long customerId);
+
+    @Query("SELECT COALESCE(SUM(CASE " +
+            "WHEN dt.type = com.andara.erp.entity.DepositTransactionType.DEPOSIT_IN THEN dt.amount " +
+            "WHEN dt.type = com.andara.erp.entity.DepositTransactionType.DEPOSIT_ADJUSTMENT THEN dt.amount " +
+            "ELSE -dt.amount END), 0) " +
+            "FROM DepositTransaction dt")
+    BigDecimal calculateGrandTotalDepositBalance();
 }

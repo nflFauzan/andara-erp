@@ -23,6 +23,10 @@ public interface KegiatanRepository extends JpaRepository<Kegiatan, Long> {
 
     List<Kegiatan> findByCustomerIdAndStatus(Long customerId, KegiatanStatus status);
 
+    long countByStatusIn(List<KegiatanStatus> statuses);
+
+    long countByCustomerId(Long customerId);
+
     @Query("SELECT k FROM Kegiatan k " +
             "JOIN k.customer c " +
             "WHERE (:customerId IS NULL OR k.customer.id = :customerId) " +

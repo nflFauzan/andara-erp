@@ -12,11 +12,13 @@ import {
   Lock,
   FileCheck2,
   Send,
-  AlertTriangle
+  AlertTriangle,
+  History
 } from 'lucide-react';
 import { invoiceApi } from '../api/invoiceApi';
 import { Invoice, InvoiceStatus, InvoicePaymentStatus } from '../types/invoice';
 import { AttachmentSection } from '../components/common/AttachmentSection';
+import { AuditHistoryModal } from '../components/audit/AuditHistoryModal';
 
 const STATUS_CONFIG: Record<InvoiceStatus, { label: string; bg: string; text: string; icon: React.ComponentType<{ className?: string }> }> = {
   DRAFT: {
@@ -69,6 +71,7 @@ export const InvoiceDetailPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [showAuditModal, setShowAuditModal] = useState(false);
 
   const loadData = async () => {
     if (!id) return;
@@ -210,6 +213,16 @@ export const InvoiceDetailPage: React.FC = () => {
           >
             <Printer className="w-4 h-4 text-slate-500" />
             Cetak Faktur / PDF
+          </button>
+
+          {/* Audit Trail Button */}
+          <button
+            onClick={() => setShowAuditModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 shadow-sm transition"
+            title="Lihat riwayat audit dokumen ini"
+          >
+            <History className="w-4 h-4 text-slate-500" />
+            Audit Trail
           </button>
 
           {/* Edit Button */}
@@ -487,6 +500,16 @@ export const InvoiceDetailPage: React.FC = () => {
           description="Unggah berkas BAST, surat jalan, atau rincian lampiran pekerjaan proyek (tersimpan di Cloudflare R2 / storage)."
         />
       </div>
+      {/* Audit History Modal */}
+      {invoice && (
+        <AuditHistoryModal
+          isOpen={showAuditModal}
+          onClose={() => setShowAuditModal(false)}
+          entityType="INVOICE"
+          entityId={invoice.id}
+          title={`Audit Trail - Faktur ${invoice.number}`}
+        />
+      )}
     </div>
   );
 };
