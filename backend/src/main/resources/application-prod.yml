@@ -1,8 +1,13 @@
 server:
+  port: ${SERVER_PORT:8080}
+  forward-headers-strategy: framework
   servlet:
     session:
       cookie:
         secure: true
+        http-only: true
+        same-site: lax
+        name: ANDARA_SESSION
 
 spring:
   datasource:
@@ -29,3 +34,20 @@ app:
   cors:
     allowed-origins:
       - ${APP_DOMAIN:https://andara.co.id}
+  storage:
+    type: ${STORAGE_TYPE:r2}
+    local-dir: ${STORAGE_LOCAL_DIR:/app/uploads}
+    r2:
+      endpoint: ${R2_ENDPOINT:}
+      access-key: ${R2_ACCESS_KEY:}
+      secret-key: ${R2_SECRET_KEY:}
+      bucket-name: ${R2_BUCKET_NAME:andara-files}
+      region: ${R2_REGION:auto}
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: WARN
+    org.springframework.security: WARN
+    org.hibernate: WARN
+    com.andara.erp: INFO
