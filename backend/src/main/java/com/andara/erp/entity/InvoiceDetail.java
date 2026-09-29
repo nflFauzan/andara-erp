@@ -21,6 +21,10 @@ public class InvoiceDetail {
     private PenawaranDetail sourcePenawaranDetail;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sph_kegiatan_id")
+    private SphKegiatan sphKegiatan;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_kegiatan_id")
     private Kegiatan sourceKegiatan;
 
@@ -120,6 +124,14 @@ public class InvoiceDetail {
 
     public void setSourcePenawaranDetail(PenawaranDetail sourcePenawaranDetail) {
         this.sourcePenawaranDetail = sourcePenawaranDetail;
+    }
+
+    public SphKegiatan getSphKegiatan() {
+        return sphKegiatan;
+    }
+
+    public void setSphKegiatan(SphKegiatan sphKegiatan) {
+        this.sphKegiatan = sphKegiatan;
     }
 
     public Kegiatan getSourceKegiatan() {

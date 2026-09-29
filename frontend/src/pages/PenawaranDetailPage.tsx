@@ -13,13 +13,15 @@ import {
   RotateCcw,
   AlertCircle,
   Lock,
-  History
+  History,
+  Receipt
 } from 'lucide-react';
 import { penawaranApi } from '../api/penawaranApi';
 import { customerApi } from '../api/customerApi';
 import { Penawaran, PenawaranStatus } from '../types/penawaran';
 import { Customer } from '../types/customer';
 import { AuditHistoryModal } from '../components/audit/AuditHistoryModal';
+import { AndaraLetterhead } from '../components/common/AndaraLetterhead';
 
 const STATUS_CONFIG: Record<PenawaranStatus, { label: string; bg: string; text: string; icon: React.ComponentType<{ className?: string }> }> = {
   DRAFT: {
@@ -195,11 +197,12 @@ export const PenawaranDetailPage: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           {/* Print Button */}
           <button
-            onClick={() => window.print()}
+            onClick={() => window.open(`/penawaran/${penawaran.id}/print`, '_blank')}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 shadow-sm transition"
+            title="Buka format cetak resmi CV. ANDARA (siap cetak/simpan PDF)"
           >
             <Printer className="w-4 h-4 text-slate-500" />
-            Cetak / PDF
+            Cetak Format Resmi
           </button>
 
           {/* Audit Trail Button */}
@@ -211,6 +214,17 @@ export const PenawaranDetailPage: React.FC = () => {
             <History className="w-4 h-4 text-slate-500" />
             Audit Trail
           </button>
+
+          {/* Buat Faktur Penjualan Button when Approved */}
+          {isApproved && (
+            <button
+              onClick={() => navigate(`/faktur/create?penawaranId=${penawaran.id}`)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition"
+            >
+              <Receipt className="w-4 h-4" />
+              Buat Faktur Penjualan
+            </button>
+          )}
 
           {/* DRAFT Actions */}
           {penawaran.status === 'DRAFT' && (
@@ -322,45 +336,30 @@ export const PenawaranDetailPage: React.FC = () => {
 
       {/* Financial Locking Banner */}
       {isApproved && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 text-sm text-emerald-950 flex items-start gap-3 shadow-sm print:hidden">
-          <Lock className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold">Dokumen Terkunci Secara Finansial (Financial Locked)</p>
-            <p className="text-xs text-emerald-800 mt-0.5 leading-relaxed">
-              Surat penawaran ini telah berstatus <strong>DISESETUJUI (APPROVED)</strong>. Nilai total, volume, dan harga satuan telah dikunci untuk melindungi keabsahan penerbitan faktur penjualan berikutnya (anti-manipulation).
-            </p>
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm print:hidden">
+          <div className="flex items-start gap-3">
+            <Lock className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold">Dokumen Terkunci Secara Finansial (Financial Locked)</p>
+              <p className="text-xs text-emerald-800 mt-0.5 leading-relaxed">
+                Surat penawaran ini telah berstatus <strong>DISETUJUI (APPROVED)</strong>. Nilai total, volume, dan harga satuan telah dikunci untuk melindungi keabsahan penerbitan faktur penjualan berikutnya (anti-manipulation).
+              </p>
+            </div>
           </div>
+          <button
+            onClick={() => navigate(`/faktur/create?penawaranId=${penawaran.id}`)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition shrink-0 whitespace-nowrap self-start sm:self-center"
+          >
+            <Receipt className="w-4 h-4" />
+            Terbitkan Faktur Penjualan
+          </button>
         </div>
       )}
 
       {/* Printable Document Sheet */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-10 space-y-8 print:shadow-none print:border-none print:p-0">
-        {/* Letterhead */}
-        <div className="flex items-start justify-between border-b-2 border-slate-900 pb-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center font-bold text-white shadow-sm">
-                A
-              </div>
-              <h2 className="text-xl font-bold tracking-tight text-slate-900">CV. ANDARA</h2>
-            </div>
-            <p className="text-xs text-slate-500 font-medium max-w-sm leading-relaxed">
-              Jasa Pengadaan, Kontraktor Sipil, Pameran & Event Organizer Terpadu
-              <br />
-              Email: finance@andara.co.id | Telepon: (021) 789-ANDARA
-            </p>
-          </div>
-
-          <div className="text-right space-y-1">
-            <span className="inline-block px-3 py-1 rounded bg-slate-900 text-white font-mono text-xs font-bold uppercase tracking-wider">
-              SURAT PENAWARAN HARGA
-            </span>
-            <p className="font-mono text-sm font-bold text-brand-700">{penawaran.number}</p>
-            <p className="text-xs text-slate-500">
-              Tanggal: {new Date(penawaran.date).toLocaleDateString('id-ID', { dateStyle: 'medium' })}
-            </p>
-          </div>
-        </div>
+        {/* Letterhead Resmi CV. ANDARA */}
+        <AndaraLetterhead showDivisiStrip={false} className="mb-4" />
 
         {/* Customer & Info Details */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200 print:bg-transparent">
@@ -406,7 +405,71 @@ export const PenawaranDetailPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {penawaran.details && penawaran.details.length > 0 ? (
+                {penawaran.kegiatanList && penawaran.kegiatanList.length > 0 ? (
+                  penawaran.kegiatanList.map((kegiatan, kIdx) => {
+                    const letter = String.fromCharCode(65 + kIdx);
+                    return (
+                      <React.Fragment key={kegiatan.id || kIdx}>
+                        {/* Kegiatan Group Header */}
+                        <tr className="bg-slate-100/90 font-bold border-t border-b border-slate-300">
+                          <td className="py-2.5 px-3 text-center text-xs font-mono text-slate-900 font-bold">
+                            {letter}
+                          </td>
+                          <td colSpan={5} className="py-2.5 px-3 text-xs uppercase tracking-wider text-slate-900 font-bold">
+                            {kegiatan.name}
+                          </td>
+                        </tr>
+                        {/* Items in this Kegiatan */}
+                        {kegiatan.items && kegiatan.items.length > 0 ? (
+                          kegiatan.items.map((item, itemIdx) => (
+                            <tr key={item.id || itemIdx} className="hover:bg-slate-50/50">
+                              <td className="py-2.5 px-3 text-center text-xs font-mono text-slate-500">
+                                {itemIdx + 1}
+                              </td>
+                              <td className="py-2.5 px-3">
+                                <div className="font-semibold text-slate-800 text-xs sm:text-sm">
+                                  {item.description}
+                                </div>
+                                {item.notes && (
+                                  <div className="text-[11px] text-slate-500 italic mt-0.5">
+                                    {item.notes}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-mono font-medium text-slate-700 text-xs">
+                                {item.volume}
+                              </td>
+                              <td className="py-2.5 px-3 text-center text-xs text-slate-600">
+                                {item.unit}
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-mono text-slate-700 text-xs">
+                                {formatCurrency(item.unitPrice)}
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 text-xs">
+                                {formatCurrency(item.amount)}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={6} className="py-2 px-3 text-center text-xs text-slate-400 italic">
+                              Belum ada item dalam kegiatan ini.
+                            </td>
+                          </tr>
+                        )}
+                        {/* Kegiatan Subtotal Row */}
+                        <tr className="bg-slate-50/80 font-semibold border-b border-slate-200">
+                          <td colSpan={5} className="py-2 px-3 text-right text-xs font-bold text-slate-700">
+                            JUMLAH {letter} :
+                          </td>
+                          <td className="py-2 px-3 text-right font-mono font-bold text-slate-800 text-xs">
+                            {formatCurrency(kegiatan.subtotal)}
+                          </td>
+                        </tr>
+                      </React.Fragment>
+                    );
+                  })
+                ) : penawaran.details && penawaran.details.length > 0 ? (
                   penawaran.details.map((detail, idx) => (
                     <tr key={detail.id || idx} className="hover:bg-slate-50/50">
                       <td className="py-3 px-3 text-center text-xs font-mono text-slate-500">

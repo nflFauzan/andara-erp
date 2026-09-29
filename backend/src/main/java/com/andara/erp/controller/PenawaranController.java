@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/penawaran")
@@ -48,6 +49,12 @@ public class PenawaranController {
     public ApiResponse<PenawaranDTO> getPenawaranById(@PathVariable Long id) {
         PenawaranDTO dto = penawaranService.getPenawaranById(id);
         return ApiResponse.success(dto);
+    }
+
+    @GetMapping("/customer/{customerId}")
+    public ApiResponse<List<PenawaranDTO>> getPenawaranByCustomerId(@PathVariable Long customerId) {
+        List<PenawaranDTO> list = penawaranService.getPenawaranByCustomerId(customerId);
+        return ApiResponse.success(list);
     }
 
     @PostMapping

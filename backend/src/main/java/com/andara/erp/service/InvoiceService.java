@@ -101,6 +101,10 @@ public class InvoiceService {
 
             PenawaranBillableItemDTO dto = new PenawaranBillableItemDTO();
             dto.setPenawaranDetailId(detail.getId());
+            if (detail.getSphKegiatan() != null) {
+                dto.setSphKegiatanId(detail.getSphKegiatan().getId());
+                dto.setSphKegiatanName(detail.getSphKegiatan().getName());
+            }
             if (detail.getKegiatan() != null) {
                 dto.setKegiatanId(detail.getKegiatan().getId());
                 dto.setKegiatanName(detail.getKegiatan().getName());
@@ -133,6 +137,14 @@ public class InvoiceService {
             throw new AppException(ErrorCode.INVALID_REQUEST, "Customer nonaktif tidak dapat dipilih untuk faktur");
         }
 
+        // Role check: ADMIN must create invoice from SPH
+        boolean isAdmin = SecurityContextHolder.getContext().getAuthentication() != null
+                && SecurityContextHolder.getContext().getAuthentication().getAuthorities()
+                .stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (isAdmin && request.getSourcePenawaranId() == null) {
+            throw new AppException(ErrorCode.FORBIDDEN, "Role Admin wajib membuat faktur penjualan yang bersumber dari Surat Penawaran Harga (SPH)");
+        }
+
         Penawaran sourcePenawaran = null;
         if (request.getSourcePenawaranId() != null) {
             sourcePenawaran = penawaranRepository.findById(request.getSourcePenawaranId())
@@ -157,6 +169,7 @@ public class InvoiceService {
         invoice.setPaidAmount(BigDecimal.ZERO);
         invoice.setNotes(request.getNotes());
         invoice.setTerms(request.getTerms());
+        invoice.setWorkLocation(request.getWorkLocation());
         invoice.setCreatedBy(getCurrentUsername());
         invoice.setUpdatedBy(getCurrentUsername());
 
@@ -204,6 +217,7 @@ public class InvoiceService {
         invoice.setDueDate(request.getDueDate());
         invoice.setNotes(request.getNotes());
         invoice.setTerms(request.getTerms());
+        invoice.setWorkLocation(request.getWorkLocation());
         invoice.setUpdatedBy(getCurrentUsername());
         invoice.setUpdatedAt(OffsetDateTime.now());
 
@@ -308,6 +322,9 @@ public class InvoiceService {
                 }
 
                 detail.setSourcePenawaranDetail(pDetail);
+                if (pDetail.getSphKegiatan() != null) {
+                    detail.setSphKegiatan(pDetail.getSphKegiatan());
+                }
                 if (pDetail.getKegiatan() != null) {
                     detail.setSourceKegiatan(pDetail.getKegiatan());
                 }

@@ -9,6 +9,8 @@ public class CreatePenawaranDetailRequest {
 
     private Long kegiatanId;
     private Long kegiatanItemId;
+    private Long sphKegiatanId;
+    private Long itemCatalogId;
 
     @NotBlank(message = "Deskripsi item penawaran wajib diisi")
     private String description;
@@ -99,5 +101,21 @@ public class CreatePenawaranDetailRequest {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public Long getSphKegiatanId() {
+        return sphKegiatanId;
+    }
+
+    public void setSphKegiatanId(Long sphKegiatanId) {
+        this.sphKegiatanId = sphKegiatanId;
+    }
+
+    public Long getItemCatalogId() {
+        return itemCatalogId;
+    }
+
+    public void setItemCatalogId(Long itemCatalogId) {
+        this.itemCatalogId = itemCatalogId;
     }
 }

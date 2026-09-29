@@ -42,6 +42,10 @@ public class Penawaran {
     @OrderBy("sortOrder ASC, id ASC")
     private List<PenawaranDetail> details = new ArrayList<>();
 
+    @OneToMany(mappedBy = "penawaran", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortOrder ASC, id ASC")
+    private List<SphKegiatan> kegiatanList = new ArrayList<>();
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -82,6 +86,16 @@ public class Penawaran {
     }
 
     public void recalculateTotalAmount() {
+        if (kegiatanList != null && !kegiatanList.isEmpty()) {
+            this.totalAmount = kegiatanList.stream()
+                    .map(k -> {
+                        k.recalculateSubtotal();
+                        return k.getSubtotal() != null ? k.getSubtotal() : BigDecimal.ZERO;
+                    })
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            return;
+        }
+
         if (details == null || details.isEmpty()) {
             this.totalAmount = BigDecimal.ZERO;
             return;
@@ -89,9 +103,21 @@ public class Penawaran {
         this.totalAmount = details.stream()
                 .map(detail -> {
                     detail.calculateAmount();
-                    return detail.getAmount();
+                    return detail.getAmount() != null ? detail.getAmount() : BigDecimal.ZERO;
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public void addKegiatan(SphKegiatan k) {
+        kegiatanList.add(k);
+        k.setPenawaran(this);
+        recalculateTotalAmount();
+    }
+
+    public void removeKegiatan(SphKegiatan k) {
+        kegiatanList.remove(k);
+        k.setPenawaran(null);
+        recalculateTotalAmount();
     }
 
     public void addDetail(PenawaranDetail detail) {
@@ -216,5 +242,19 @@ public class Penawaran {
 
     public void setUpdatedBy(String updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public List<SphKegiatan> getKegiatanList() {
+        return kegiatanList;
+    }
+
+    public void setKegiatanList(List<SphKegiatan> kegiatanList) {
+        this.kegiatanList = kegiatanList;
+        if (kegiatanList != null) {
+            for (SphKegiatan k : kegiatanList) {
+                k.setPenawaran(this);
+            }
+        }
+        recalculateTotalAmount();
     }
 }

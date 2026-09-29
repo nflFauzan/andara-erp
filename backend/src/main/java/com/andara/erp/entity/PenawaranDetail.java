@@ -24,6 +24,14 @@ public class PenawaranDetail {
     @JoinColumn(name = "kegiatan_item_id")
     private KegiatanItem kegiatanItem;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sph_kegiatan_id")
+    private SphKegiatan sphKegiatan;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "item_catalog_id")
+    private ItemCatalog itemCatalog;
+
     @Column(nullable = false, length = 500)
     private String description;
 
@@ -198,5 +206,21 @@ public class PenawaranDetail {
 
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public SphKegiatan getSphKegiatan() {
+        return sphKegiatan;
+    }
+
+    public void setSphKegiatan(SphKegiatan sphKegiatan) {
+        this.sphKegiatan = sphKegiatan;
+    }
+
+    public ItemCatalog getItemCatalog() {
+        return itemCatalog;
+    }
+
+    public void setItemCatalog(ItemCatalog itemCatalog) {
+        this.itemCatalog = itemCatalog;
     }
 }

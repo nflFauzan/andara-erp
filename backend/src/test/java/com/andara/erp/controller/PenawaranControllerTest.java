@@ -157,4 +157,56 @@ class PenawaranControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message", containsString("DRAFT")));
     }
+
+    @Test
+    @WithMockUser(username = "operator", roles = {"OPERATOR"})
+    void createPenawaran_WithGroupedKegiatan_ShouldPersistGroupsAndCalculateSubtotals() throws Exception {
+        CreatePenawaranRequest request = new CreatePenawaranRequest();
+        request.setCustomerId(1L);
+        request.setDate(LocalDate.now());
+        request.setNotes("Penawaran Berkelompok SPH");
+
+        com.andara.erp.dto.penawaran.CreateSphKegiatanRequest groupA = new com.andara.erp.dto.penawaran.CreateSphKegiatanRequest();
+        groupA.setName("Pembangunan Ruang Kelas Baru");
+        groupA.setSortOrder(1);
+        groupA.setItems(List.of(
+                new CreatePenawaranDetailRequest("Pekerjaan Pondasi", new BigDecimal("10.00"), "m3", new BigDecimal("100000.00")),
+                new CreatePenawaranDetailRequest("Pekerjaan Dinding", new BigDecimal("20.00"), "m2", new BigDecimal("50000.00"))
+        ));
+
+        com.andara.erp.dto.penawaran.CreateSphKegiatanRequest groupB = new com.andara.erp.dto.penawaran.CreateSphKegiatanRequest();
+        groupB.setName("Pembangunan Perpustakaan");
+        groupB.setSortOrder(2);
+        groupB.setItems(List.of(
+                new CreatePenawaranDetailRequest("Pekerjaan Atap", new BigDecimal("5.00"), "unit", new BigDecimal("200000.00"))
+        ));
+
+        request.setKegiatan(List.of(groupA, groupB));
+
+        // Subtotal A = (10 * 100.000) + (20 * 50.000) = 1.000.000 + 1.000.000 = 2.000.000
+        // Subtotal B = (5 * 200.000) = 1.000.000
+        // Total SPH = 3.000.000
+        mockMvc.perform(post("/api/penawaran")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.kegiatanList.length()").value(2))
+                .andExpect(jsonPath("$.data.kegiatanList[0].name").value("Pembangunan Ruang Kelas Baru"))
+                .andExpect(jsonPath("$.data.kegiatanList[0].subtotal").value(2000000.0))
+                .andExpect(jsonPath("$.data.kegiatanList[0].items.length()").value(2))
+                .andExpect(jsonPath("$.data.kegiatanList[1].name").value("Pembangunan Perpustakaan"))
+                .andExpect(jsonPath("$.data.kegiatanList[1].subtotal").value(1000000.0))
+                .andExpect(jsonPath("$.data.totalAmount").value(3000000.0));
+    }
+
+    @Test
+    @WithMockUser(username = "operator", roles = {"OPERATOR"})
+    void getPenawaranByCustomerId_ShouldReturnList() throws Exception {
+        mockMvc.perform(get("/api/penawaran/customer/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray());
+    }
 }

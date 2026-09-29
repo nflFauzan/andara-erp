@@ -8,6 +8,10 @@ public class PenawaranDetailDTO {
 
     private Long id;
     private Long penawaranId;
+    private Long sphKegiatanId;
+    private String sphKegiatanName;
+    private Long itemCatalogId;
+    private String itemCatalogCode;
     private Long kegiatanId;
     private String kegiatanName;
     private Long kegiatanItemId;
@@ -28,6 +32,14 @@ public class PenawaranDetailDTO {
         PenawaranDetailDTO dto = new PenawaranDetailDTO();
         dto.setId(detail.getId());
         dto.setPenawaranId(detail.getPenawaran() != null ? detail.getPenawaran().getId() : null);
+        if (detail.getSphKegiatan() != null) {
+            dto.setSphKegiatanId(detail.getSphKegiatan().getId());
+            dto.setSphKegiatanName(detail.getSphKegiatan().getName());
+        }
+        if (detail.getItemCatalog() != null) {
+            dto.setItemCatalogId(detail.getItemCatalog().getId());
+            dto.setItemCatalogCode(detail.getItemCatalog().getCode());
+        }
         if (detail.getKegiatan() != null) {
             dto.setKegiatanId(detail.getKegiatan().getId());
             dto.setKegiatanName(detail.getKegiatan().getName());
@@ -157,5 +169,37 @@ public class PenawaranDetailDTO {
 
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Long getSphKegiatanId() {
+        return sphKegiatanId;
+    }
+
+    public void setSphKegiatanId(Long sphKegiatanId) {
+        this.sphKegiatanId = sphKegiatanId;
+    }
+
+    public String getSphKegiatanName() {
+        return sphKegiatanName;
+    }
+
+    public void setSphKegiatanName(String sphKegiatanName) {
+        this.sphKegiatanName = sphKegiatanName;
+    }
+
+    public Long getItemCatalogId() {
+        return itemCatalogId;
+    }
+
+    public void setItemCatalogId(Long itemCatalogId) {
+        this.itemCatalogId = itemCatalogId;
+    }
+
+    public String getItemCatalogCode() {
+        return itemCatalogCode;
+    }
+
+    public void setItemCatalogCode(String itemCatalogCode) {
+        this.itemCatalogCode = itemCatalogCode;
     }
 }

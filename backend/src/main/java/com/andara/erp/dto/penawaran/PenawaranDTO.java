@@ -24,6 +24,7 @@ public class PenawaranDTO {
     private BigDecimal totalAmount;
     private Integer itemCount;
     private List<PenawaranDetailDTO> details = new ArrayList<>();
+    private List<SphKegiatanDTO> kegiatanList = new ArrayList<>();
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private String createdBy;
@@ -56,15 +57,26 @@ public class PenawaranDTO {
         dto.setCreatedBy(entity.getCreatedBy());
         dto.setUpdatedBy(entity.getUpdatedBy());
 
-        if (entity.getDetails() != null) {
-            dto.setItemCount(entity.getDetails().size());
+        if (entity.getKegiatanList() != null && !entity.getKegiatanList().isEmpty()) {
+            int count = entity.getKegiatanList().stream()
+                    .mapToInt(k -> k.getItems() != null ? k.getItems().size() : 0)
+                    .sum();
+            dto.setItemCount(count);
             if (includeDetails) {
-                dto.setDetails(entity.getDetails().stream()
-                        .map(PenawaranDetailDTO::fromEntity)
+                dto.setKegiatanList(entity.getKegiatanList().stream()
+                        .map(SphKegiatanDTO::fromEntity)
                         .collect(Collectors.toList()));
             }
+        } else if (entity.getDetails() != null) {
+            dto.setItemCount(entity.getDetails().size());
         } else {
             dto.setItemCount(0);
+        }
+
+        if (includeDetails && entity.getDetails() != null && !entity.getDetails().isEmpty()) {
+            dto.setDetails(entity.getDetails().stream()
+                    .map(PenawaranDetailDTO::fromEntity)
+                    .collect(Collectors.toList()));
         }
 
         return dto;
@@ -206,5 +218,13 @@ public class PenawaranDTO {
 
     public void setUpdatedBy(String updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public List<SphKegiatanDTO> getKegiatanList() {
+        return kegiatanList;
+    }
+
+    public void setKegiatanList(List<SphKegiatanDTO> kegiatanList) {
+        this.kegiatanList = kegiatanList;
     }
 }

@@ -3,6 +3,10 @@ export type PenawaranStatus = 'DRAFT' | 'SENT' | 'APPROVED' | 'REJECTED' | 'CANC
 export interface PenawaranDetail {
   id: number;
   penawaranId: number;
+  sphKegiatanId?: number;
+  sphKegiatanName?: string;
+  itemCatalogId?: number;
+  itemCatalogCode?: string;
   kegiatanId?: number;
   kegiatanName?: string;
   kegiatanItemId?: number;
@@ -15,6 +19,15 @@ export interface PenawaranDetail {
   notes?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface SphKegiatan {
+  id: number;
+  penawaranId: number;
+  name: string;
+  sortOrder: number;
+  subtotal: number;
+  items: PenawaranDetail[];
 }
 
 export interface Penawaran {
@@ -31,6 +44,7 @@ export interface Penawaran {
   totalAmount: number;
   itemCount: number;
   details: PenawaranDetail[];
+  kegiatanList?: SphKegiatan[];
   createdAt?: string;
   updatedAt?: string;
   createdBy?: string;
@@ -38,6 +52,8 @@ export interface Penawaran {
 }
 
 export interface CreatePenawaranDetailInput {
+  itemCatalogId?: number;
+  sphKegiatanId?: number;
   kegiatanId?: number;
   kegiatanItemId?: number;
   description: string;
@@ -48,13 +64,21 @@ export interface CreatePenawaranDetailInput {
   notes?: string;
 }
 
+export interface CreateSphKegiatanInput {
+  id?: number;
+  name: string;
+  sortOrder?: number;
+  items: CreatePenawaranDetailInput[];
+}
+
 export interface CreatePenawaranInput {
   customerId: number;
   number?: string;
   date?: string;
   notes?: string;
   terms?: string;
-  items: CreatePenawaranDetailInput[];
+  items?: CreatePenawaranDetailInput[];
+  kegiatan?: CreateSphKegiatanInput[];
 }
 
 export interface UpdatePenawaranInput {
@@ -62,7 +86,8 @@ export interface UpdatePenawaranInput {
   date?: string;
   notes?: string;
   terms?: string;
-  items: CreatePenawaranDetailInput[];
+  items?: CreatePenawaranDetailInput[];
+  kegiatan?: CreateSphKegiatanInput[];
 }
 
 export interface UpdatePenawaranStatusInput {

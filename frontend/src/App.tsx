@@ -9,15 +9,18 @@ import { DashboardPage } from '@/pages/DashboardPage';
 import { StatusPage } from '@/pages/StatusPage';
 import { CustomerListPage } from '@/pages/CustomerListPage';
 import { CustomerDetailPage } from '@/pages/CustomerDetailPage';
+import { ItemCatalogListPage } from '@/pages/ItemCatalogListPage';
 import { KegiatanListPage } from '@/pages/KegiatanListPage';
 import { KegiatanDetailPage } from '@/pages/KegiatanDetailPage';
 import { NumberingPage } from '@/pages/NumberingPage';
 import { PenawaranListPage } from '@/pages/PenawaranListPage';
 import { PenawaranFormPage } from '@/pages/PenawaranFormPage';
 import { PenawaranDetailPage } from '@/pages/PenawaranDetailPage';
+import { SphPrintPage } from '@/pages/SphPrintPage';
 import { InvoiceListPage } from '@/pages/InvoiceListPage';
 import { InvoiceFormPage } from '@/pages/InvoiceFormPage';
 import { InvoiceDetailPage } from '@/pages/InvoiceDetailPage';
+import { InvoicePrintPage } from '@/pages/InvoicePrintPage';
 import { PaymentListPage } from '@/pages/PaymentListPage';
 import { PaymentFormPage } from '@/pages/PaymentFormPage';
 import { PaymentDetailPage } from '@/pages/PaymentDetailPage';
@@ -59,6 +62,9 @@ export const App: React.FC = () => {
               {/* Module routes */}
               <Route path="customers" element={<CustomerListPage />} />
               <Route path="customers/:id" element={<CustomerDetailPage />} />
+              <Route path="items" element={<ItemCatalogListPage />} />
+              <Route path="master/items" element={<ItemCatalogListPage />} />
+              <Route path="master/customers" element={<CustomerListPage />} />
               <Route path="kegiatan" element={<KegiatanListPage />} />
               <Route path="kegiatan/:id" element={<KegiatanDetailPage />} />
               <Route path="numbering" element={<NumberingPage />} />
@@ -77,6 +83,24 @@ export const App: React.FC = () => {
               <Route path="kwitansi/:id" element={<ReceiptDetailPage />} />
               <Route path="rekap" element={<RekapPage />} />
             </Route>
+
+            {/* Standalone Formal Print Views (Clean sheet without sidebar) */}
+            <Route
+              path="/penawaran/:id/print"
+              element={
+                <ProtectedRoute>
+                  <SphPrintPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/faktur/:id/print"
+              element={
+                <ProtectedRoute>
+                  <InvoicePrintPage />
+                </ProtectedRoute>
+              }
+            />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

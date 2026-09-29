@@ -32,6 +32,7 @@ public class InvoiceDTO {
     private BigDecimal outstanding;
     private String notes;
     private String terms;
+    private String workLocation;
     private Integer itemCount;
     private List<InvoiceDetailDTO> details = new ArrayList<>();
     private OffsetDateTime createdAt;
@@ -72,6 +73,7 @@ public class InvoiceDTO {
         dto.setOutstanding(entity.getOutstanding());
         dto.setNotes(entity.getNotes());
         dto.setTerms(entity.getTerms());
+        dto.setWorkLocation(entity.getWorkLocation());
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
         dto.setCreatedBy(entity.getCreatedBy());
@@ -299,5 +301,13 @@ public class InvoiceDTO {
 
     public void setUpdatedBy(String updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public String getWorkLocation() {
+        return workLocation;
+    }
+
+    public void setWorkLocation(String workLocation) {
+        this.workLocation = workLocation;
     }
 }

@@ -244,4 +244,52 @@ class InvoiceControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value("CONFLICT"));
     }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void adminCreateInvoice_WithoutSPH_ShouldReturnForbidden() throws Exception {
+        CreateInvoiceRequest createReq = new CreateInvoiceRequest();
+        createReq.setCustomerId(1L);
+        createReq.setDate(LocalDate.now());
+        createReq.setSourcePenawaranId(null); // Manual without SPH
+        createReq.setDetails(List.of(new CreateInvoiceDetailRequest("Manual Item", new BigDecimal("1.00"), "paket", new BigDecimal("500000.00"))));
+
+        mockMvc.perform(post("/api/faktur")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createReq)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void adminCreateInvoice_WithSPH_ShouldSucceedAndPersistLocationAndKegiatan() throws Exception {
+        CreateInvoiceRequest createReq = new CreateInvoiceRequest();
+        createReq.setCustomerId(1L);
+        createReq.setDate(LocalDate.now());
+        createReq.setSourcePenawaranId(1L); // SPH 1
+        createReq.setWorkLocation("Gedung Pertemuan Utama");
+
+        // Detail item from Penawaran 1, item 4 (id=4 in seed data, volume=1.00)
+        CreateInvoiceDetailRequest detailReq = new CreateInvoiceDetailRequest(
+                "Pekerjaan Finishing & Pembersihan Akhir",
+                new BigDecimal("1.00"),
+                "ls",
+                new BigDecimal("1000000.00")
+        );
+        detailReq.setSourcePenawaranDetailId(4L);
+        createReq.setDetails(List.of(detailReq));
+
+        mockMvc.perform(post("/api/faktur")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createReq)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.sourcePenawaranId").value(1))
+                .andExpect(jsonPath("$.data.workLocation").value("Gedung Pertemuan Utama"))
+                .andExpect(jsonPath("$.data.details[0].sourcePenawaranDetailId").value(4));
+    }
 }

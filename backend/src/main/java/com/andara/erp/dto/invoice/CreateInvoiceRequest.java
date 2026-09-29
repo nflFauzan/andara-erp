@@ -23,6 +23,8 @@ public class CreateInvoiceRequest {
 
     private String terms;
 
+    private String workLocation;
+
     @NotEmpty(message = "Item faktur minimal harus ada 1")
     @Valid
     private List<CreateInvoiceDetailRequest> details = new ArrayList<>();
@@ -76,6 +78,14 @@ public class CreateInvoiceRequest {
 
     public void setTerms(String terms) {
         this.terms = terms;
+    }
+
+    public String getWorkLocation() {
+        return workLocation;
+    }
+
+    public void setWorkLocation(String workLocation) {
+        this.workLocation = workLocation;
     }
 
     public List<CreateInvoiceDetailRequest> getDetails() {

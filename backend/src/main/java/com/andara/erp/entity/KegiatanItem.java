@@ -16,6 +16,10 @@ public class KegiatanItem {
     @JoinColumn(name = "kegiatan_id", nullable = false)
     private Kegiatan kegiatan;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "item_catalog_id")
+    private ItemCatalog itemCatalog;
+
     @Column(nullable = false, length = 500)
     private String description;
 
@@ -173,5 +177,13 @@ public class KegiatanItem {
 
     public void setUpdatedBy(String updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public ItemCatalog getItemCatalog() {
+        return itemCatalog;
+    }
+
+    public void setItemCatalog(ItemCatalog itemCatalog) {
+        this.itemCatalog = itemCatalog;
     }
 }

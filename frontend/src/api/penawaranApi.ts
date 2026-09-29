@@ -33,6 +33,11 @@ export const penawaranApi = {
     return response.data.data!;
   },
 
+  async getPenawaranByCustomerId(customerId: number): Promise<Penawaran[]> {
+    const response = await api.get<ApiResponse<Penawaran[]>>(`/penawaran/customer/${customerId}`);
+    return response.data.data!;
+  },
+
   async createPenawaran(data: CreatePenawaranInput): Promise<Penawaran> {
     const response = await api.post<ApiResponse<Penawaran>>('/penawaran', data);
     return response.data.data!;

@@ -25,11 +25,13 @@ import {
 import { customerApi } from '../api/customerApi';
 import { attachmentApi } from '../api/attachmentApi';
 import { kegiatanApi } from '../api/kegiatanApi';
+import { penawaranApi } from '../api/penawaranApi';
 import { CustomerModal } from '../components/customer/CustomerModal';
 import { KegiatanModal } from '../components/kegiatan/KegiatanModal';
 import { Attachment } from '../types/attachment';
 import { UpdateCustomerInput } from '../types/customer';
 import { CreateKegiatanInput, Kegiatan } from '../types/kegiatan';
+import { Penawaran } from '../types/penawaran';
 import { formatRupiah } from '../lib/utils';
 
 export const CustomerDetailPage: React.FC = () => {
@@ -43,7 +45,7 @@ export const CustomerDetailPage: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateKegiatanOpen, setIsCreateKegiatanOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'attachments' | 'activities'>('attachments');
+  const [activeTab, setActiveTab] = useState<'sph' | 'activities' | 'attachments'>('sph');
 
   // Fetch Customer
   const {
@@ -73,6 +75,16 @@ export const CustomerDetailPage: React.FC = () => {
   } = useQuery({
     queryKey: ['kegiatan-by-customer', customerId],
     queryFn: () => kegiatanApi.getKegiatanByCustomer(customerId),
+    enabled: !isNaN(customerId),
+  });
+
+  // Fetch SPH (Penawaran) for this customer
+  const {
+    data: customerPenawaran = [],
+    isLoading: isPenawaranLoading,
+  } = useQuery({
+    queryKey: ['penawaran-by-customer', customerId],
+    queryFn: () => penawaranApi.getPenawaranByCustomerId(customerId),
     enabled: !isNaN(customerId),
   });
 
@@ -267,6 +279,13 @@ export const CustomerDetailPage: React.FC = () => {
         {/* Action Buttons */}
         <div className="flex items-center gap-2.5">
           <button
+            onClick={() => navigate(`/penawaran/create?customerId=${customer.id}`)}
+            className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-sm shadow-brand-600/30 transition hover:scale-[1.01]"
+          >
+            <FileText className="w-4 h-4" />
+            <span>+ Buat SPH</span>
+          </button>
+          <button
             onClick={() => setIsEditModalOpen(true)}
             className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 hover:text-slate-900 text-sm font-semibold rounded-xl hover:bg-slate-50 shadow-sm transition"
           >
@@ -435,33 +454,141 @@ export const CustomerDetailPage: React.FC = () => {
 
       {/* Section Tabs */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="flex border-b border-slate-200 bg-slate-50/50 px-6 pt-3">
+        <div className="flex border-b border-slate-200 bg-slate-50/50 px-6 pt-3 gap-2 overflow-x-auto">
           <button
-            onClick={() => setActiveTab('attachments')}
-            className={`flex items-center space-x-2 py-3 px-4 font-semibold text-sm border-b-2 transition ${
-              activeTab === 'attachments'
-                ? 'border-indigo-600 text-indigo-600 bg-white rounded-t-lg'
+            onClick={() => setActiveTab('sph')}
+            className={`flex items-center space-x-2 py-3 px-4 font-semibold text-sm border-b-2 transition shrink-0 ${
+              activeTab === 'sph'
+                ? 'border-brand-600 text-brand-600 bg-white rounded-t-lg shadow-sm'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Paperclip className="w-4 h-4" />
-            <span>Lampiran & Berkas Dokumen ({attachments.length})</span>
+            <FileText className="w-4 h-4" />
+            <span>Surat Penawaran Harga (SPH) ({customerPenawaran.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('activities')}
-            className={`flex items-center space-x-2 py-3 px-4 font-semibold text-sm border-b-2 transition ${
+            className={`flex items-center space-x-2 py-3 px-4 font-semibold text-sm border-b-2 transition shrink-0 ${
               activeTab === 'activities'
-                ? 'border-indigo-600 text-indigo-600 bg-white rounded-t-lg'
+                ? 'border-brand-600 text-brand-600 bg-white rounded-t-lg shadow-sm'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             <Layers className="w-4 h-4" />
-            <span>Kegiatan & Riwayat Transaksi</span>
+            <span>Kegiatan & Riwayat ({customerKegiatan.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('attachments')}
+            className={`flex items-center space-x-2 py-3 px-4 font-semibold text-sm border-b-2 transition shrink-0 ${
+              activeTab === 'attachments'
+                ? 'border-brand-600 text-brand-600 bg-white rounded-t-lg shadow-sm'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Paperclip className="w-4 h-4" />
+            <span>Lampiran & Berkas ({attachments.length})</span>
           </button>
         </div>
 
         <div className="p-6">
-          {activeTab === 'attachments' ? (
+          {activeTab === 'sph' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">Daftar Surat Penawaran Harga (SPH)</h3>
+                  <p className="text-xs text-slate-500">Seluruh dokumen SPH yang dibuat untuk pelanggan ini</p>
+                </div>
+                <button
+                  onClick={() => navigate(`/penawaran/create?customerId=${customerId}`)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>+ Buat SPH Baru</span>
+                </button>
+              </div>
+
+              {isPenawaranLoading ? (
+                <div className="py-12 text-center text-slate-400">
+                  <div className="w-6 h-6 border-2 border-brand-600/30 border-t-brand-600 rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-xs">Memuat daftar SPH...</p>
+                </div>
+              ) : customerPenawaran.length === 0 ? (
+                <div className="py-12 text-center bg-slate-50/50 rounded-xl border border-slate-100 p-6">
+                  <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-slate-700">Belum ada SPH untuk pelanggan ini</p>
+                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                    Buat Surat Penawaran Harga pertama dengan rincian kegiatan dan item pekerjaan untuk diajukan ke pelanggan.
+                  </p>
+                  <button
+                    onClick={() => navigate(`/penawaran/create?customerId=${customerId}`)}
+                    className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Buat SPH Sekarang</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100 border border-slate-200/80 rounded-xl overflow-hidden">
+                  {customerPenawaran.map((sph: Penawaran) => (
+                    <div
+                      key={sph.id}
+                      className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200/60">
+                            {sph.number}
+                          </span>
+                          <span className="text-xs text-slate-400">•</span>
+                          <span className="text-xs text-slate-500">
+                            {new Date(sph.date).toLocaleDateString('id-ID', { dateStyle: 'medium' })}
+                          </span>
+                          <span
+                            className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                              sph.status === 'APPROVED'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : sph.status === 'SENT'
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : sph.status === 'REJECTED'
+                                ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                : sph.status === 'CANCELLED'
+                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                : 'bg-slate-100 text-slate-700 border border-slate-200'
+                            }`}
+                          >
+                            {sph.status}
+                          </span>
+                        </div>
+                        {sph.notes && (
+                          <p className="text-xs text-slate-600 line-clamp-1">{sph.notes}</p>
+                        )}
+                        <p className="text-[11px] text-slate-400">
+                          {sph.itemCount || (sph.details ? sph.details.length : 0)} rincian item
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3 self-end sm:self-center">
+                        <div className="text-right">
+                          <span className="text-[10px] text-slate-400 uppercase font-semibold block">Total SPH</span>
+                          <span className="font-mono font-bold text-sm text-slate-900">
+                            {formatRupiah(sph.totalAmount)}
+                          </span>
+                        </div>
+                        <Link
+                          to={`/penawaran/${sph.id}`}
+                          className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:text-brand-600 bg-white hover:bg-brand-50 border border-slate-200 rounded-lg shadow-sm transition"
+                        >
+                          Lihat Detail
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'attachments' && (
             <div className="space-y-6">
               {/* Upload Box */}
               <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:border-indigo-400 transition group">
@@ -564,7 +691,9 @@ export const CustomerDetailPage: React.FC = () => {
                 )}
               </div>
             </div>
-          ) : (
+          )}
+
+          {activeTab === 'activities' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between pb-2">
                 <div>

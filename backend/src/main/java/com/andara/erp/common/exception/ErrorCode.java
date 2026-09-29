@@ -23,6 +23,7 @@ public enum ErrorCode {
     // Kegiatan & Items
     KEGIATAN_NOT_FOUND("KEGIATAN_NOT_FOUND", "Kegiatan tidak ditemukan", HttpStatus.NOT_FOUND),
     KEGIATAN_ITEM_NOT_FOUND("KEGIATAN_ITEM_NOT_FOUND", "Item kegiatan tidak ditemukan", HttpStatus.NOT_FOUND),
+    ITEM_CATALOG_NOT_FOUND("ITEM_CATALOG_NOT_FOUND", "Item katalog master tidak ditemukan", HttpStatus.NOT_FOUND),
 
     // Penawaran & Invoice
     PENAWARAN_NOT_FOUND("PENAWARAN_NOT_FOUND", "Penawaran tidak ditemukan", HttpStatus.NOT_FOUND),

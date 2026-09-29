@@ -1,64 +1,115 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  FileText,
   ArrowLeft,
   Plus,
   Trash2,
   Save,
   AlertCircle,
-  DownloadCloud,
   Building2,
-  Calculator
+  Calculator,
+  Layers,
+  Package,
+  PlusCircle,
+  CheckCircle2,
+  FolderPlus
 } from 'lucide-react';
 import { penawaranApi } from '../api/penawaranApi';
 import { customerApi } from '../api/customerApi';
-import { kegiatanApi } from '../api/kegiatanApi';
+import { itemCatalogApi } from '../api/itemCatalogApi';
 import { Customer } from '../types/customer';
-import { Kegiatan } from '../types/kegiatan';
-import { CreatePenawaranDetailInput } from '../types/penawaran';
+import { ItemCatalog, CreateItemCatalogInput, UpdateItemCatalogInput } from '../types/itemCatalog';
+import { ItemCatalogModal } from '../components/items/ItemCatalogModal';
+import { formatRupiah } from '../lib/utils';
 
-interface ItemRow extends CreatePenawaranDetailInput {
+interface FormItemRow {
   tempId: string;
+  itemCatalogId?: number;
+  description: string;
+  volume: number;
+  unit: string;
+  unitPrice: number;
+  sortOrder: number;
+  notes?: string;
+}
+
+interface FormKegiatanGroup {
+  tempId: string;
+  name: string;
+  sortOrder: number;
+  items: FormItemRow[];
 }
 
 export const PenawaranFormPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const customerIdFromQuery = searchParams.get('customerId');
   const isEdit = Boolean(id);
+  const queryClient = useQueryClient();
 
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<number | ''>('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | ''>(
+    customerIdFromQuery ? Number(customerIdFromQuery) : ''
+  );
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
   const [terms, setTerms] = useState(
     '1. Pembayaran DP 30% setelah penawaran disetujui\n2. Termin 2 sebesar 50% setelah progress fisik mencapai 70%\n3. Pelunasan 20% saat serah terima pekerjaan\n4. Masa retensi garansi 30 hari kalender'
   );
 
-  const [items, setItems] = useState<ItemRow[]>([
+  // Grouped Kegiatan State
+  const [kegiatanGroups, setKegiatanGroups] = useState<FormKegiatanGroup[]>([
     {
-      tempId: 'row-1',
-      description: '',
-      volume: 1,
-      unit: 'unit',
-      unitPrice: 0,
+      tempId: 'kg-1',
+      name: 'Pembangunan Ruang Kelas Baru',
       sortOrder: 1,
+      items: [
+        {
+          tempId: 'item-1',
+          description: '',
+          volume: 1,
+          unit: 'm2',
+          unitPrice: 0,
+          sortOrder: 1,
+        },
+      ],
     },
   ]);
 
-  // Customer's Kegiatan for importing
-  const [customerKegiatan, setCustomerKegiatan] = useState<Kegiatan[]>([]);
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [selectedKegiatanId, setSelectedKegiatanId] = useState<number | ''>('');
+  // Modal for quick adding master item
+  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+  const [targetKegiatanTempId, setTargetKegiatanTempId] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEdit);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
 
   // Load Customers
   useEffect(() => {
     customerApi.getActiveCustomers().then(setCustomers).catch(console.error);
   }, []);
+
+  // Set customer from query if customers loaded
+  useEffect(() => {
+    if (customerIdFromQuery && !selectedCustomerId) {
+      setSelectedCustomerId(Number(customerIdFromQuery));
+    }
+  }, [customerIdFromQuery, selectedCustomerId]);
+
+  // Fetch Master Catalog Items
+  const { data: masterItems = [], refetch: refetchMasterItems } = useQuery({
+    queryKey: ['active-master-items'],
+    queryFn: () => itemCatalogApi.getActiveItems(),
+  });
+
+  // Fetch Categories for quick modal
+  const { data: categories = [] } = useQuery({
+    queryKey: ['item-catalog-categories'],
+    queryFn: () => itemCatalogApi.getCategories(),
+  });
 
   // If edit mode, load existing penawaran
   useEffect(() => {
@@ -71,24 +122,48 @@ export const PenawaranFormPage: React.FC = () => {
           setDate(data.date);
           setNotes(data.notes || '');
           setTerms(data.terms || '');
-          if (data.details && data.details.length > 0) {
-            setItems(
-              data.details.map((d, idx) => ({
-                tempId: `row-${idx + 1}`,
-                kegiatanId: d.kegiatanId,
-                kegiatanItemId: d.kegiatanItemId,
-                description: d.description,
-                volume: d.volume,
-                unit: d.unit,
-                unitPrice: d.unitPrice,
-                sortOrder: d.sortOrder || idx + 1,
-                notes: d.notes,
+
+          if (data.kegiatanList && data.kegiatanList.length > 0) {
+            setKegiatanGroups(
+              data.kegiatanList.map((k, kIdx) => ({
+                tempId: `kg-${k.id || kIdx + 1}`,
+                name: k.name,
+                sortOrder: k.sortOrder || kIdx + 1,
+                items: (k.items || []).map((it, itIdx) => ({
+                  tempId: `item-${it.id || itIdx + 1}`,
+                  itemCatalogId: it.itemCatalogId,
+                  description: it.description,
+                  volume: it.volume,
+                  unit: it.unit,
+                  unitPrice: it.unitPrice,
+                  sortOrder: it.sortOrder || itIdx + 1,
+                  notes: it.notes,
+                })),
               }))
             );
+          } else if (data.details && data.details.length > 0) {
+            // Legacy flat items fallback into 1 kegiatan
+            setKegiatanGroups([
+              {
+                tempId: 'kg-legacy-1',
+                name: 'Pekerjaan Utama',
+                sortOrder: 1,
+                items: data.details.map((d, idx) => ({
+                  tempId: `item-legacy-${idx + 1}`,
+                  itemCatalogId: d.itemCatalogId,
+                  description: d.description,
+                  volume: d.volume,
+                  unit: d.unit,
+                  unitPrice: d.unitPrice,
+                  sortOrder: d.sortOrder || idx + 1,
+                  notes: d.notes,
+                })),
+              },
+            ]);
           }
         })
         .catch((err) => {
-          setErrorMsg(err.response?.data?.message || 'Gagal memuat rincian penawaran.');
+          setErrorMsg(err.response?.data?.message || 'Gagal memuat rincian SPH.');
         })
         .finally(() => {
           setInitialLoading(false);
@@ -96,105 +171,165 @@ export const PenawaranFormPage: React.FC = () => {
     }
   }, [isEdit, id]);
 
-  // When customer changes, fetch their kegiatan
-  useEffect(() => {
-    if (selectedCustomerId) {
-      kegiatanApi
-        .getKegiatanByCustomer(Number(selectedCustomerId))
-        .then((kegiatanList) => {
-          setCustomerKegiatan(kegiatanList);
-          if (kegiatanList.length > 0) {
-            setSelectedKegiatanId(kegiatanList[0].id);
-          } else {
-            setSelectedKegiatanId('');
-          }
-        })
-        .catch(console.error);
-    } else {
-      setCustomerKegiatan([]);
-      setSelectedKegiatanId('');
-    }
-  }, [selectedCustomerId]);
-
-  const handleAddItemRow = () => {
-    const nextOrder = items.length + 1;
-    setItems((prev) => [
+  // Operations on Kegiatan Groups
+  const handleAddKegiatan = (initialName = '') => {
+    const nextIdx = kegiatanGroups.length + 1;
+    setKegiatanGroups((prev) => [
       ...prev,
       {
-        tempId: `row-${Date.now()}-${nextOrder}`,
-        description: '',
-        volume: 1,
-        unit: 'unit',
-        unitPrice: 0,
-        sortOrder: nextOrder,
+        tempId: `kg-${Date.now()}-${nextIdx}`,
+        name: initialName,
+        sortOrder: nextIdx,
+        items: [
+          {
+            tempId: `item-${Date.now()}-1`,
+            description: '',
+            volume: 1,
+            unit: 'm2',
+            unitPrice: 0,
+            sortOrder: 1,
+          },
+        ],
       },
     ]);
   };
 
-  const handleRemoveItemRow = (tempId: string) => {
-    if (items.length <= 1) {
-      setErrorMsg('Penawaran harus memiliki minimal 1 item.');
+  const handleRemoveKegiatan = (kegiatanTempId: string) => {
+    if (kegiatanGroups.length <= 1) {
+      setErrorMsg('SPH harus memiliki minimal 1 kegiatan.');
       return;
     }
-    setItems((prev) => prev.filter((item) => item.tempId !== tempId));
+    setKegiatanGroups((prev) => prev.filter((k) => k.tempId !== kegiatanTempId));
   };
 
-  const handleItemChange = (tempId: string, field: keyof CreatePenawaranDetailInput, value: any) => {
-    setItems((prev) =>
-      prev.map((item) => {
-        if (item.tempId === tempId) {
-          return { ...item, [field]: value };
-        }
-        return item;
+  const handleKegiatanNameChange = (kegiatanTempId: string, name: string) => {
+    setKegiatanGroups((prev) =>
+      prev.map((k) => (k.tempId === kegiatanTempId ? { ...k, name } : k))
+    );
+  };
+
+  // Operations on Items inside a Kegiatan
+  const handleAddItemToKegiatan = (kegiatanTempId: string, prefillItem?: ItemCatalog) => {
+    setKegiatanGroups((prev) =>
+      prev.map((k) => {
+        if (k.tempId !== kegiatanTempId) return k;
+        const nextOrder = k.items.length + 1;
+        const newItem: FormItemRow = prefillItem
+          ? {
+              tempId: `item-${Date.now()}-${nextOrder}`,
+              itemCatalogId: prefillItem.id,
+              description: prefillItem.name,
+              volume: 1,
+              unit: prefillItem.defaultUnit || 'unit',
+              unitPrice: prefillItem.defaultPrice || 0,
+              sortOrder: nextOrder,
+            }
+          : {
+              tempId: `item-${Date.now()}-${nextOrder}`,
+              description: '',
+              volume: 1,
+              unit: 'unit',
+              unitPrice: 0,
+              sortOrder: nextOrder,
+            };
+        return {
+          ...k,
+          items: [...k.items, newItem],
+        };
       })
     );
   };
 
-  const handleImportFromKegiatan = () => {
-    if (!selectedKegiatanId) return;
-    const kegiatan = customerKegiatan.find((k) => k.id === Number(selectedKegiatanId));
-    if (!kegiatan || !kegiatan.items || kegiatan.items.length === 0) {
-      alert('Kegiatan ini belum memiliki item terdaftar.');
-      return;
-    }
-
-    const importedRows: ItemRow[] = kegiatan.items.map((item, idx) => ({
-      tempId: `imported-${item.id}-${Date.now()}-${idx}`,
-      kegiatanId: kegiatan.id,
-      kegiatanItemId: item.id,
-      description: item.description,
-      volume: item.volume,
-      unit: item.unit,
-      unitPrice: item.unitPrice,
-      sortOrder: items.length + idx + 1,
-      notes: `Diimpor dari Kegiatan: ${kegiatan.name}`,
-    }));
-
-    // If first row is empty, replace it
-    if (items.length === 1 && !items[0].description.trim() && items[0].unitPrice === 0) {
-      setItems(importedRows);
-    } else {
-      setItems((prev) => [...prev, ...importedRows]);
-    }
-
-    setShowImportModal(false);
+  const handleRemoveItemFromKegiatan = (kegiatanTempId: string, itemTempId: string) => {
+    setKegiatanGroups((prev) =>
+      prev.map((k) => {
+        if (k.tempId !== kegiatanTempId) return k;
+        if (k.items.length <= 1) {
+          setErrorMsg('Setiap kegiatan harus memiliki minimal 1 item.');
+          return k;
+        }
+        return {
+          ...k,
+          items: k.items.filter((it) => it.tempId !== itemTempId),
+        };
+      })
+    );
   };
 
-  // Subtotal Calculation
-  const totalAmount = items.reduce((sum, item) => {
-    const vol = Number(item.volume) || 0;
-    const price = Number(item.unitPrice) || 0;
-    return sum + vol * price;
-  }, 0);
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(val || 0);
+  const handleItemFieldChange = (
+    kegiatanTempId: string,
+    itemTempId: string,
+    field: keyof FormItemRow,
+    value: any
+  ) => {
+    setKegiatanGroups((prev) =>
+      prev.map((k) => {
+        if (k.tempId !== kegiatanTempId) return k;
+        return {
+          ...k,
+          items: k.items.map((it) => (it.tempId === itemTempId ? { ...it, [field]: value } : it)),
+        };
+      })
+    );
   };
+
+  // Select item from master catalog dropdown
+  const handleSelectMasterItem = (kegiatanTempId: string, itemTempId: string, itemCatalogIdStr: string) => {
+    if (!itemCatalogIdStr) return;
+    const catId = Number(itemCatalogIdStr);
+    const found = masterItems.find((m) => m.id === catId);
+    if (!found) return;
+
+    setKegiatanGroups((prev) =>
+      prev.map((k) => {
+        if (k.tempId !== kegiatanTempId) return k;
+        return {
+          ...k,
+          items: k.items.map((it) => {
+            if (it.tempId !== itemTempId) return it;
+            return {
+              ...it,
+              itemCatalogId: found.id,
+              description: found.name,
+              unit: found.defaultUnit || it.unit,
+              unitPrice: found.defaultPrice !== undefined ? found.defaultPrice : it.unitPrice,
+            };
+          }),
+        };
+      })
+    );
+  };
+
+  // Quick create master item modal submit
+  const handleCreateMasterItemSubmit = async (formData: CreateItemCatalogInput | UpdateItemCatalogInput) => {
+    try {
+      const createdItem = await itemCatalogApi.createItem(formData as CreateItemCatalogInput);
+      await refetchMasterItems();
+      queryClient.invalidateQueries({ queryKey: ['active-master-items'] });
+
+      // Automatically append to the target kegiatan
+      if (targetKegiatanTempId) {
+        handleAddItemToKegiatan(targetKegiatanTempId, createdItem);
+      }
+
+      setIsAddItemModalOpen(false);
+      setTargetKegiatanTempId(null);
+      setFeedbackMsg(`Item '${createdItem.name}' berhasil disimpan ke Master Data dan ditambahkan ke kegiatan.`);
+      setTimeout(() => setFeedbackMsg(null), 4000);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Gagal menyimpan item ke Master Data.');
+    }
+  };
+
+  // Calculation helpers
+  const calculateKegiatanSubtotal = (k: FormKegiatanGroup) => {
+    return k.items.reduce((sum, it) => sum + (Number(it.volume) || 0) * (Number(it.unitPrice) || 0), 0);
+  };
+
+  const grandTotalAmount = kegiatanGroups.reduce(
+    (sum, k) => sum + calculateKegiatanSubtotal(k),
+    0
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,20 +338,31 @@ export const PenawaranFormPage: React.FC = () => {
       return;
     }
 
-    // Validate items
-    for (let i = 0; i < items.length; i++) {
-      const it = items[i];
-      if (!it.description.trim()) {
-        setErrorMsg(`Deskripsi item baris ke-${i + 1} tidak boleh kosong.`);
+    // Validate groups
+    for (let i = 0; i < kegiatanGroups.length; i++) {
+      const kg = kegiatanGroups[i];
+      if (!kg.name.trim()) {
+        setErrorMsg(`Nama kegiatan ke-${i + 1} wajib diisi (misal: "Pembangunan Ruang Kelas Baru").`);
         return;
       }
-      if (Number(it.volume) <= 0) {
-        setErrorMsg(`Volume item baris ke-${i + 1} harus lebih dari 0.`);
+      if (kg.items.length === 0) {
+        setErrorMsg(`Kegiatan '${kg.name}' harus memiliki minimal 1 item.`);
         return;
       }
-      if (Number(it.unitPrice) < 0) {
-        setErrorMsg(`Harga satuan item baris ke-${i + 1} tidak boleh negatif.`);
-        return;
+      for (let j = 0; j < kg.items.length; j++) {
+        const it = kg.items[j];
+        if (!it.description.trim()) {
+          setErrorMsg(`Deskripsi item baris ke-${j + 1} di kegiatan '${kg.name}' tidak boleh kosong.`);
+          return;
+        }
+        if (Number(it.volume) <= 0) {
+          setErrorMsg(`Volume item '${it.description}' harus lebih dari 0.`);
+          return;
+        }
+        if (Number(it.unitPrice) < 0) {
+          setErrorMsg(`Harga satuan item '${it.description}' tidak boleh negatif.`);
+          return;
+        }
       }
     }
 
@@ -224,16 +370,23 @@ export const PenawaranFormPage: React.FC = () => {
       setLoading(true);
       setErrorMsg(null);
 
-      const payloadItems = items.map((it, idx) => ({
-        kegiatanId: it.kegiatanId,
-        kegiatanItemId: it.kegiatanItemId,
-        description: it.description.trim(),
-        volume: Number(it.volume),
-        unit: it.unit.trim(),
-        unitPrice: Number(it.unitPrice),
-        sortOrder: idx + 1,
-        notes: it.notes,
+      // Build payload with grouped kegiatan
+      const payloadKegiatan = kegiatanGroups.map((kg, kgIdx) => ({
+        name: kg.name.trim(),
+        sortOrder: kgIdx + 1,
+        items: kg.items.map((it, itIdx) => ({
+          itemCatalogId: it.itemCatalogId,
+          description: it.description.trim(),
+          volume: Number(it.volume),
+          unit: it.unit.trim(),
+          unitPrice: Number(it.unitPrice),
+          sortOrder: itIdx + 1,
+          notes: it.notes,
+        })),
       }));
+
+      // Flatten items for full backward compatibility
+      const flatItems = payloadKegiatan.flatMap((kg) => kg.items);
 
       if (isEdit && id) {
         await penawaranApi.updatePenawaran(Number(id), {
@@ -241,7 +394,8 @@ export const PenawaranFormPage: React.FC = () => {
           date,
           notes,
           terms,
-          items: payloadItems,
+          kegiatan: payloadKegiatan,
+          items: flatItems,
         });
         navigate(`/penawaran/${id}`);
       } else {
@@ -250,381 +404,475 @@ export const PenawaranFormPage: React.FC = () => {
           date,
           notes,
           terms,
-          items: payloadItems,
+          kegiatan: payloadKegiatan,
+          items: flatItems,
         });
         navigate(`/penawaran/${created.id}`);
       }
     } catch (err: any) {
-      setErrorMsg(err.response?.data?.message || 'Gagal menyimpan penawaran.');
+      setErrorMsg(err.response?.data?.message || 'Gagal menyimpan Surat Penawaran Harga (SPH).');
     } finally {
       setLoading(false);
     }
   };
 
+  const selectedCustomerObj = customers.find((c) => c.id === Number(selectedCustomerId));
+
   if (initialLoading) {
     return (
-      <div className="flex items-center justify-center p-16">
-        <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
-        <span className="ml-3 text-sm font-medium text-slate-600">Memuat data penawaran...</span>
+      <div className="py-20 text-center">
+        <div className="w-8 h-8 border-2 border-brand-600/30 border-t-brand-600 rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-sm text-slate-500 font-medium">Memuat data SPH...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-6xl mx-auto pb-16">
       {/* Top Header */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-5">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() => navigate('/penawaran')}
-            className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
+            onClick={() => navigate(-1)}
+            className="p-2 border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-50 transition shadow-sm"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <FileText className="w-6 h-6 text-brand-600" />
-              <h1 className="text-2xl font-bold tracking-tight text-slate-800">
-                {isEdit ? 'Edit Penawaran Harga' : 'Buat Surat Penawaran Harga Baru'}
+              <h1 className="text-xl font-bold text-slate-900">
+                {isEdit ? 'Ubah Surat Penawaran Harga (SPH)' : 'Buat Surat Penawaran Harga (SPH) Baru'}
               </h1>
+              <span className="text-xs bg-brand-50 text-brand-700 font-bold px-2 py-0.5 rounded-full border border-brand-200/60">
+                Multi-Kegiatan
+              </span>
             </div>
             <p className="text-sm text-slate-500 mt-0.5">
-              Formulir pembuatan penawaran terintegrasi nomor otomatis dan perhitungan subtotal otoritatif.
+              Kelompokkan item penawaran berdasarkan nama kegiatan/pekerjaan untuk diterbitkan ke pelanggan
             </p>
           </div>
         </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            disabled={loading}
+            className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition"
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-sm font-semibold rounded-xl shadow-sm shadow-brand-600/30 transition hover:scale-[1.01] disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {loading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan SPH' : 'Terbitkan SPH'}
+          </button>
+        </div>
       </div>
 
+      {/* Feedback Messages */}
+      {feedbackMsg && (
+        <div className="p-4 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-sm flex items-center gap-2 animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{feedbackMsg}</span>
+        </div>
+      )}
+
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-3 text-sm">
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+        <div className="p-4 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 text-sm flex items-center gap-2 animate-in fade-in">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Document Header Info Card */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-brand-600" />
-            Informasi Dokumen & Customer
-          </h2>
+      {/* Customer & Document Information */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-brand-600" />
+          Informasi Pelanggan & Penawaran
+        </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Customer Dropdown */}
-            <div className="space-y-1">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Pilih Customer <span className="text-rose-500">*</span>
-              </label>
-              <select
-                required
-                value={selectedCustomerId}
-                onChange={(e) => setSelectedCustomerId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
-              >
-                <option value="">-- Pilih Customer --</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.code} - {c.name} {c.companyName ? `(${c.companyName})` : ''}
-                  </option>
-                ))}
-              </select>
-              <p className="text-[11px] text-slate-400">
-                Hanya customer berstatus aktif yang dapat dipilih.
-              </p>
-            </div>
-
-            {/* Date Picker */}
-            <div className="space-y-1">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Tanggal Penawaran <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="date"
-                  required
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-            </div>
-
-            {/* Numbering Preview Note */}
-            <div className="space-y-1">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Nomor Penawaran
-              </label>
-              <div className="px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono font-medium text-slate-600">
-                {isEdit ? 'Nomor Tetap (Terkunci)' : '[Otomatis dari Numbering Engine]'}
-              </div>
-              <p className="text-[11px] text-slate-400">
-                Format nomor dijamin berurutan secara atomik di PostgreSQL.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Items Section */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-                <Calculator className="w-4 h-4 text-brand-600" />
-                Rincian Item Pekerjaan & Biaya
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Subtotal setiap baris dihitung otomatis dan divalidasi otoritatif di server.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 self-start sm:self-auto">
-              {customerKegiatan.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setShowImportModal(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-brand-700 bg-brand-50 border border-brand-200 rounded-lg hover:bg-brand-100 transition"
-                >
-                  <DownloadCloud className="w-3.5 h-3.5" />
-                  Impor dari Kegiatan Customer
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={handleAddItemRow}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg shadow-sm transition"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Tambah Baris
-              </button>
-            </div>
-          </div>
-
-          {/* Items Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  <th className="py-2.5 px-3 w-12 text-center">#</th>
-                  <th className="py-2.5 px-3 min-w-[280px]">Deskripsi Pekerjaan / Barang</th>
-                  <th className="py-2.5 px-3 w-28 text-right">Volume</th>
-                  <th className="py-2.5 px-3 w-24">Satuan</th>
-                  <th className="py-2.5 px-3 w-40 text-right">Harga Satuan (Rp)</th>
-                  <th className="py-2.5 px-3 w-44 text-right">Subtotal</th>
-                  <th className="py-2.5 px-3 w-12 text-center"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {items.map((row, index) => {
-                  const subtotal = (Number(row.volume) || 0) * (Number(row.unitPrice) || 0);
-
-                  return (
-                    <tr key={row.tempId} className="hover:bg-slate-50/50">
-                      <td className="py-2.5 px-3 text-center text-xs font-mono text-slate-400">
-                        {index + 1}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <input
-                          type="text"
-                          required
-                          placeholder="Nama pekerjaan atau spesifikasi barang..."
-                          value={row.description}
-                          onChange={(e) => handleItemChange(row.tempId, 'description', e.target.value)}
-                          className="w-full text-sm px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                        />
-                        {row.notes && (
-                          <span className="text-[11px] text-slate-400 italic block mt-0.5">
-                            {row.notes}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0.01"
-                          required
-                          value={row.volume}
-                          onChange={(e) =>
-                            handleItemChange(row.tempId, 'volume', parseFloat(e.target.value) || 0)
-                          }
-                          className="w-full text-right font-mono text-sm px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                        />
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <input
-                          type="text"
-                          required
-                          placeholder="m2, unit"
-                          value={row.unit}
-                          onChange={(e) => handleItemChange(row.tempId, 'unit', e.target.value)}
-                          className="w-full text-sm px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                        />
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          step="1000"
-                          required
-                          value={row.unitPrice}
-                          onChange={(e) =>
-                            handleItemChange(row.tempId, 'unitPrice', parseFloat(e.target.value) || 0)
-                          }
-                          className="w-full text-right font-mono text-sm px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                        />
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-800">
-                        {formatCurrency(subtotal)}
-                      </td>
-                      <td className="py-2.5 px-3 text-center">
-                        <button
-                          type="button"
-                          disabled={items.length <= 1}
-                          onClick={() => handleRemoveItemRow(row.tempId)}
-                          className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition disabled:opacity-30"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Subtotal Summary Bar */}
-          <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4">
-            <span className="text-xs text-slate-500 font-medium">
-              Total {items.length} item pekerjaan dicantumkan
-            </span>
-            <div className="flex items-center gap-4 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-sm">
-              <span className="text-xs uppercase tracking-wider font-semibold text-slate-300">
-                Total Penawaran:
-              </span>
-              <span className="font-mono text-xl font-bold text-brand-300">
-                {formatCurrency(totalAmount)}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Terms and Notes Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-              Syarat & Ketentuan Pembayaran (Terms)
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Customer */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              Customer / Pelanggan <span className="text-rose-500">*</span>
             </label>
-            <textarea
-              rows={4}
-              value={terms}
-              onChange={(e) => setTerms(e.target.value)}
-              placeholder="Contoh: DP 30%, Termin 50%, Pelunasan 20%..."
-              className="w-full text-xs font-mono p-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed"
-            />
-            <p className="text-[11px] text-slate-400">
-              Syarat ini akan tercetak pada surat penawaran resmi yang dikirim ke pelanggan.
+            <select
+              value={selectedCustomerId}
+              onChange={(e) => setSelectedCustomerId(e.target.value ? Number(e.target.value) : '')}
+              className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none bg-white font-medium"
+            >
+              <option value="">-- Pilih Customer --</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.code}) {c.companyName ? `• ${c.companyName}` : ''}
+                </option>
+              ))}
+            </select>
+            {selectedCustomerObj && (
+              <div className="mt-2 p-3 bg-slate-50 rounded-lg border border-slate-200/60 text-xs text-slate-600 space-y-0.5">
+                <p className="font-semibold text-slate-800">{selectedCustomerObj.name}</p>
+                {selectedCustomerObj.address && <p>{selectedCustomerObj.address}</p>}
+                {selectedCustomerObj.phone && <p>Telp/Kontak: {selectedCustomerObj.phone}</p>}
+              </div>
+            )}
+          </div>
+
+          {/* Date & Notes */}
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                Tanggal SPH <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                Perihal / Catatan Ringkas SPH
+              </label>
+              <input
+                type="text"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Contoh: Perkiraan Harga Pengadaan dan Pemasangan Atap..."
+                className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Grouped Kegiatan Section */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-brand-600" />
+              Kelompok Kegiatan & Rincian Item Pekerjaan
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Setiap kegiatan memiliki kelompok item dan subtotal masing-masing (TOTAL A, TOTAL B, dst)
             </p>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-              Catatan Internal / Lingkup Pekerjaan
-            </label>
-            <textarea
-              rows={4}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Catatan tambahan mengenai spesifikasi bahan, lokasi pengiriman, dsb..."
-              className="w-full text-xs p-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed"
-            />
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center justify-between pt-4 border-t border-slate-200">
           <button
             type="button"
-            onClick={() => navigate('/penawaran')}
-            className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
+            onClick={() => handleAddKegiatan('')}
+            className="inline-flex items-center gap-2 px-3.5 py-2 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 rounded-xl text-xs font-bold transition shadow-sm"
+          >
+            <FolderPlus className="w-4 h-4" />
+            <span>+ Tambah Kelompok Kegiatan</span>
+          </button>
+        </div>
+
+        {kegiatanGroups.map((kg, kgIdx) => {
+          const letterLabel = String.fromCharCode(65 + kgIdx); // A, B, C...
+          const subtotalKg = calculateKegiatanSubtotal(kg);
+
+          return (
+            <div
+              key={kg.tempId}
+              className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden"
+            >
+              {/* Kegiatan Header Bar */}
+              <div className="bg-slate-900 text-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3 flex-1">
+                  <span className="w-8 h-8 rounded-lg bg-brand-500 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
+                    {letterLabel}
+                  </span>
+                  <div className="flex-1 max-w-xl">
+                    <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">
+                      Nama Kegiatan {letterLabel} <span className="text-rose-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={kg.name}
+                      onChange={(e) => handleKegiatanNameChange(kg.tempId, e.target.value)}
+                      placeholder='Contoh: "Pembangunan Ruang Kelas Baru", "Perpustakaan", "Toilet"...'
+                      className="w-full px-3 py-1.5 text-sm bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-brand-400 outline-none font-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 justify-between sm:justify-end">
+                  <div className="text-right">
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold block">
+                      Subtotal {letterLabel}
+                    </span>
+                    <span className="font-mono font-bold text-sm text-emerald-400">
+                      {formatRupiah(subtotalKg)}
+                    </span>
+                  </div>
+
+                  {kegiatanGroups.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveKegiatan(kg.tempId)}
+                      title="Hapus kegiatan ini"
+                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Items Table for this Kegiatan */}
+              <div className="p-4 sm:p-5 space-y-4">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <th className="py-2.5 px-3 w-10 text-center">No</th>
+                        <th className="py-2.5 px-3 min-w-[280px]">Nama Pekerjaan / Uraian Material</th>
+                        <th className="py-2.5 px-3 w-28 text-right">Perkiraan Vol</th>
+                        <th className="py-2.5 px-3 w-20 text-center">Satuan</th>
+                        <th className="py-2.5 px-3 w-36 text-right">Harga Satuan (Rp)</th>
+                        <th className="py-2.5 px-3 w-36 text-right">Subtotal</th>
+                        <th className="py-2.5 px-3 w-12 text-center"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {kg.items.map((it, itIdx) => {
+                        const rowTotal = (Number(it.volume) || 0) * (Number(it.unitPrice) || 0);
+
+                        return (
+                          <tr key={it.tempId} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="py-2.5 px-3 text-center text-xs font-mono text-slate-400">
+                              {itIdx + 1}
+                            </td>
+
+                            {/* Description & Master Picker */}
+                            <td className="py-2.5 px-3 space-y-1">
+                              <input
+                                type="text"
+                                value={it.description}
+                                onChange={(e) =>
+                                  handleItemFieldChange(kg.tempId, it.tempId, 'description', e.target.value)
+                                }
+                                placeholder="Pilih dropdown di bawah atau ketik uraian pekerjaan manual..."
+                                className="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none font-medium text-slate-800"
+                              />
+
+                              {/* Master Dropdown Picker */}
+                              <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                <Package className="w-3.5 h-3.5 text-brand-600 shrink-0" />
+                                <select
+                                  value={it.itemCatalogId || ''}
+                                  onChange={(e) =>
+                                    handleSelectMasterItem(kg.tempId, it.tempId, e.target.value)
+                                  }
+                                  className="text-xs border border-slate-200 rounded-md px-2 py-0.5 bg-slate-50 text-slate-700 outline-none hover:bg-slate-100 max-w-md truncate"
+                                >
+                                  <option value="">-- Pilih dari Master Data Item --</option>
+                                  {masterItems.map((m) => (
+                                    <option key={m.id} value={m.id}>
+                                      {m.name} [{m.defaultUnit} - {formatRupiah(m.defaultPrice)}]
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </td>
+
+                            {/* Volume */}
+                            <td className="py-2.5 px-3">
+                              <input
+                                type="number"
+                                step="any"
+                                min="0.01"
+                                value={it.volume}
+                                onChange={(e) =>
+                                  handleItemFieldChange(kg.tempId, it.tempId, 'volume', Number(e.target.value))
+                                }
+                                className="w-full px-2 py-1.5 text-sm text-right border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none font-mono"
+                              />
+                            </td>
+
+                            {/* Unit */}
+                            <td className="py-2.5 px-3">
+                              <input
+                                type="text"
+                                value={it.unit}
+                                onChange={(e) =>
+                                  handleItemFieldChange(kg.tempId, it.tempId, 'unit', e.target.value)
+                                }
+                                placeholder="m2"
+                                className="w-full px-2 py-1.5 text-sm text-center border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none uppercase font-semibold text-xs"
+                              />
+                            </td>
+
+                            {/* Unit Price */}
+                            <td className="py-2.5 px-3">
+                              <input
+                                type="number"
+                                step="any"
+                                min="0"
+                                value={it.unitPrice}
+                                onChange={(e) =>
+                                  handleItemFieldChange(kg.tempId, it.tempId, 'unitPrice', Number(e.target.value))
+                                }
+                                className="w-full px-2 py-1.5 text-sm text-right border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none font-mono"
+                              />
+                            </td>
+
+                            {/* Subtotal */}
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-800 text-xs">
+                              {formatRupiah(rowTotal)}
+                            </td>
+
+                            {/* Delete Button */}
+                            <td className="py-2.5 px-3 text-center">
+                              {kg.items.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveItemFromKegiatan(kg.tempId, it.tempId)}
+                                  className="text-slate-400 hover:text-rose-600 p-1 rounded transition"
+                                  title="Hapus baris item"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Sub-Actions & Total for this Kegiatan */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleAddItemToKegiatan(kg.tempId)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Tambah Baris Kosong</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetKegiatanTempId(kg.tempId);
+                        setIsAddItemModalOpen(true);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 text-xs font-semibold rounded-lg transition"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span>+ Buat Item Baru ke Master</span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200/60 self-end sm:self-auto">
+                    <span className="text-xs font-bold text-slate-600">TOTAL {letterLabel} :</span>
+                    <span className="font-mono font-bold text-sm text-slate-900">
+                      {formatRupiah(subtotalKg)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Grand Total Summary Card */}
+      <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-lg space-y-4">
+        <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+          <Calculator className="w-5 h-5 text-brand-400" />
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">
+            Rekapitulasi Total Penawaran SPH
+          </h3>
+        </div>
+
+        <div className="space-y-2 text-xs">
+          {kegiatanGroups.map((kg, kgIdx) => {
+            const letterLabel = String.fromCharCode(65 + kgIdx);
+            const subtotalKg = calculateKegiatanSubtotal(kg);
+
+            return (
+              <div key={kg.tempId} className="flex justify-between items-center text-slate-300">
+                <span>
+                  TOTAL {letterLabel} ({kg.name || `Kegiatan ${letterLabel}`}) :
+                </span>
+                <span className="font-mono font-semibold">{formatRupiah(subtotalKg)}</span>
+              </div>
+            );
+          })}
+
+          <div className="pt-3 border-t border-slate-800 flex justify-between items-center text-base font-bold text-white">
+            <span className="text-brand-300">
+              TOTAL KESELURUHAN (A s/d {String.fromCharCode(65 + kegiatanGroups.length - 1)}) :
+            </span>
+            <span className="font-mono text-xl text-emerald-400">{formatRupiah(grandTotalAmount)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Terms & Conditions */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+        <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+          Syarat & Ketentuan Penawaran
+        </label>
+        <textarea
+          rows={4}
+          value={terms}
+          onChange={(e) => setTerms(e.target.value)}
+          placeholder="Tuliskan termin pembayaran, masa garansi, dsb..."
+          className="w-full p-3 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none font-sans"
+        />
+      </div>
+
+      {/* Floating Bottom Action Bar */}
+      <div className="flex items-center justify-between p-4 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-2xl shadow-xl sticky bottom-4">
+        <div>
+          <span className="text-xs text-slate-500 block">Total Nilai Penawaran</span>
+          <span className="font-mono font-bold text-lg text-slate-900">{formatRupiah(grandTotalAmount)}</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition"
           >
             Batal
           </button>
-
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 active:bg-brand-800 shadow-md transition disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-sm font-semibold rounded-xl shadow-sm shadow-brand-600/30 transition hover:scale-[1.01] disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            {loading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Simpan Penawaran'}
+            {loading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan SPH' : 'Terbitkan SPH'}
           </button>
         </div>
-      </form>
+      </div>
 
-      {/* Modal Import dari Kegiatan Customer */}
-      {showImportModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                <DownloadCloud className="w-5 h-5 text-brand-600" />
-                Impor Item dari Kegiatan Customer
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowImportModal(false)}
-                className="text-slate-400 hover:text-slate-700 text-sm font-semibold"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Pilih kegiatan terdaftar milik customer ini untuk menyalin seluruh rincian item pekerjaan ke dalam dokumen penawaran:
-            </p>
-
-            <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Pilih Kegiatan
-              </label>
-              <select
-                value={selectedKegiatanId}
-                onChange={(e) => setSelectedKegiatanId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
-              >
-                {customerKegiatan.map((k) => (
-                  <option key={k.id} value={k.id}>
-                    {k.code} - {k.name} ({k.items?.length || 0} item, {formatCurrency(k.totalAmount)})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setShowImportModal(false)}
-                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition"
-              >
-                Tutup
-              </button>
-              <button
-                type="button"
-                onClick={handleImportFromKegiatan}
-                className="px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition shadow-sm"
-              >
-                Impor Rincian Item
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      {/* Quick Add Master Item Modal */}
+      <ItemCatalogModal
+        isOpen={isAddItemModalOpen}
+        onClose={() => {
+          setIsAddItemModalOpen(false);
+          setTargetKegiatanTempId(null);
+        }}
+        onSubmit={handleCreateMasterItemSubmit}
+        categories={categories}
+      />
+    </form>
   );
 };
-
-export default PenawaranFormPage;

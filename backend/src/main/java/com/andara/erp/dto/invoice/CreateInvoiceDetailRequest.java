@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 public class CreateInvoiceDetailRequest {
 
     private Long sourcePenawaranDetailId;
+    private Long sphKegiatanId;
     private Long sourceKegiatanId;
     private Long sourceKegiatanItemId;
 
@@ -44,6 +45,14 @@ public class CreateInvoiceDetailRequest {
 
     public void setSourcePenawaranDetailId(Long sourcePenawaranDetailId) {
         this.sourcePenawaranDetailId = sourcePenawaranDetailId;
+    }
+
+    public Long getSphKegiatanId() {
+        return sphKegiatanId;
+    }
+
+    public void setSphKegiatanId(Long sphKegiatanId) {
+        this.sphKegiatanId = sphKegiatanId;
     }
 
     public Long getSourceKegiatanId() {

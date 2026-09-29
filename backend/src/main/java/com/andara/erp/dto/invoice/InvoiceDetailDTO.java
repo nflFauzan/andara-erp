@@ -9,6 +9,8 @@ public class InvoiceDetailDTO {
     private Long id;
     private Long invoiceId;
     private Long sourcePenawaranDetailId;
+    private Long sphKegiatanId;
+    private String sphKegiatanName;
     private Long sourceKegiatanId;
     private String sourceKegiatanName;
     private Long sourceKegiatanItemId;
@@ -31,6 +33,10 @@ public class InvoiceDetailDTO {
         dto.setInvoiceId(detail.getInvoice() != null ? detail.getInvoice().getId() : null);
         if (detail.getSourcePenawaranDetail() != null) {
             dto.setSourcePenawaranDetailId(detail.getSourcePenawaranDetail().getId());
+        }
+        if (detail.getSphKegiatan() != null) {
+            dto.setSphKegiatanId(detail.getSphKegiatan().getId());
+            dto.setSphKegiatanName(detail.getSphKegiatan().getName());
         }
         if (detail.getSourceKegiatan() != null) {
             dto.setSourceKegiatanId(detail.getSourceKegiatan().getId());
@@ -75,6 +81,22 @@ public class InvoiceDetailDTO {
 
     public void setSourcePenawaranDetailId(Long sourcePenawaranDetailId) {
         this.sourcePenawaranDetailId = sourcePenawaranDetailId;
+    }
+
+    public Long getSphKegiatanId() {
+        return sphKegiatanId;
+    }
+
+    public void setSphKegiatanId(Long sphKegiatanId) {
+        this.sphKegiatanId = sphKegiatanId;
+    }
+
+    public String getSphKegiatanName() {
+        return sphKegiatanName;
+    }
+
+    public void setSphKegiatanName(String sphKegiatanName) {
+        this.sphKegiatanName = sphKegiatanName;
     }
 
     public Long getSourceKegiatanId() {

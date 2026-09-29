@@ -18,9 +18,11 @@ public class UpdatePenawaranRequest {
 
     private String terms;
 
-    @NotEmpty(message = "Penawaran harus memiliki minimal 1 item detail")
     @Valid
     private List<CreatePenawaranDetailRequest> items = new ArrayList<>();
+
+    @Valid
+    private List<CreateSphKegiatanRequest> kegiatan = new ArrayList<>();
 
     public UpdatePenawaranRequest() {
     }
@@ -63,5 +65,13 @@ public class UpdatePenawaranRequest {
 
     public void setItems(List<CreatePenawaranDetailRequest> items) {
         this.items = items;
+    }
+
+    public List<CreateSphKegiatanRequest> getKegiatan() {
+        return kegiatan;
+    }
+
+    public void setKegiatan(List<CreateSphKegiatanRequest> kegiatan) {
+        this.kegiatan = kegiatan;
     }
 }

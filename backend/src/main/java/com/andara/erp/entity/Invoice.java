@@ -52,6 +52,9 @@ public class Invoice {
     @Column(columnDefinition = "TEXT")
     private String terms;
 
+    @Column(name = "work_location")
+    private String workLocation;
+
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC, id ASC")
     private List<InvoiceDetail> details = new ArrayList<>();
@@ -241,6 +244,14 @@ public class Invoice {
 
     public void setTerms(String terms) {
         this.terms = terms;
+    }
+
+    public String getWorkLocation() {
+        return workLocation;
+    }
+
+    public void setWorkLocation(String workLocation) {
+        this.workLocation = workLocation;
     }
 
     public List<InvoiceDetail> getDetails() {

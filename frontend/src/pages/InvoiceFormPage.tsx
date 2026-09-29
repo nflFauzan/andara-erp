@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Receipt,
@@ -11,17 +11,21 @@ import {
   Building2,
   Calculator,
   FileCheck2,
-  AlertTriangle
+  AlertTriangle,
+  Layers,
+  MapPin
 } from 'lucide-react';
 import { invoiceApi } from '../api/invoiceApi';
 import { customerApi } from '../api/customerApi';
 import { penawaranApi } from '../api/penawaranApi';
+import { useAuth } from '../context/AuthContext';
 import { Customer } from '../types/customer';
 import { Penawaran } from '../types/penawaran';
 import { CreateInvoiceDetailInput, PenawaranBillableItem } from '../types/invoice';
 
 interface ItemRow extends CreateInvoiceDetailInput {
   tempId: string;
+  sphKegiatanName?: string;
   maxBillableQuantity?: number;
 }
 
@@ -31,12 +35,16 @@ export const InvoiceFormPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const isEdit = Boolean(id);
 
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+
   const initialPenawaranId = searchParams.get('penawaranId');
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | ''>('');
   const [sourcePenawaranId, setSourcePenawaranId] = useState<number | null>(null);
   const [sourcePenawaranNumber, setSourcePenawaranNumber] = useState<string | null>(null);
+  const [workLocation, setWorkLocation] = useState('');
 
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const defaultDueDate = new Date();
@@ -86,6 +94,7 @@ export const InvoiceFormPage: React.FC = () => {
           setSelectedCustomerId(data.customerId);
           setSourcePenawaranId(data.sourcePenawaranId || null);
           setSourcePenawaranNumber(data.sourcePenawaranNumber || null);
+          setWorkLocation(data.workLocation || '');
           setDate(data.date);
           setDueDate(data.dueDate || '');
           setNotes(data.notes || '');
@@ -95,6 +104,8 @@ export const InvoiceFormPage: React.FC = () => {
               data.details.map((d, idx) => ({
                 tempId: `row-${idx + 1}`,
                 sourcePenawaranDetailId: d.sourcePenawaranDetailId,
+                sphKegiatanId: d.sphKegiatanId,
+                sphKegiatanName: d.sphKegiatanName,
                 sourceKegiatanId: d.sourceKegiatanId,
                 sourceKegiatanItemId: d.sourceKegiatanItemId,
                 description: d.description,
@@ -132,6 +143,8 @@ export const InvoiceFormPage: React.FC = () => {
               validItems.map((bi, idx) => ({
                 tempId: `penawaran-item-${bi.penawaranDetailId}-${idx}`,
                 sourcePenawaranDetailId: bi.penawaranDetailId,
+                sphKegiatanId: bi.sphKegiatanId,
+                sphKegiatanName: bi.sphKegiatanName,
                 sourceKegiatanId: bi.kegiatanId,
                 sourceKegiatanItemId: bi.kegiatanItemId,
                 description: bi.description,
@@ -238,8 +251,10 @@ export const InvoiceFormPage: React.FC = () => {
       const sel = selectedBillableRows[bi.penawaranDetailId];
       if (sel && sel.selected && sel.quantity > 0) {
         imported.push({
-          tempId: `imported-penawaran-${bi.penawaranDetailId}-${Date.now()}`,
+          tempId: `imported-penawaran-${bi.penawaranDetailId}-${Date.now()}-${imported.length}`,
           sourcePenawaranDetailId: bi.penawaranDetailId,
+          sphKegiatanId: bi.sphKegiatanId,
+          sphKegiatanName: bi.sphKegiatanName,
           sourceKegiatanId: bi.kegiatanId,
           sourceKegiatanItemId: bi.kegiatanItemId,
           description: bi.description,
@@ -271,6 +286,52 @@ export const InvoiceFormPage: React.FC = () => {
     setShowPenawaranModal(false);
   };
 
+  // Group billableItems by SPH Kegiatan
+  const groupedBillable = useMemo(() => {
+    const map = new Map<string, PenawaranBillableItem[]>();
+    billableItems.forEach((bi) => {
+      const groupName = bi.sphKegiatanName || bi.kegiatanName || 'Pekerjaan Utama';
+      if (!map.has(groupName)) {
+        map.set(groupName, []);
+      }
+      map.get(groupName)!.push(bi);
+    });
+    return Array.from(map.entries()).map(([groupName, gItems]) => ({
+      groupName,
+      items: gItems,
+    }));
+  }, [billableItems]);
+
+  const handleToggleKegiatanGroup = (groupItems: PenawaranBillableItem[], select: boolean) => {
+    setSelectedBillableRows((prev) => {
+      const next = { ...prev };
+      groupItems.forEach((it) => {
+        if (it.remainingBillableVolume > 0) {
+          next[it.penawaranDetailId] = {
+            selected: select,
+            quantity: next[it.penawaranDetailId]?.quantity || it.remainingBillableVolume,
+          };
+        }
+      });
+      return next;
+    });
+  };
+
+  const handleSelectAllBillable = (select: boolean) => {
+    setSelectedBillableRows((prev) => {
+      const next = { ...prev };
+      billableItems.forEach((it) => {
+        if (it.remainingBillableVolume > 0) {
+          next[it.penawaranDetailId] = {
+            selected: select,
+            quantity: next[it.penawaranDetailId]?.quantity || it.remainingBillableVolume,
+          };
+        }
+      });
+      return next;
+    });
+  };
+
   // Subtotal Calculation
   const totalAmount = items.reduce((sum, item) => {
     const qty = Number(item.quantity) || 0;
@@ -291,6 +352,11 @@ export const InvoiceFormPage: React.FC = () => {
     e.preventDefault();
     if (!selectedCustomerId) {
       setErrorMsg('Customer wajib dipilih.');
+      return;
+    }
+
+    if (isAdmin && !sourcePenawaranId) {
+      setErrorMsg('Role Admin diwajibkan menerbitkan Faktur Penjualan berdasarkan Surat Penawaran Harga (SPH) resmi.');
       return;
     }
 
@@ -324,6 +390,7 @@ export const InvoiceFormPage: React.FC = () => {
 
       const payloadItems = items.map((it, idx) => ({
         sourcePenawaranDetailId: it.sourcePenawaranDetailId,
+        sphKegiatanId: it.sphKegiatanId,
         sourceKegiatanId: it.sourceKegiatanId,
         sourceKegiatanItemId: it.sourceKegiatanItemId,
         description: it.description.trim(),
@@ -337,6 +404,7 @@ export const InvoiceFormPage: React.FC = () => {
       if (isEdit && id) {
         await invoiceApi.updateInvoice(Number(id), {
           customerId: Number(selectedCustomerId),
+          workLocation: workLocation.trim() || undefined,
           date,
           dueDate: dueDate || undefined,
           notes,
@@ -348,6 +416,7 @@ export const InvoiceFormPage: React.FC = () => {
         const created = await invoiceApi.createInvoice({
           customerId: Number(selectedCustomerId),
           sourcePenawaranId: sourcePenawaranId || undefined,
+          workLocation: workLocation.trim() || undefined,
           date,
           dueDate: dueDate || undefined,
           notes,
@@ -467,7 +536,35 @@ export const InvoiceFormPage: React.FC = () => {
                 className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
+
+            {/* Work Location */}
+            <div className="space-y-1 md:col-span-4">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-slate-500" />
+                <span>Lokasi Pekerjaan / Kegiatan (Opsional)</span>
+              </label>
+              <input
+                type="text"
+                value={workLocation}
+                onChange={(e) => setWorkLocation(e.target.value)}
+                placeholder="Contoh: Gedung SMPN 1 Bojonegoro, Aula Utama, Ruang Kelas Baru, dll."
+                className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
           </div>
+
+          {/* Admin Role Constraint Banner */}
+          {isAdmin && !sourcePenawaranId && (
+            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-amber-900">Otorisasi Role Admin Terdeteksi</p>
+                <p className="text-amber-800 mt-0.5 leading-relaxed">
+                  Sesuai kebijakan tata kelola sistem, role <strong>Admin</strong> wajib membuat Faktur Penjualan berdasarkan <strong>Surat Penawaran Harga (SPH)</strong> yang telah disetujui. Silakan gunakan tombol <em>"Tarik dari Penawaran Disetujui"</em> di bawah untuk memilih rincian kegiatan dan item yang akan ditagihkan.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Source Penawaran Indicator */}
           {sourcePenawaranNumber && (
@@ -509,21 +606,23 @@ export const InvoiceFormPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowPenawaranModal(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-brand-700 bg-brand-50 border border-brand-200 rounded-lg hover:bg-brand-100 transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-brand-700 bg-brand-50 border border-brand-200 rounded-lg hover:bg-brand-100 transition shadow-sm"
                 >
                   <DownloadCloud className="w-3.5 h-3.5" />
                   Tarik dari Penawaran Disetujui
                 </button>
               )}
 
-              <button
-                type="button"
-                onClick={handleAddItemRow}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg shadow-sm transition"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Tambah Baris Manual
-              </button>
+              {!isAdmin && (
+                <button
+                  type="button"
+                  onClick={handleAddItemRow}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg shadow-sm transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Tambah Baris Manual
+                </button>
+              )}
             </div>
           </div>
 
@@ -554,6 +653,14 @@ export const InvoiceFormPage: React.FC = () => {
                         {index + 1}
                       </td>
                       <td className="py-2.5 px-3">
+                        {row.sphKegiatanName && (
+                          <div className="mb-1">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                              <Layers className="w-3 h-3 text-indigo-500" />
+                              Kegiatan: {row.sphKegiatanName}
+                            </span>
+                          </div>
+                        )}
                         <input
                           type="text"
                           required
@@ -706,121 +813,196 @@ export const InvoiceFormPage: React.FC = () => {
       {/* Modal Tarik dari Penawaran Disetujui */}
       {showPenawaranModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                <DownloadCloud className="w-5 h-5 text-brand-600" />
-                Tarik Item dari Penawaran Disetujui (Approved)
-              </h3>
+          <div className="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
+              <div>
+                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                  <DownloadCloud className="w-5 h-5 text-brand-600" />
+                  Tarik Kegiatan & Item dari SPH Disetujui
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Pilih kegiatan tertentu atau sebagian volume item untuk penagihan parsial / bertahap.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowPenawaranModal(false)}
-                className="text-slate-400 hover:text-slate-700 text-sm font-semibold"
+                className="text-slate-400 hover:text-slate-700 text-sm font-semibold p-1"
               >
                 ✕
               </button>
             </div>
 
-            <div className="space-y-3 shrink-0">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Pilih Dokumen Penawaran
-              </label>
-              <select
-                value={selectedModalPenawaranId}
-                onChange={(e) => setSelectedModalPenawaranId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
-              >
-                {approvedPenawaranList.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.number} - {p.date} ({p.itemCount} item, {formatCurrency(p.totalAmount)})
-                  </option>
-                ))}
-              </select>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+              <div className="flex-1 space-y-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                  Pilih Dokumen SPH Acuan:
+                </label>
+                <select
+                  value={selectedModalPenawaranId}
+                  onChange={(e) => setSelectedModalPenawaranId(e.target.value ? Number(e.target.value) : '')}
+                  className="w-full text-xs font-medium px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                >
+                  {approvedPenawaranList.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.number} - {p.date} ({p.itemCount} item, {formatCurrency(p.totalAmount)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                <button
+                  type="button"
+                  onClick={() => handleSelectAllBillable(true)}
+                  className="px-2.5 py-1.5 text-xs font-semibold text-brand-700 bg-white border border-brand-200 rounded-lg hover:bg-brand-50 transition shadow-sm"
+                >
+                  Pilih Semua Item
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectAllBillable(false)}
+                  className="px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition shadow-sm"
+                >
+                  Kosongkan Pilihan
+                </button>
+              </div>
             </div>
 
-            {/* Billable Items List */}
+            {/* Billable Items List Grouped by Kegiatan */}
             <div className="overflow-y-auto flex-1 border border-slate-200 rounded-xl">
               {loadingBillable ? (
-                <div className="p-8 text-center text-xs text-slate-500">Memeriksa sisa kuota penagihan...</div>
+                <div className="p-12 text-center text-xs text-slate-500 flex flex-col items-center justify-center gap-2">
+                  <div className="w-6 h-6 border-2 border-brand-600/30 border-t-brand-600 rounded-full animate-spin" />
+                  <span>Memeriksa rincian kegiatan dan kuota penagihan...</span>
+                </div>
               ) : billableItems.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-500">
-                  Tidak ada rincian item dalam penawaran ini.
+                <div className="p-12 text-center text-xs text-slate-500">
+                  Tidak ada rincian item atau seluruh item pada penawaran ini telah selesai ditagihkan.
                 </div>
               ) : (
                 <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold sticky top-0">
+                  <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider sticky top-0 z-10">
                     <tr>
-                      <th className="p-2.5 w-10 text-center">Pilih</th>
-                      <th className="p-2.5">Deskripsi Item</th>
-                      <th className="p-2.5 text-right w-20">Total</th>
-                      <th className="p-2.5 text-right w-20">Tertagih</th>
-                      <th className="p-2.5 text-right w-20">Sisa Kuota</th>
-                      <th className="p-2.5 text-right w-28">Tagihkan Sekarang</th>
+                      <th className="p-2.5 w-12 text-center">Pilih</th>
+                      <th className="p-2.5">Uraian Kegiatan / Item Pekerjaan</th>
+                      <th className="p-2.5 text-right w-24">Vol. SPH</th>
+                      <th className="p-2.5 text-right w-24">Tertagih</th>
+                      <th className="p-2.5 text-right w-24">Sisa Kuota</th>
+                      <th className="p-2.5 text-right w-36">Tagihkan Sekarang</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {billableItems.map((bi) => {
-                      const sel = selectedBillableRows[bi.penawaranDetailId] || { selected: false, quantity: 0 };
-                      const isExhausted = bi.remainingBillableVolume <= 0;
+                    {groupedBillable.map((group, gIdx) => {
+                      const activeGroupItems = group.items.filter((it) => it.remainingBillableVolume > 0);
+                      const isGroupAllSelected =
+                        activeGroupItems.length > 0 &&
+                        activeGroupItems.every((it) => selectedBillableRows[it.penawaranDetailId]?.selected);
+                      const letter = String.fromCharCode(65 + gIdx);
 
                       return (
-                        <tr key={bi.penawaranDetailId} className={isExhausted ? 'bg-slate-50 opacity-60' : 'hover:bg-slate-50/70'}>
-                          <td className="p-2.5 text-center">
-                            <input
-                              type="checkbox"
-                              disabled={isExhausted}
-                              checked={sel.selected}
-                              onChange={(e) =>
-                                setSelectedBillableRows((prev) => ({
-                                  ...prev,
-                                  [bi.penawaranDetailId]: {
-                                    ...sel,
-                                    selected: e.target.checked,
-                                  },
-                                }))
-                              }
-                              className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-                            />
-                          </td>
-                          <td className="p-2.5">
-                            <div className="font-medium text-slate-800">{bi.description}</div>
-                            <div className="text-[10px] text-slate-400 font-mono">
-                              Harga: {formatCurrency(bi.unitPrice)} / {bi.unit}
-                            </div>
-                          </td>
-                          <td className="p-2.5 text-right font-mono text-slate-600">
-                            {bi.originalVolume} {bi.unit}
-                          </td>
-                          <td className="p-2.5 text-right font-mono text-slate-600">
-                            {bi.alreadyBilledVolume} {bi.unit}
-                          </td>
-                          <td className="p-2.5 text-right font-mono font-bold">
-                            <span className={isExhausted ? 'text-slate-400' : 'text-emerald-700'}>
-                              {bi.remainingBillableVolume} {bi.unit}
-                            </span>
-                          </td>
-                          <td className="p-2.5 text-right">
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0.01"
-                              max={bi.remainingBillableVolume}
-                              disabled={isExhausted || !sel.selected}
-                              value={sel.quantity}
-                              onChange={(e) => {
-                                const val = parseFloat(e.target.value) || 0;
-                                setSelectedBillableRows((prev) => ({
-                                  ...prev,
-                                  [bi.penawaranDetailId]: {
-                                    ...sel,
-                                    quantity: val,
-                                  },
-                                }));
-                              }}
-                              className="w-24 text-right font-mono text-xs px-2 py-1 rounded border border-slate-300 disabled:bg-slate-100"
-                            />
-                          </td>
-                        </tr>
+                        <React.Fragment key={group.groupName || gIdx}>
+                          {/* Group Header with Select All in Group Checkbox */}
+                          <tr className="bg-slate-100/90 font-bold border-t-2 border-b border-slate-300">
+                            <td className="p-2 text-center">
+                              <input
+                                type="checkbox"
+                                disabled={activeGroupItems.length === 0}
+                                checked={isGroupAllSelected}
+                                onChange={(e) => handleToggleKegiatanGroup(group.items, e.target.checked)}
+                                className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
+                                title={`Pilih seluruh item kegiatan ${group.groupName}`}
+                              />
+                            </td>
+                            <td colSpan={5} className="p-2 text-slate-900">
+                              <div className="flex items-center justify-between">
+                                <span className="flex items-center gap-1.5 uppercase tracking-wide">
+                                  <Layers className="w-3.5 h-3.5 text-brand-600" />
+                                  Kegiatan {letter}: {group.groupName}
+                                </span>
+                                <span className="text-[11px] font-normal text-slate-500">
+                                  {group.items.length} item ({activeGroupItems.length} dapat ditagihkan)
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+
+                          {/* Items in Kegiatan Group */}
+                          {group.items.map((bi) => {
+                            const sel = selectedBillableRows[bi.penawaranDetailId] || { selected: false, quantity: 0 };
+                            const isExhausted = bi.remainingBillableVolume <= 0;
+
+                            return (
+                              <tr
+                                key={bi.penawaranDetailId}
+                                className={`transition-colors ${
+                                  isExhausted
+                                    ? 'bg-slate-50 opacity-50'
+                                    : sel.selected
+                                    ? 'bg-brand-50/30'
+                                    : 'hover:bg-slate-50/70'
+                                }`}
+                              >
+                                <td className="p-2.5 text-center">
+                                  <input
+                                    type="checkbox"
+                                    disabled={isExhausted}
+                                    checked={sel.selected}
+                                    onChange={(e) =>
+                                      setSelectedBillableRows((prev) => ({
+                                        ...prev,
+                                        [bi.penawaranDetailId]: {
+                                          ...sel,
+                                          selected: e.target.checked,
+                                        },
+                                      }))
+                                    }
+                                    className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
+                                  />
+                                </td>
+                                <td className="p-2.5">
+                                  <div className="font-semibold text-slate-800 text-xs">{bi.description}</div>
+                                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                    Harga Satuan: {formatCurrency(bi.unitPrice)} / {bi.unit}
+                                    {bi.notes && <span className="ml-2 italic text-slate-500">• {bi.notes}</span>}
+                                  </div>
+                                </td>
+                                <td className="p-2.5 text-right font-mono text-slate-600">
+                                  {bi.originalVolume} {bi.unit}
+                                </td>
+                                <td className="p-2.5 text-right font-mono text-slate-600">
+                                  {bi.alreadyBilledVolume} {bi.unit}
+                                </td>
+                                <td className="p-2.5 text-right font-mono font-bold">
+                                  <span className={isExhausted ? 'text-slate-400' : 'text-emerald-700'}>
+                                    {bi.remainingBillableVolume} {bi.unit}
+                                  </span>
+                                </td>
+                                <td className="p-2.5 text-right">
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    max={bi.remainingBillableVolume}
+                                    disabled={isExhausted || !sel.selected}
+                                    value={sel.quantity}
+                                    onChange={(e) => {
+                                      const val = parseFloat(e.target.value) || 0;
+                                      setSelectedBillableRows((prev) => ({
+                                        ...prev,
+                                        [bi.penawaranDetailId]: {
+                                          ...sel,
+                                          quantity: val,
+                                        },
+                                      }));
+                                    }}
+                                    className="w-28 text-right font-mono text-xs px-2.5 py-1 rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:bg-slate-100"
+                                  />
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </React.Fragment>
                       );
                     })}
                   </tbody>
@@ -828,21 +1010,27 @@ export const InvoiceFormPage: React.FC = () => {
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 shrink-0">
-              <button
-                type="button"
-                onClick={() => setShowPenawaranModal(false)}
-                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleImportSelectedFromPenawaran}
-                className="px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition shadow-sm"
-              >
-                Tambahkan Item Terpilih
-              </button>
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100 shrink-0">
+              <span className="text-xs text-slate-500 font-medium">
+                Centang kegiatan atau item di atas, lalu sesuaikan volume jika ingin menagihkan secara bertahap / termin.
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPenawaranModal(false)}
+                  className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleImportSelectedFromPenawaran}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition shadow-sm flex items-center gap-1.5"
+                >
+                  <DownloadCloud className="w-3.5 h-3.5" />
+                  Tambahkan Item Terpilih
+                </button>
+              </div>
             </div>
           </div>
         </div>

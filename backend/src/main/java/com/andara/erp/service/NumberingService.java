@@ -164,13 +164,15 @@ public class NumberingService {
     }
 
     private String determinePeriod(ResetPeriod resetPeriod, LocalDate date) {
-        if (resetPeriod == null) {
+        if (resetPeriod == null || resetPeriod == ResetPeriod.NEVER) {
             return "";
         }
-        return switch (resetPeriod) {
-            case MONTHLY -> date.format(DateTimeFormatter.ofPattern("yyyy-MM"));
-            case YEARLY -> date.format(DateTimeFormatter.ofPattern("yyyy"));
-            case NEVER -> "";
-        };
+        if (resetPeriod == ResetPeriod.MONTHLY) {
+            return date.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+        }
+        if (resetPeriod == ResetPeriod.YEARLY) {
+            return date.format(DateTimeFormatter.ofPattern("yyyy"));
+        }
+        return "";
     }
 }

@@ -18,6 +18,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class PenawaranService {
@@ -26,6 +27,7 @@ public class PenawaranService {
     private final CustomerRepository customerRepository;
     private final KegiatanRepository kegiatanRepository;
     private final KegiatanItemRepository kegiatanItemRepository;
+    private final ItemCatalogRepository itemCatalogRepository;
     private final NumberingService numberingService;
     private final AuditLogService auditLogService;
 
@@ -34,6 +36,7 @@ public class PenawaranService {
             CustomerRepository customerRepository,
             KegiatanRepository kegiatanRepository,
             KegiatanItemRepository kegiatanItemRepository,
+            ItemCatalogRepository itemCatalogRepository,
             NumberingService numberingService,
             AuditLogService auditLogService
     ) {
@@ -41,6 +44,7 @@ public class PenawaranService {
         this.customerRepository = customerRepository;
         this.kegiatanRepository = kegiatanRepository;
         this.kegiatanItemRepository = kegiatanItemRepository;
+        this.itemCatalogRepository = itemCatalogRepository;
         this.numberingService = numberingService;
         this.auditLogService = auditLogService;
     }
@@ -77,6 +81,13 @@ public class PenawaranService {
         return PenawaranDTO.fromEntity(penawaran, true);
     }
 
+    @Transactional(readOnly = true)
+    public List<PenawaranDTO> getPenawaranByCustomerId(Long customerId) {
+        return penawaranRepository.findByCustomerIdOrderByDateDesc(customerId).stream()
+                .map(p -> PenawaranDTO.fromEntity(p, false))
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public PenawaranDTO createPenawaran(CreatePenawaranRequest request) {
         Customer customer = customerRepository.findById(request.getCustomerId())
@@ -108,8 +119,8 @@ public class PenawaranService {
         penawaran.setTerms(request.getTerms());
         penawaran.setCreatedBy(getCurrentUsername());
 
-        // Process details
-        buildDetails(penawaran, request.getItems());
+        // Process details and kegiatan
+        buildKegiatanAndDetails(penawaran, request.getKegiatan(), request.getItems());
 
         Penawaran saved = penawaranRepository.save(penawaran);
         return PenawaranDTO.fromEntity(saved, true);
@@ -148,9 +159,10 @@ public class PenawaranService {
         penawaran.setUpdatedBy(getCurrentUsername());
         penawaran.setUpdatedAt(OffsetDateTime.now());
 
-        // Replace details
+        // Replace kegiatan and details
+        penawaran.getKegiatanList().clear();
         penawaran.getDetails().clear();
-        buildDetails(penawaran, request.getItems());
+        buildKegiatanAndDetails(penawaran, request.getKegiatan(), request.getItems());
 
         Penawaran updated = penawaranRepository.save(penawaran);
         return PenawaranDTO.fromEntity(updated, true);
@@ -214,43 +226,68 @@ public class PenawaranService {
         penawaranRepository.delete(penawaran);
     }
 
-    private void buildDetails(Penawaran penawaran, List<CreatePenawaranDetailRequest> itemRequests) {
-        if (itemRequests == null || itemRequests.isEmpty()) {
-            throw new AppException(ErrorCode.INVALID_REQUEST, "Penawaran harus memiliki minimal 1 item");
+    private void buildKegiatanAndDetails(Penawaran penawaran, List<CreateSphKegiatanRequest> kegiatanRequests, List<CreatePenawaranDetailRequest> itemRequests) {
+        boolean hasKegiatan = kegiatanRequests != null && !kegiatanRequests.isEmpty();
+        boolean hasItems = itemRequests != null && !itemRequests.isEmpty();
+
+        if (!hasKegiatan && !hasItems) {
+            throw new AppException(ErrorCode.INVALID_REQUEST, "Penawaran harus memiliki minimal 1 kegiatan atau item pekerjaan");
         }
 
-        List<PenawaranDetail> details = new ArrayList<>();
-        int order = 1;
-
-        for (CreatePenawaranDetailRequest itemReq : itemRequests) {
-            PenawaranDetail detail = new PenawaranDetail();
-            detail.setDescription(itemReq.getDescription().trim());
-            detail.setVolume(itemReq.getVolume());
-            detail.setUnit(itemReq.getUnit().trim());
-            detail.setUnitPrice(itemReq.getUnitPrice());
-            detail.setSortOrder(itemReq.getSortOrder() != null && itemReq.getSortOrder() > 0 ? itemReq.getSortOrder() : order++);
-            detail.setNotes(itemReq.getNotes());
-
-            // Link to Kegiatan if provided
-            if (itemReq.getKegiatanId() != null) {
-                Kegiatan kegiatan = kegiatanRepository.findById(itemReq.getKegiatanId())
-                        .orElseThrow(() -> new AppException(ErrorCode.KEGIATAN_NOT_FOUND, "Kegiatan dengan ID " + itemReq.getKegiatanId() + " tidak ditemukan"));
-                detail.setKegiatan(kegiatan);
+        if (hasKegiatan) {
+            int kOrder = 1;
+            for (CreateSphKegiatanRequest kReq : kegiatanRequests) {
+                SphKegiatan k = new SphKegiatan(kReq.getName().trim(), kReq.getSortOrder() != null && kReq.getSortOrder() > 0 ? kReq.getSortOrder() : kOrder++);
+                int itemOrder = 1;
+                if (kReq.getItems() != null && !kReq.getItems().isEmpty()) {
+                    for (CreatePenawaranDetailRequest itemReq : kReq.getItems()) {
+                        PenawaranDetail detail = createDetailEntity(itemReq, itemOrder++);
+                        k.addItem(detail);
+                        penawaran.addDetail(detail);
+                    }
+                }
+                penawaran.addKegiatan(k);
             }
-
-            // Link to KegiatanItem if provided
-            if (itemReq.getKegiatanItemId() != null) {
-                KegiatanItem kegiatanItem = kegiatanItemRepository.findById(itemReq.getKegiatanItemId())
-                        .orElseThrow(() -> new AppException(ErrorCode.KEGIATAN_ITEM_NOT_FOUND, "Kegiatan Item dengan ID " + itemReq.getKegiatanItemId() + " tidak ditemukan"));
-                detail.setKegiatanItem(kegiatanItem);
+        } else {
+            // Backward-compatible fallback for flat items: wrap in single default group
+            SphKegiatan defaultK = new SphKegiatan("Pekerjaan Utama", 1);
+            int itemOrder = 1;
+            for (CreatePenawaranDetailRequest itemReq : itemRequests) {
+                PenawaranDetail detail = createDetailEntity(itemReq, itemOrder++);
+                defaultK.addItem(detail);
+                penawaran.addDetail(detail);
             }
-
-            // Authoritative server-side calculation: volume * unitPrice
-            BigDecimal amount = detail.getVolume().multiply(detail.getUnitPrice()).setScale(2, RoundingMode.HALF_UP);
-            detail.setAmount(amount);
-
-            penawaran.addDetail(detail);
+            penawaran.addKegiatan(defaultK);
         }
+    }
+
+    private PenawaranDetail createDetailEntity(CreatePenawaranDetailRequest itemReq, int defaultSortOrder) {
+        PenawaranDetail detail = new PenawaranDetail();
+        detail.setDescription(itemReq.getDescription().trim());
+        detail.setVolume(itemReq.getVolume());
+        detail.setUnit(itemReq.getUnit().trim());
+        detail.setUnitPrice(itemReq.getUnitPrice());
+        detail.setSortOrder(itemReq.getSortOrder() != null && itemReq.getSortOrder() > 0 ? itemReq.getSortOrder() : defaultSortOrder);
+        detail.setNotes(itemReq.getNotes());
+
+        if (itemReq.getItemCatalogId() != null) {
+            ItemCatalog itemCat = itemCatalogRepository.findById(itemReq.getItemCatalogId()).orElse(null);
+            detail.setItemCatalog(itemCat);
+        }
+
+        if (itemReq.getKegiatanId() != null) {
+            Kegiatan kegiatan = kegiatanRepository.findById(itemReq.getKegiatanId()).orElse(null);
+            detail.setKegiatan(kegiatan);
+        }
+
+        if (itemReq.getKegiatanItemId() != null) {
+            KegiatanItem kegiatanItem = kegiatanItemRepository.findById(itemReq.getKegiatanItemId()).orElse(null);
+            detail.setKegiatanItem(kegiatanItem);
+        }
+
+        BigDecimal amount = detail.getVolume().multiply(detail.getUnitPrice()).setScale(2, RoundingMode.HALF_UP);
+        detail.setAmount(amount);
+        return detail;
     }
 
     private void validateStatusTransition(PenawaranStatus from, PenawaranStatus to) {

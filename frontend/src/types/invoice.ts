@@ -5,6 +5,8 @@ export interface InvoiceDetail {
   id: number;
   invoiceId: number;
   sourcePenawaranDetailId?: number;
+  sphKegiatanId?: number;
+  sphKegiatanName?: string;
   sourceKegiatanId?: number;
   sourceKegiatanName?: string;
   sourceKegiatanItemId?: number;
@@ -29,6 +31,7 @@ export interface Invoice {
   customerPhone?: string;
   sourcePenawaranId?: number;
   sourcePenawaranNumber?: string;
+  workLocation?: string;
   date: string;
   dueDate?: string;
   status: InvoiceStatus;
@@ -50,6 +53,7 @@ export interface Invoice {
 
 export interface CreateInvoiceDetailInput {
   sourcePenawaranDetailId?: number;
+  sphKegiatanId?: number;
   sourceKegiatanId?: number;
   sourceKegiatanItemId?: number;
   description: string;
@@ -63,6 +67,7 @@ export interface CreateInvoiceDetailInput {
 export interface CreateInvoiceInput {
   customerId: number;
   sourcePenawaranId?: number;
+  workLocation?: string;
   date: string;
   dueDate?: string;
   notes?: string;
@@ -72,6 +77,7 @@ export interface CreateInvoiceInput {
 
 export interface UpdateInvoiceInput {
   customerId: number;
+  workLocation?: string;
   date: string;
   dueDate?: string;
   notes?: string;
@@ -85,6 +91,8 @@ export interface UpdateInvoiceStatusInput {
 
 export interface PenawaranBillableItem {
   penawaranDetailId: number;
+  sphKegiatanId?: number;
+  sphKegiatanName?: string;
   kegiatanId?: number;
   kegiatanName?: string;
   kegiatanItemId?: number;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -15,7 +15,10 @@ import {
   X,
   ShieldCheck,
   Building2,
-  LogOut
+  LogOut,
+  Database,
+  Package,
+  ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -24,6 +27,14 @@ export const AppLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isMasterDataActive =
+    location.pathname.startsWith('/customers') ||
+    location.pathname.startsWith('/items') ||
+    location.pathname.startsWith('/master');
+
+  const [masterDataOpen, setMasterDataOpen] = useState(true);
 
   const handleLogout = async () => {
     try {
@@ -34,9 +45,7 @@ export const AppLayout: React.FC = () => {
     }
   };
 
-  const navigation = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Master Customer', href: '/customers', icon: Users },
+  const otherNavigation = [
     { name: 'Kegiatan & Item', href: '/kegiatan', icon: Briefcase },
     { name: 'Penawaran', href: '/penawaran', icon: FileText },
     { name: 'Faktur Penjualan', href: '/faktur', icon: Receipt },
@@ -93,11 +102,87 @@ export const AppLayout: React.FC = () => {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navigation.map((item) => (
+          {/* Dashboard */}
+          <NavLink
+            to="/"
+            end
+            onClick={() => setSidebarOpen(false)}
+            className={({ isActive }) => cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+              isActive 
+                ? "bg-brand-600 text-white shadow-sm" 
+                : "text-slate-300 hover:bg-slate-800 hover:text-white"
+            )}
+          >
+            <LayoutDashboard className="w-4 h-4 shrink-0" />
+            <span>Dashboard</span>
+          </NavLink>
+
+          {/* Master Data (Customer & Item) */}
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => setMasterDataOpen(!masterDataOpen)}
+              className={cn(
+                "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left",
+                isMasterDataActive
+                  ? "bg-slate-800/80 text-white font-semibold"
+                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <Database className={cn("w-4 h-4 shrink-0", isMasterDataActive ? "text-brand-400" : "text-slate-400")} />
+                <span>Master Data</span>
+              </div>
+              <ChevronDown
+                className={cn(
+                  "w-3.5 h-3.5 text-slate-400 transition-transform duration-200",
+                  masterDataOpen ? "rotate-180" : ""
+                )}
+              />
+            </button>
+
+            {masterDataOpen && (
+              <div className="pl-3.5 my-1 space-y-1 border-l border-slate-800 ml-4">
+                <NavLink
+                  to="/customers"
+                  onClick={() => setSidebarOpen(false)}
+                  className={({ isActive }) => cn(
+                    "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                    isActive
+                      ? "bg-brand-600 text-white shadow-sm font-semibold"
+                      : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
+                  )}
+                >
+                  <Users className="w-3.5 h-3.5 shrink-0" />
+                  <span>Data Customer</span>
+                </NavLink>
+
+                <NavLink
+                  to="/items"
+                  onClick={() => setSidebarOpen(false)}
+                  className={({ isActive }) => cn(
+                    "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                    isActive
+                      ? "bg-brand-600 text-white shadow-sm font-semibold"
+                      : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
+                  )}
+                >
+                  <Package className="w-3.5 h-3.5 shrink-0" />
+                  <span>Data Item</span>
+                </NavLink>
+              </div>
+            )}
+          </div>
+
+          {/* Separator */}
+          <div className="pt-1 border-t border-slate-800/60 my-1" />
+
+          {/* Operational & Transaction Modules */}
+          {otherNavigation.map((item) => (
             <NavLink
               key={item.name}
               to={item.href}
-              end={item.href === '/'}
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) => cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",

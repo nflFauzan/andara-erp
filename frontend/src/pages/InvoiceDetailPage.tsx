@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
   Edit,
@@ -13,12 +13,14 @@ import {
   FileCheck2,
   Send,
   AlertTriangle,
-  History
+  History,
+  MapPin
 } from 'lucide-react';
 import { invoiceApi } from '../api/invoiceApi';
 import { Invoice, InvoiceStatus, InvoicePaymentStatus } from '../types/invoice';
 import { AttachmentSection } from '../components/common/AttachmentSection';
 import { AuditHistoryModal } from '../components/audit/AuditHistoryModal';
+import { AndaraLetterhead } from '../components/common/AndaraLetterhead';
 
 const STATUS_CONFIG: Record<InvoiceStatus, { label: string; bg: string; text: string; icon: React.ComponentType<{ className?: string }> }> = {
   DRAFT: {
@@ -208,11 +210,12 @@ export const InvoiceDetailPage: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           {/* Print Button */}
           <button
-            onClick={() => window.print()}
+            onClick={() => window.open(`/faktur/${invoice.id}/print`, '_blank')}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 shadow-sm transition"
+            title="Buka format cetak resmi CV. ANDARA (siap cetak/simpan PDF)"
           >
             <Printer className="w-4 h-4 text-slate-500" />
-            Cetak Faktur / PDF
+            Cetak Format Resmi
           </button>
 
           {/* Audit Trail Button */}
@@ -309,37 +312,8 @@ export const InvoiceDetailPage: React.FC = () => {
 
       {/* Printable Invoice Sheet */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-10 space-y-8 print:shadow-none print:border-none print:p-0">
-        {/* Letterhead */}
-        <div className="flex items-start justify-between border-b-2 border-slate-900 pb-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center font-bold text-white shadow-sm">
-                A
-              </div>
-              <h2 className="text-xl font-bold tracking-tight text-slate-900">CV. ANDARA</h2>
-            </div>
-            <p className="text-xs text-slate-500 font-medium max-w-sm leading-relaxed">
-              Jasa Pengadaan, Kontraktor Sipil, Pameran & Event Organizer Terpadu
-              <br />
-              Email: finance@andara.co.id | Telepon: (021) 789-ANDARA
-            </p>
-          </div>
-
-          <div className="text-right space-y-1">
-            <span className="inline-block px-3 py-1 rounded bg-slate-900 text-white font-mono text-xs font-bold uppercase tracking-wider">
-              FAKTUR PENJUALAN / INVOICE
-            </span>
-            <p className="font-mono text-sm font-bold text-brand-700">{invoice.number}</p>
-            <p className="text-xs text-slate-500">
-              Tanggal: {new Date(invoice.date).toLocaleDateString('id-ID', { dateStyle: 'medium' })}
-            </p>
-            {invoice.dueDate && (
-              <p className="text-xs text-rose-600 font-medium">
-                Jatuh Tempo: {new Date(invoice.dueDate).toLocaleDateString('id-ID', { dateStyle: 'medium' })}
-              </p>
-            )}
-          </div>
-        </div>
+        {/* Letterhead Resmi CV. ANDARA dengan Pita Divisi Baja Ringan */}
+        <AndaraLetterhead showDivisiStrip={true} className="mb-4" />
 
         {/* Customer & Info Details */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200 print:bg-transparent">
@@ -355,8 +329,19 @@ export const InvoiceDetailPage: React.FC = () => {
             <p className="text-sm font-bold text-slate-900 font-mono">Kode Customer: {invoice.customerCode}</p>
             {invoice.sourcePenawaranNumber && (
               <p className="text-slate-600">
-                Referensi Penawaran:{' '}
-                <span className="font-mono font-semibold text-brand-700">{invoice.sourcePenawaranNumber}</span>
+                Referensi SPH:{' '}
+                <Link
+                  to={`/penawaran/${invoice.sourcePenawaranId}`}
+                  className="font-mono font-semibold text-brand-700 hover:underline"
+                >
+                  {invoice.sourcePenawaranNumber}
+                </Link>
+              </p>
+            )}
+            {invoice.workLocation && (
+              <p className="text-slate-600 flex items-center gap-1 sm:justify-end">
+                <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                <span>Lokasi: <strong className="text-slate-800">{invoice.workLocation}</strong></span>
               </p>
             )}
             <p className="text-slate-500">
@@ -394,9 +379,9 @@ export const InvoiceDetailPage: React.FC = () => {
                       </td>
                       <td className="py-3 px-3">
                         <div className="font-semibold text-slate-800">{detail.description}</div>
-                        {detail.sourceKegiatanName && (
+                        {(detail.sphKegiatanName || detail.sourceKegiatanName) && (
                           <span className="text-[11px] text-brand-600 font-medium">
-                            • Kegiatan: {detail.sourceKegiatanName}
+                            • Kegiatan: {detail.sphKegiatanName || detail.sourceKegiatanName}
                           </span>
                         )}
                         {detail.notes && (
