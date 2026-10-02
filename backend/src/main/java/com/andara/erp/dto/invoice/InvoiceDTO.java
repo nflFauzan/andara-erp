@@ -35,6 +35,7 @@ public class InvoiceDTO {
     private String workLocation;
     private Integer itemCount;
     private List<InvoiceDetailDTO> details = new ArrayList<>();
+    private List<InvoicePaymentItemDTO> payments = new ArrayList<>();
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private String createdBy;
@@ -309,5 +310,13 @@ public class InvoiceDTO {
 
     public void setWorkLocation(String workLocation) {
         this.workLocation = workLocation;
+    }
+
+    public List<InvoicePaymentItemDTO> getPayments() {
+        return payments;
+    }
+
+    public void setPayments(List<InvoicePaymentItemDTO> payments) {
+        this.payments = payments;
     }
 }

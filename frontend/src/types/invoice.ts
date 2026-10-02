@@ -45,10 +45,21 @@ export interface Invoice {
   terms?: string;
   itemCount: number;
   details: InvoiceDetail[];
+  payments?: InvoicePaymentItem[];
   createdAt?: string;
   updatedAt?: string;
   createdBy?: string;
   updatedBy?: string;
+}
+
+export interface InvoicePaymentItem {
+  id: number;
+  paymentNumber: string;
+  paymentDate: string;
+  paymentMethod: string;
+  paymentMethodLabel?: string;
+  amount: number;
+  notes?: string;
 }
 
 export interface CreateInvoiceDetailInput {

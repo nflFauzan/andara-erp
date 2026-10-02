@@ -31,6 +31,7 @@ public class InvoiceService {
     private final KegiatanItemRepository kegiatanItemRepository;
     private final NumberingService numberingService;
     private final AuditLogService auditLogService;
+    private final PaymentAllocationRepository paymentAllocationRepository;
 
     public InvoiceService(
             InvoiceRepository invoiceRepository,
@@ -41,7 +42,8 @@ public class InvoiceService {
             KegiatanRepository kegiatanRepository,
             KegiatanItemRepository kegiatanItemRepository,
             NumberingService numberingService,
-            AuditLogService auditLogService
+            AuditLogService auditLogService,
+            PaymentAllocationRepository paymentAllocationRepository
     ) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceDetailRepository = invoiceDetailRepository;
@@ -52,6 +54,7 @@ public class InvoiceService {
         this.kegiatanItemRepository = kegiatanItemRepository;
         this.numberingService = numberingService;
         this.auditLogService = auditLogService;
+        this.paymentAllocationRepository = paymentAllocationRepository;
     }
 
     @Transactional(readOnly = true)
@@ -85,7 +88,28 @@ public class InvoiceService {
     public InvoiceDTO getInvoiceById(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.INVOICE_NOT_FOUND, "Faktur dengan ID " + id + " tidak ditemukan"));
-        return InvoiceDTO.fromEntity(invoice, true);
+        InvoiceDTO dto = InvoiceDTO.fromEntity(invoice, true);
+
+        List<PaymentAllocation> allocs = paymentAllocationRepository.findByInvoiceId(invoice.getId());
+        if (allocs != null && !allocs.isEmpty()) {
+            List<InvoicePaymentItemDTO> paymentDTOs = new ArrayList<>();
+            for (PaymentAllocation alloc : allocs) {
+                if (alloc.getPayment() != null && alloc.getPayment().getStatus() != com.andara.erp.entity.PaymentStatus.CANCELLED) {
+                    InvoicePaymentItemDTO pDto = new InvoicePaymentItemDTO();
+                    pDto.setId(alloc.getId());
+                    pDto.setPaymentNumber(alloc.getPayment().getNumber());
+                    pDto.setPaymentDate(alloc.getPayment().getDate());
+                    pDto.setPaymentMethod(alloc.getPayment().getPaymentMethod());
+                    pDto.setPaymentMethodLabel(alloc.getPayment().getPaymentMethod() != null ? alloc.getPayment().getPaymentMethod().getLabel() : "Transfer");
+                    pDto.setAmount(alloc.getAmount());
+                    pDto.setNotes(alloc.getNotes());
+                    paymentDTOs.add(pDto);
+                }
+            }
+            dto.setPayments(paymentDTOs);
+        }
+
+        return dto;
     }
 
     @Transactional(readOnly = true)
