@@ -127,7 +127,8 @@ export const InvoiceFormPage: React.FC = () => {
     }
   }, [isEdit, id]);
 
-  // If initialPenawaranId query param exists, load that penawaran and its billable items
+  // If initialPenawaranId query param exists, load penawaran meta and open the selection modal
+  // (do NOT auto-import all items — user must explicitly choose which kegiatan/items to bill)
   useEffect(() => {
     if (!isEdit && initialPenawaranId) {
       const pId = Number(initialPenawaranId);
@@ -135,29 +136,9 @@ export const InvoiceFormPage: React.FC = () => {
         setSelectedCustomerId(p.customerId);
         setSourcePenawaranId(p.id);
         setSourcePenawaranNumber(p.number);
-        // Load billable items
-        invoiceApi.getBillableItemsFromPenawaran(pId).then((bItems) => {
-          const validItems = bItems.filter((bi) => bi.remainingBillableVolume > 0);
-          if (validItems.length > 0) {
-            setItems(
-              validItems.map((bi, idx) => ({
-                tempId: `penawaran-item-${bi.penawaranDetailId}-${idx}`,
-                sourcePenawaranDetailId: bi.penawaranDetailId,
-                sphKegiatanId: bi.sphKegiatanId,
-                sphKegiatanName: bi.sphKegiatanName,
-                sourceKegiatanId: bi.kegiatanId,
-                sourceKegiatanItemId: bi.kegiatanItemId,
-                description: bi.description,
-                quantity: bi.remainingBillableVolume,
-                unit: bi.unit,
-                unitPrice: bi.unitPrice,
-                sortOrder: idx + 1,
-                notes: bi.notes,
-                maxBillableQuantity: bi.remainingBillableVolume,
-              }))
-            );
-          }
-        });
+        setSelectedModalPenawaranId(p.id);
+        // Buka modal agar user bisa pilih kegiatan/item mana yang mau ditagih
+        setShowPenawaranModal(true);
       }).catch(console.error);
     }
   }, [isEdit, initialPenawaranId]);
@@ -286,20 +267,24 @@ export const InvoiceFormPage: React.FC = () => {
     setShowPenawaranModal(false);
   };
 
-  // Group billableItems by SPH Kegiatan
+  // Group billableItems by SPH Kegiatan ID (NOT name string, to prevent merging groups with same name)
   const groupedBillable = useMemo(() => {
-    const map = new Map<string, PenawaranBillableItem[]>();
+    // Use a Map keyed by a stable unique group key: sphKegiatanId or kegiatanId or 'manual'
+    const map = new Map<string, { groupKey: string; groupName: string; items: PenawaranBillableItem[] }>();
     billableItems.forEach((bi) => {
+      // Determine a stable group key using the ID, not the name
+      const groupKey = bi.sphKegiatanId != null
+        ? `sph:${bi.sphKegiatanId}`
+        : bi.kegiatanId != null
+        ? `kegiatan:${bi.kegiatanId}`
+        : 'manual';
       const groupName = bi.sphKegiatanName || bi.kegiatanName || 'Pekerjaan Utama';
-      if (!map.has(groupName)) {
-        map.set(groupName, []);
+      if (!map.has(groupKey)) {
+        map.set(groupKey, { groupKey, groupName, items: [] });
       }
-      map.get(groupName)!.push(bi);
+      map.get(groupKey)!.items.push(bi);
     });
-    return Array.from(map.entries()).map(([groupName, gItems]) => ({
-      groupName,
-      items: gItems,
-    }));
+    return Array.from(map.values());
   }, [billableItems]);
 
   const handleToggleKegiatanGroup = (groupItems: PenawaranBillableItem[], select: boolean) => {
@@ -901,7 +886,7 @@ export const InvoiceFormPage: React.FC = () => {
                       const letter = String.fromCharCode(65 + gIdx);
 
                       return (
-                        <React.Fragment key={group.groupName || gIdx}>
+                        <React.Fragment key={group.groupKey}>
                           {/* Group Header with Select All in Group Checkbox */}
                           <tr className="bg-slate-100/90 font-bold border-t-2 border-b border-slate-300">
                             <td className="p-2 text-center">

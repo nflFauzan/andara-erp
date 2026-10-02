@@ -19,6 +19,14 @@ public interface PenawaranRepository extends JpaRepository<Penawaran, Long> {
 
     Optional<Penawaran> findByNumber(String number);
 
+    // Safe JOIN FETCH: only fetch penawaran.details in one query.
+    // sphKegiatan on each detail is lazy-loaded within the same @Transactional context.
+    // Avoids MultipleBagFetchException from fetching kegiatanList + details simultaneously.
+    @Query("SELECT p FROM Penawaran p " +
+            "LEFT JOIN FETCH p.details d " +
+            "WHERE p.id = :id")
+    Optional<Penawaran> findByIdWithAllDetails(@Param("id") Long id);
+
     boolean existsByNumber(String number);
 
     List<Penawaran> findByCustomerIdOrderByDateDesc(Long customerId);

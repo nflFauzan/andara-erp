@@ -90,17 +90,32 @@ public class InvoiceService {
 
     @Transactional(readOnly = true)
     public List<PenawaranBillableItemDTO> getBillableItemsFromPenawaran(Long penawaranId) {
-        Penawaran penawaran = penawaranRepository.findById(penawaranId)
+        // JOIN FETCH p.details loads all PenawaranDetail in one SQL query (avoids N+1).
+        // IMPORTANT: buildKegiatanAndDetails() calls penawaran.addDetail(detail) for EVERY item,
+        // even items that belong to a SphKegiatan. So penawaran.details ALREADY contains ALL items.
+        // sphKegiatan on each detail is lazy-loaded within this @Transactional context.
+        Penawaran penawaran = penawaranRepository.findByIdWithAllDetails(penawaranId)
                 .orElseThrow(() -> new AppException(ErrorCode.PENAWARAN_NOT_FOUND, "Penawaran dengan ID " + penawaranId + " tidak ditemukan"));
+
+        // Sort: group by kegiatan sortOrder first, then by item sortOrder within each kegiatan.
+        // Items without sphKegiatan (null) go at the end.
+        List<PenawaranDetail> sortedDetails = penawaran.getDetails().stream()
+                .sorted(java.util.Comparator
+                        .comparingInt((PenawaranDetail d) ->
+                                d.getSphKegiatan() != null && d.getSphKegiatan().getSortOrder() != null
+                                        ? d.getSphKegiatan().getSortOrder() : Integer.MAX_VALUE)
+                        .thenComparingInt(d -> d.getSortOrder() != null ? d.getSortOrder() : 0))
+                .collect(java.util.stream.Collectors.toList());
 
         List<PenawaranBillableItemDTO> billableList = new ArrayList<>();
 
-        for (PenawaranDetail detail : penawaran.getDetails()) {
+        for (PenawaranDetail detail : sortedDetails) {
             BigDecimal billed = invoiceDetailRepository.sumBilledQuantityBySourcePenawaranDetailId(detail.getId(), null);
             BigDecimal remaining = detail.getVolume().subtract(billed).max(BigDecimal.ZERO);
 
             PenawaranBillableItemDTO dto = new PenawaranBillableItemDTO();
             dto.setPenawaranDetailId(detail.getId());
+            // sphKegiatan is lazy-loaded here — safe within @Transactional, critical for frontend grouping
             if (detail.getSphKegiatan() != null) {
                 dto.setSphKegiatanId(detail.getSphKegiatan().getId());
                 dto.setSphKegiatanName(detail.getSphKegiatan().getName());
@@ -149,6 +164,15 @@ public class InvoiceService {
         if (request.getSourcePenawaranId() != null) {
             sourcePenawaran = penawaranRepository.findById(request.getSourcePenawaranId())
                     .orElseThrow(() -> new AppException(ErrorCode.PENAWARAN_NOT_FOUND, "Penawaran sumber tidak ditemukan"));
+
+            // Guard: penawaran sumber harus berstatus APPROVED
+            if (sourcePenawaran.getStatus() != PenawaranStatus.APPROVED) {
+                throw new AppException(
+                        ErrorCode.INVALID_REQUEST,
+                        "Faktur hanya dapat dibuat dari Surat Penawaran yang telah berstatus DISETUJUI (APPROVED). " +
+                        "Status saat ini: " + sourcePenawaran.getStatus()
+                );
+            }
 
             if (!sourcePenawaran.getCustomer().getId().equals(customer.getId())) {
                 throw new AppException(ErrorCode.INVALID_REQUEST, "Customer faktur harus sama dengan customer pada penawaran sumber");
