@@ -19,6 +19,9 @@ import {
 } from '@/api/rekapApi';
 import { customerApi } from '@/api/customerApi';
 import { Customer } from '@/types/customer';
+import { BentoCard } from '@/components/common/BentoCard';
+import { PageHeader } from '@/components/common/PageHeader';
+import { StatusBadge } from '@/components/common/StatusBadge';
 
 const formatCurrency = (val: number | null | undefined): string => {
   return new Intl.NumberFormat('id-ID', {
@@ -121,41 +124,39 @@ export const RekapPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 print:border-none print:shadow-none">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              Laporan Keuangan & Rekapitulasi
-            </div>
-            <h1 className="text-2xl font-bold text-slate-900">Rekap Transaksi & Operasional</h1>
-            <p className="text-xs text-slate-500">
-              Monitoring data teragregasi per customer, faktur penjualan, realisasi kas, dan kegiatan proyek.
-            </p>
-          </div>
+      <PageHeader
+        title="Rekap Transaksi & Operasional"
+        subtitle="Monitoring data teragregasi per customer, faktur penjualan, realisasi kas, dan kegiatan proyek."
+        badge={
+          <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            Laporan Keuangan
+          </span>
+        }
+        actions={
+          <button
+            onClick={handlePrint}
+            className="print:hidden inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-semibold transition shadow-xs"
+          >
+            <Printer className="w-4 h-4" />
+            <span>Cetak / PDF</span>
+          </button>
+        }
+      />
 
-          <div className="flex items-center gap-2 print:hidden">
-            <button
-              onClick={handlePrint}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition shadow-sm"
-            >
-              <Printer className="w-4 h-4" />
-              Cetak / PDF
-            </button>
-          </div>
-        </div>
-
+      {/* Control Card: Tabs & Filters */}
+      <BentoCard padding="default" className="print:hidden space-y-4">
         {/* Tab Selector */}
-        <div className="flex flex-wrap items-center gap-2 mt-6 pt-4 border-t border-slate-100 print:hidden">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => handleTabChange('CUSTOMERS')}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
               activeTab === 'CUSTOMERS'
-                ? 'bg-brand-500 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-700'
             }`}
           >
             <Users className="w-4 h-4" />
@@ -166,8 +167,8 @@ export const RekapPage: React.FC = () => {
             onClick={() => handleTabChange('INVOICES')}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
               activeTab === 'INVOICES'
-                ? 'bg-brand-500 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-700'
             }`}
           >
             <Receipt className="w-4 h-4" />
@@ -178,8 +179,8 @@ export const RekapPage: React.FC = () => {
             onClick={() => handleTabChange('PAYMENTS')}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
               activeTab === 'PAYMENTS'
-                ? 'bg-brand-500 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-700'
             }`}
           >
             <CreditCard className="w-4 h-4" />
@@ -190,8 +191,8 @@ export const RekapPage: React.FC = () => {
             onClick={() => handleTabChange('KEGIATAN')}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
               activeTab === 'KEGIATAN'
-                ? 'bg-brand-500 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-700'
             }`}
           >
             <Briefcase className="w-4 h-4" />
@@ -200,7 +201,7 @@ export const RekapPage: React.FC = () => {
         </div>
 
         {/* Filters Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 print:hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-slate-100 dark:border-navy-700/80">
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -211,7 +212,7 @@ export const RekapPage: React.FC = () => {
                 setSearch(e.target.value);
                 setPage(0);
               }}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-500 bg-slate-50/50"
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-white dark:bg-navy-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
@@ -222,7 +223,7 @@ export const RekapPage: React.FC = () => {
                 setSelectedCustomerId(e.target.value);
                 setPage(0);
               }}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-500 bg-slate-50/50 text-slate-700"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-white dark:bg-navy-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="">Semua Customer</option>
               {customers.map((c) => (
@@ -243,7 +244,7 @@ export const RekapPage: React.FC = () => {
                     setStartDate(e.target.value);
                     setPage(0);
                   }}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-500 bg-slate-50/50 text-slate-700"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-white dark:bg-navy-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Tanggal Mulai"
                 />
               </div>
@@ -255,51 +256,51 @@ export const RekapPage: React.FC = () => {
                     setEndDate(e.target.value);
                     setPage(0);
                   }}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-500 bg-slate-50/50 text-slate-700"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-white dark:bg-navy-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Tanggal Akhir"
                 />
               </div>
             </>
           )}
         </div>
-      </div>
+      </BentoCard>
 
       {/* TAB 1: REKAP CUSTOMER */}
       {activeTab === 'CUSTOMERS' && (
         <div className="space-y-4">
           {/* Summary KPI Strip */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase">Total Tagihan</span>
-              <div className="text-lg font-bold text-slate-900 mt-1">
+            <BentoCard padding="default">
+              <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Tagihan</span>
+              <div className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-1 font-mono">
                 {formatCurrency(customerRekap?.grandTotalInvoiceAmount || 0)}
               </div>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase">Total Dibayar</span>
-              <div className="text-lg font-bold text-emerald-600 mt-1">
+            </BentoCard>
+            <BentoCard padding="default">
+              <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Dibayar</span>
+              <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
                 {formatCurrency(customerRekap?.grandTotalPaidAmount || 0)}
               </div>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase">Total Piutang</span>
-              <div className="text-lg font-bold text-amber-600 mt-1">
+            </BentoCard>
+            <BentoCard padding="default">
+              <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Piutang</span>
+              <div className="text-lg font-bold text-amber-600 dark:text-amber-400 mt-1 font-mono">
                 {formatCurrency(customerRekap?.grandTotalOutstanding || 0)}
               </div>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase">Saldo Deposit Mengendap</span>
-              <div className="text-lg font-bold text-purple-600 mt-1">
+            </BentoCard>
+            <BentoCard padding="default">
+              <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Saldo Deposit Mengendap</span>
+              <div className="text-lg font-bold text-purple-600 dark:text-purple-400 mt-1 font-mono">
                 {formatCurrency(customerRekap?.grandTotalDepositBalance || 0)}
               </div>
-            </div>
+            </BentoCard>
           </div>
 
           {/* Table */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <BentoCard padding="none" className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                <thead className="bg-slate-50/80 dark:bg-navy-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-200/80 dark:border-navy-700/80">
                   <tr>
                     <th className="py-3.5 px-4">Kode & Customer</th>
                     <th className="py-3.5 px-4">Kontak / Telp</th>
@@ -311,46 +312,46 @@ export const RekapPage: React.FC = () => {
                     <th className="py-3.5 px-4 text-right">Deposit</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-navy-800">
                   {loadingCustomers ? (
                     <tr>
-                      <td colSpan={8} className="py-8 text-center text-slate-400">
+                      <td colSpan={8} className="py-10 text-center text-slate-400 dark:text-slate-500">
                         Memuat data rekap customer...
                       </td>
                     </tr>
                   ) : customerRekap?.page.content && customerRekap.page.content.length > 0 ? (
                     customerRekap.page.content.map((row) => (
-                      <tr key={row.customerId} className="hover:bg-slate-50/50 transition">
+                      <tr key={row.customerId} className="hover:bg-slate-50/70 dark:hover:bg-navy-800/40 transition">
                         <td className="py-3 px-4">
-                          <div className="font-bold text-slate-900">{row.customerName}</div>
-                          <div className="text-[11px] text-slate-400 font-mono">
+                          <div className="font-bold text-slate-900 dark:text-slate-100">{row.customerName}</div>
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
                             {row.customerCode} {row.companyName ? `• ${row.companyName}` : ''}
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-slate-600">{row.phone || '-'}</td>
-                        <td className="py-3 px-4 text-center font-medium text-slate-700">
+                        <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{row.phone || '-'}</td>
+                        <td className="py-3 px-4 text-center font-medium text-slate-700 dark:text-slate-300">
                           {row.totalKegiatan}
                         </td>
-                        <td className="py-3 px-4 text-center font-medium text-slate-700">
+                        <td className="py-3 px-4 text-center font-medium text-slate-700 dark:text-slate-300">
                           {row.totalInvoices}
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-slate-900">
+                        <td className="py-3 px-4 text-right font-bold text-slate-900 dark:text-slate-100 font-mono">
                           {formatCurrency(row.totalInvoiceAmount)}
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-emerald-600">
+                        <td className="py-3 px-4 text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono">
                           {formatCurrency(row.totalPaidAmount)}
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-amber-600">
+                        <td className="py-3 px-4 text-right font-bold text-amber-600 dark:text-amber-400 font-mono">
                           {formatCurrency(row.totalOutstanding)}
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-purple-600">
+                        <td className="py-3 px-4 text-right font-bold text-purple-600 dark:text-purple-400 font-mono">
                           {formatCurrency(row.depositBalance)}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="py-8 text-center text-slate-400">
+                      <td colSpan={8} className="py-10 text-center text-slate-400 dark:text-slate-500">
                         Tidak ada data customer yang cocok dengan filter.
                       </td>
                     </tr>
@@ -361,7 +362,7 @@ export const RekapPage: React.FC = () => {
 
             {/* Pagination */}
             {customerRekap?.page && customerRekap.page.totalPages > 1 && (
-              <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <div className="p-4 border-t border-slate-100 dark:border-navy-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>
                   Halaman {customerRekap.page.number + 1} dari {customerRekap.page.totalPages} (Total{' '}
                   {customerRekap.page.totalElements} mitra)
@@ -370,21 +371,21 @@ export const RekapPage: React.FC = () => {
                   <button
                     disabled={page === 0}
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
-                    className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-navy-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-navy-800"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     disabled={page >= customerRekap.page.totalPages - 1}
                     onClick={() => setPage((p) => p + 1)}
-                    className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-navy-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-navy-800"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
             )}
-          </div>
+          </BentoCard>
         </div>
       )}
 
@@ -393,30 +394,30 @@ export const RekapPage: React.FC = () => {
         <div className="space-y-4">
           {/* Summary Strip */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase">Grand Total Nilai Faktur</span>
-              <div className="text-xl font-bold text-slate-900 mt-1">
+            <BentoCard padding="default">
+              <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Grand Total Nilai Faktur</span>
+              <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mt-1 font-mono">
                 {formatCurrency(invoiceRekap?.grandTotalAmount || 0)}
               </div>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase">Grand Total Pelunasan</span>
-              <div className="text-xl font-bold text-emerald-600 mt-1">
+            </BentoCard>
+            <BentoCard padding="default">
+              <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Grand Total Pelunasan</span>
+              <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
                 {formatCurrency(invoiceRekap?.grandTotalPaidAmount || 0)}
               </div>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase">Grand Total Sisa Piutang</span>
-              <div className="text-xl font-bold text-amber-600 mt-1">
+            </BentoCard>
+            <BentoCard padding="default">
+              <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Grand Total Sisa Piutang</span>
+              <div className="text-xl font-bold text-amber-600 dark:text-amber-400 mt-1 font-mono">
                 {formatCurrency(invoiceRekap?.grandTotalOutstanding || 0)}
               </div>
-            </div>
+            </BentoCard>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <BentoCard padding="none" className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                <thead className="bg-slate-50/80 dark:bg-navy-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-200/80 dark:border-navy-700/80">
                   <tr>
                     <th className="py-3.5 px-4">No. Faktur</th>
                     <th className="py-3.5 px-4">Tanggal & Jatuh Tempo</th>
@@ -427,52 +428,44 @@ export const RekapPage: React.FC = () => {
                     <th className="py-3.5 px-4 text-right">Outstanding</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-navy-800">
                   {loadingInvoices ? (
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-slate-400">
+                      <td colSpan={7} className="py-10 text-center text-slate-400 dark:text-slate-500">
                         Memuat data rekap faktur...
                       </td>
                     </tr>
                   ) : invoiceRekap?.page.content && invoiceRekap.page.content.length > 0 ? (
                     invoiceRekap.page.content.map((row) => (
-                      <tr key={row.id} className="hover:bg-slate-50/50 transition">
-                        <td className="py-3 px-4 font-mono font-bold text-brand-600">{row.number}</td>
+                      <tr key={row.id} className="hover:bg-slate-50/70 dark:hover:bg-navy-800/40 transition">
+                        <td className="py-3 px-4 font-mono font-bold text-indigo-600 dark:text-indigo-400">{row.number}</td>
                         <td className="py-3 px-4">
-                          <div>{formatDate(row.date)}</div>
-                          <div className="text-[11px] text-slate-400">
+                          <div className="text-slate-800 dark:text-slate-200">{formatDate(row.date)}</div>
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500">
                             JT: {row.dueDate ? formatDate(row.dueDate) : '-'}
                           </div>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-semibold text-slate-900">{row.customerName}</div>
-                          <div className="text-[11px] text-slate-400 font-mono">{row.customerCode}</div>
+                          <div className="font-semibold text-slate-900 dark:text-slate-100">{row.customerName}</div>
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">{row.customerCode}</div>
                         </td>
                         <td className="py-3 px-4">
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                            row.paymentStatus === 'PAID'
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : row.paymentStatus === 'PARTIAL'
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}>
-                            {row.paymentStatus}
-                          </span>
+                          <StatusBadge status={row.paymentStatus} size="sm" />
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-slate-900">
+                        <td className="py-3 px-4 text-right font-bold text-slate-900 dark:text-slate-100 font-mono">
                           {formatCurrency(row.totalAmount)}
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-emerald-600">
+                        <td className="py-3 px-4 text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono">
                           {formatCurrency(row.paidAmount)}
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-amber-600">
+                        <td className="py-3 px-4 text-right font-bold text-amber-600 dark:text-amber-400 font-mono">
                           {formatCurrency(row.outstanding)}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-slate-400">
+                      <td colSpan={7} className="py-10 text-center text-slate-400 dark:text-slate-500">
                         Tidak ada data faktur penjualan yang cocok.
                       </td>
                     </tr>
@@ -483,7 +476,7 @@ export const RekapPage: React.FC = () => {
 
             {/* Pagination */}
             {invoiceRekap?.page && invoiceRekap.page.totalPages > 1 && (
-              <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <div className="p-4 border-t border-slate-100 dark:border-navy-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>
                   Halaman {invoiceRekap.page.number + 1} dari {invoiceRekap.page.totalPages} (Total{' '}
                   {invoiceRekap.page.totalElements} faktur)
@@ -492,38 +485,38 @@ export const RekapPage: React.FC = () => {
                   <button
                     disabled={page === 0}
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
-                    className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-navy-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-navy-800"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     disabled={page >= invoiceRekap.page.totalPages - 1}
                     onClick={() => setPage((p) => p + 1)}
-                    className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-navy-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-navy-800"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
             )}
-          </div>
+          </BentoCard>
         </div>
       )}
 
       {/* TAB 3: REKAP PEMBAYARAN */}
       {activeTab === 'PAYMENTS' && (
         <div className="space-y-4">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm max-w-sm">
-            <span className="text-[11px] font-semibold text-slate-400 uppercase">Grand Total Realisasi Kas</span>
-            <div className="text-xl font-bold text-emerald-600 mt-1">
+          <BentoCard padding="default" className="max-w-sm">
+            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Grand Total Realisasi Kas</span>
+            <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
               {formatCurrency(paymentRekap?.grandTotalAmount || 0)}
             </div>
-          </div>
+          </BentoCard>
 
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <BentoCard padding="none" className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                <thead className="bg-slate-50/80 dark:bg-navy-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-200/80 dark:border-navy-700/80">
                   <tr>
                     <th className="py-3.5 px-4">No. Bukti Bayar</th>
                     <th className="py-3.5 px-4">Tanggal</th>
@@ -535,47 +528,45 @@ export const RekapPage: React.FC = () => {
                     <th className="py-3.5 px-4 text-right">Deposit Terbentuk</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-navy-800">
                   {loadingPayments ? (
                     <tr>
-                      <td colSpan={8} className="py-8 text-center text-slate-400">
+                      <td colSpan={8} className="py-10 text-center text-slate-400 dark:text-slate-500">
                         Memuat data pembayaran...
                       </td>
                     </tr>
                   ) : paymentRekap?.page.content && paymentRekap.page.content.length > 0 ? (
                     paymentRekap.page.content.map((row) => (
-                      <tr key={row.id} className="hover:bg-slate-50/50 transition">
-                        <td className="py-3 px-4 font-mono font-bold text-brand-600">{row.number}</td>
-                        <td className="py-3 px-4 text-slate-600">{formatDate(row.date)}</td>
+                      <tr key={row.id} className="hover:bg-slate-50/70 dark:hover:bg-navy-800/40 transition">
+                        <td className="py-3 px-4 font-mono font-bold text-indigo-600 dark:text-indigo-400">{row.number}</td>
+                        <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{formatDate(row.date)}</td>
                         <td className="py-3 px-4">
-                          <div className="font-semibold text-slate-900">{row.customerName}</div>
-                          <div className="text-[11px] text-slate-400 font-mono">{row.customerCode}</div>
+                          <div className="font-semibold text-slate-900 dark:text-slate-100">{row.customerName}</div>
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">{row.customerCode}</div>
                         </td>
                         <td className="py-3 px-4">
-                          <span className="font-medium text-slate-800">{row.paymentMethod}</span>
+                          <span className="font-medium text-slate-800 dark:text-slate-200">{row.paymentMethod}</span>
                           {row.destinationAccount && (
-                            <div className="text-[11px] text-slate-400">{row.destinationAccount}</div>
+                            <div className="text-[11px] text-slate-400 dark:text-slate-500">{row.destinationAccount}</div>
                           )}
                         </td>
                         <td className="py-3 px-4">
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
-                            {row.status}
-                          </span>
+                          <StatusBadge status={row.status} size="sm" />
                         </td>
-                        <td className="py-3 px-4 text-right font-black text-emerald-600">
+                        <td className="py-3 px-4 text-right font-black text-emerald-600 dark:text-emerald-400 font-mono">
                           {formatCurrency(row.amount)}
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-slate-800">
+                        <td className="py-3 px-4 text-right font-bold text-slate-800 dark:text-slate-200 font-mono">
                           {formatCurrency(row.allocatedAmount)}
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-purple-600">
+                        <td className="py-3 px-4 text-right font-bold text-purple-600 dark:text-purple-400 font-mono">
                           {formatCurrency(row.excessDeposit)}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="py-8 text-center text-slate-400">
+                      <td colSpan={8} className="py-10 text-center text-slate-400 dark:text-slate-500">
                         Tidak ada riwayat pembayaran yang cocok.
                       </td>
                     </tr>
@@ -586,7 +577,7 @@ export const RekapPage: React.FC = () => {
 
             {/* Pagination */}
             {paymentRekap?.page && paymentRekap.page.totalPages > 1 && (
-              <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <div className="p-4 border-t border-slate-100 dark:border-navy-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>
                   Halaman {paymentRekap.page.number + 1} dari {paymentRekap.page.totalPages} (Total{' '}
                   {paymentRekap.page.totalElements} pembayaran)
@@ -595,38 +586,38 @@ export const RekapPage: React.FC = () => {
                   <button
                     disabled={page === 0}
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
-                    className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-navy-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-navy-800"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     disabled={page >= paymentRekap.page.totalPages - 1}
                     onClick={() => setPage((p) => p + 1)}
-                    className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-navy-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-navy-800"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
             )}
-          </div>
+          </BentoCard>
         </div>
       )}
 
       {/* TAB 4: REKAP KEGIATAN */}
       {activeTab === 'KEGIATAN' && (
         <div className="space-y-4">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm max-w-sm">
-            <span className="text-[11px] font-semibold text-slate-400 uppercase">Grand Total Nilai Kegiatan Proyek</span>
-            <div className="text-xl font-bold text-slate-900 mt-1">
+          <BentoCard padding="default" className="max-w-sm">
+            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Grand Total Nilai Kegiatan Proyek</span>
+            <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mt-1 font-mono">
               {formatCurrency(kegiatanRekap?.grandTotalValue || 0)}
             </div>
-          </div>
+          </BentoCard>
 
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <BentoCard padding="none" className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                <thead className="bg-slate-50/80 dark:bg-navy-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-200/80 dark:border-navy-700/80">
                   <tr>
                     <th className="py-3.5 px-4">Kode & Nama Kegiatan</th>
                     <th className="py-3.5 px-4">Customer</th>
@@ -636,47 +627,39 @@ export const RekapPage: React.FC = () => {
                     <th className="py-3.5 px-4 text-right">Nilai Total</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-navy-800">
                   {loadingKegiatan ? (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-slate-400">
+                      <td colSpan={6} className="py-10 text-center text-slate-400 dark:text-slate-500">
                         Memuat data kegiatan...
                       </td>
                     </tr>
                   ) : kegiatanRekap?.page.content && kegiatanRekap.page.content.length > 0 ? (
                     kegiatanRekap.page.content.map((row) => (
-                      <tr key={row.id} className="hover:bg-slate-50/50 transition">
+                      <tr key={row.id} className="hover:bg-slate-50/70 dark:hover:bg-navy-800/40 transition">
                         <td className="py-3 px-4">
-                          <div className="font-bold text-slate-900">{row.name}</div>
-                          <div className="text-[11px] text-slate-400 font-mono">{row.code}</div>
+                          <div className="font-bold text-slate-900 dark:text-slate-100">{row.name}</div>
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">{row.code}</div>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-semibold text-slate-900">{row.customerName}</div>
-                          <div className="text-[11px] text-slate-400 font-mono">{row.customerCode}</div>
+                          <div className="font-semibold text-slate-900 dark:text-slate-100">{row.customerName}</div>
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">{row.customerCode}</div>
                         </td>
-                        <td className="py-3 px-4 text-slate-600">{row.location || '-'}</td>
+                        <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{row.location || '-'}</td>
                         <td className="py-3 px-4 text-center">
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                            row.status === 'COMPLETED'
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : row.status === 'ACTIVE'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-slate-100 text-slate-600'
-                          }`}>
-                            {row.status}
-                          </span>
+                          <StatusBadge status={row.status} size="sm" />
                         </td>
-                        <td className="py-3 px-4 text-center font-medium text-slate-700">
+                        <td className="py-3 px-4 text-center font-medium text-slate-700 dark:text-slate-300">
                           {row.itemCount} item
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-slate-900">
+                        <td className="py-3 px-4 text-right font-bold text-slate-900 dark:text-slate-100 font-mono">
                           {formatCurrency(row.totalValue)}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-slate-400">
+                      <td colSpan={6} className="py-10 text-center text-slate-400 dark:text-slate-500">
                         Tidak ada kegiatan proyek yang cocok.
                       </td>
                     </tr>
@@ -687,7 +670,7 @@ export const RekapPage: React.FC = () => {
 
             {/* Pagination */}
             {kegiatanRekap?.page && kegiatanRekap.page.totalPages > 1 && (
-              <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <div className="p-4 border-t border-slate-100 dark:border-navy-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>
                   Halaman {kegiatanRekap.page.number + 1} dari {kegiatanRekap.page.totalPages} (Total{' '}
                   {kegiatanRekap.page.totalElements} kegiatan)
@@ -696,23 +679,24 @@ export const RekapPage: React.FC = () => {
                   <button
                     disabled={page === 0}
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
-                    className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-navy-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-navy-800"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     disabled={page >= kegiatanRekap.page.totalPages - 1}
                     onClick={() => setPage((p) => p + 1)}
-                    className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-navy-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-navy-800"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
             )}
-          </div>
+          </BentoCard>
         </div>
       )}
     </div>
   );
 };
+export default RekapPage;

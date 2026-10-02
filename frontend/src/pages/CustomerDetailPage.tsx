@@ -29,10 +29,12 @@ import { penawaranApi } from '../api/penawaranApi';
 import { CustomerModal } from '../components/customer/CustomerModal';
 import { KegiatanModal } from '../components/kegiatan/KegiatanModal';
 import { Attachment } from '../types/attachment';
-import { UpdateCustomerInput } from '../types/customer';
 import { CreateKegiatanInput, Kegiatan } from '../types/kegiatan';
 import { Penawaran } from '../types/penawaran';
 import { formatRupiah } from '../lib/utils';
+import { BentoCard } from '@/components/common/BentoCard';
+import { PageHeader } from '@/components/common/PageHeader';
+import { StatusBadge } from '@/components/common/StatusBadge';
 
 export const CustomerDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -102,7 +104,7 @@ export const CustomerDetailPage: React.FC = () => {
       setTimeout(() => setFeedbackMessage(null), 4000);
     },
     onError: (error: any) => {
-      const msg = error.response?.data?.message || 'Gagal membuat kegiatan.';
+      const msg = error.response?.data?.message || 'Gagal membuat kegiatan baru.';
       setFeedbackMessage({ type: 'error', text: msg });
       setTimeout(() => setFeedbackMessage(null), 5000);
     },
@@ -110,14 +112,14 @@ export const CustomerDetailPage: React.FC = () => {
 
   // Update customer mutation
   const updateMutation = useMutation({
-    mutationFn: (input: UpdateCustomerInput) => customerApi.updateCustomer(customerId, input),
+    mutationFn: (input: any) => customerApi.updateCustomer(customerId, input),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['customer', customerId] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setIsEditModalOpen(false);
       setFeedbackMessage({
         type: 'success',
-        text: `Data customer '${data.name}' berhasil diperbarui.`,
+        text: `Profil customer '${data.name}' berhasil diperbarui.`,
       });
       setTimeout(() => setFeedbackMessage(null), 4000);
     },
@@ -136,7 +138,7 @@ export const CustomerDetailPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setFeedbackMessage({
         type: 'success',
-        text: `Status customer diubah menjadi ${data.active ? 'Aktif' : 'Nonaktif'}.`,
+        text: `Customer ${data.name} kini ${data.active ? 'Aktif' : 'Nonaktif'}.`,
       });
       setTimeout(() => setFeedbackMessage(null), 4000);
     },
@@ -150,17 +152,14 @@ export const CustomerDetailPage: React.FC = () => {
   // Upload attachment mutation
   const uploadMutation = useMutation({
     mutationFn: (file: File) => attachmentApi.uploadAttachment(file, 'CUSTOMER', customerId),
-    onSuccess: (newAttachment) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['attachments', 'CUSTOMER', customerId] });
-      setFeedbackMessage({
-        type: 'success',
-        text: `Berkas '${newAttachment.originalFilename}' berhasil diunggah.`,
-      });
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      setFeedbackMessage({ type: 'success', text: 'Berkas lampiran berhasil diunggah.' });
       setTimeout(() => setFeedbackMessage(null), 4000);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     },
     onError: (error: any) => {
-      const msg = error.response?.data?.message || 'Gagal mengunggah berkas. Pastikan ukuran < 10MB.';
+      const msg = error.response?.data?.message || 'Gagal mengunggah berkas.';
       setFeedbackMessage({ type: 'error', text: msg });
       setTimeout(() => setFeedbackMessage(null), 5000);
     },
@@ -168,13 +167,10 @@ export const CustomerDetailPage: React.FC = () => {
 
   // Delete attachment mutation
   const deleteAttachmentMutation = useMutation({
-    mutationFn: (attId: number) => attachmentApi.deleteAttachment(attId),
+    mutationFn: (attachmentId: number) => attachmentApi.deleteAttachment(attachmentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['attachments', 'CUSTOMER', customerId] });
-      setFeedbackMessage({
-        type: 'success',
-        text: 'Berkas lampiran berhasil dihapus.',
-      });
+      setFeedbackMessage({ type: 'success', text: 'Berkas lampiran berhasil dihapus.' });
       setTimeout(() => setFeedbackMessage(null), 4000);
     },
     onError: (error: any) => {
@@ -207,135 +203,117 @@ export const CustomerDetailPage: React.FC = () => {
   if (isCustomerLoading) {
     return (
       <div className="py-20 flex flex-col items-center justify-center space-y-3">
-        <div className="w-8 h-8 border-3 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
-        <p className="text-sm text-slate-500 font-medium">Memuat profil customer...</p>
+        <div className="w-8 h-8 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Memuat profil customer...</p>
       </div>
     );
   }
 
   if (isCustomerError || !customer) {
     return (
-      <div className="py-16 text-center">
-        <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-3" />
-        <h2 className="text-lg font-bold text-slate-800">Customer Tidak Ditemukan</h2>
-        <p className="text-sm text-slate-500 mt-1 mb-6">
+      <BentoCard className="max-w-xl mx-auto py-16 text-center space-y-3">
+        <AlertCircle className="w-12 h-12 text-rose-500 mx-auto" />
+        <h2 className="text-base font-bold text-slate-800 dark:text-slate-200">Customer Tidak Ditemukan</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Data customer dengan ID {id} tidak tersedia atau telah dihapus.
         </p>
         <Link
           to="/customers"
-          className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-600 to-brand-500 text-white rounded-xl text-xs font-bold shadow-sm"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Kembali ke Daftar Customer</span>
         </Link>
-      </div>
+      </BentoCard>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Top Navigation & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => navigate('/customers')}
-            className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-50 transition shadow-sm"
-            title="Kembali"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <span className="font-mono text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md border border-slate-200">
-                {customer.code}
-              </span>
-              <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-                {customer.name}
-              </h1>
-              <span
-                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                  customer.active
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-slate-100 text-slate-600 border border-slate-200'
-                }`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    customer.active ? 'bg-emerald-500' : 'bg-slate-400'
-                  }`}
-                />
-                {customer.active ? 'Aktif' : 'Nonaktif'}
-              </span>
-            </div>
-            {customer.companyName && (
-              <p className="text-sm text-slate-500 mt-0.5 flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                <span>{customer.companyName}</span>
-              </p>
-            )}
+      <PageHeader
+        icon={Building2}
+        backUrl="/customers"
+        title={customer.name}
+        subtitle={customer.companyName ? customer.companyName : `Kode Pelanggan: ${customer.code}`}
+        badge={
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs font-bold px-2 py-0.5 bg-brand-500/10 text-brand-600 dark:text-brand-400 rounded-md border border-brand-500/20">
+              {customer.code}
+            </span>
+            <span
+              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                customer.active
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${customer.active ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+              {customer.active ? 'Aktif' : 'Nonaktif'}
+            </span>
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => navigate(`/penawaran/create?customerId=${customer.id}`)}
-            className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-sm shadow-brand-600/30 transition hover:scale-[1.01]"
-          >
-            <FileText className="w-4 h-4" />
-            <span>+ Buat SPH</span>
-          </button>
-          <button
-            onClick={() => setIsEditModalOpen(true)}
-            className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 hover:text-slate-900 text-sm font-semibold rounded-xl hover:bg-slate-50 shadow-sm transition"
-          >
-            <Edit2 className="w-4 h-4 text-slate-500" />
-            <span>Edit Profil</span>
-          </button>
-          <button
-            onClick={() => toggleStatusMutation.mutate(!customer.active)}
-            disabled={toggleStatusMutation.isPending}
-            className={`inline-flex items-center space-x-1.5 px-3.5 py-2 text-sm font-semibold rounded-xl transition shadow-sm ${
-              customer.active
-                ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
-                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-            }`}
-          >
-            {customer.active ? (
-              <>
-                <XCircle className="w-4 h-4" />
-                <span>Nonaktifkan</span>
-              </>
-            ) : (
-              <>
-                <CheckCircle className="w-4 h-4" />
-                <span>Aktifkan</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate(`/penawaran/create?customerId=${customer.id}`)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/25 transition"
+            >
+              <FileText className="w-4 h-4" />
+              <span>+ Buat SPH</span>
+            </button>
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl shadow-xs transition"
+            >
+              <Edit2 className="w-4 h-4 text-amber-500" />
+              <span>Edit Profil</span>
+            </button>
+            <button
+              onClick={() => toggleStatusMutation.mutate(!customer.active)}
+              disabled={toggleStatusMutation.isPending}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl transition shadow-xs ${
+                customer.active
+                  ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400 hover:bg-rose-500/20 border border-rose-500/30'
+                  : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30'
+              }`}
+            >
+              {customer.active ? (
+                <>
+                  <XCircle className="w-4 h-4 text-rose-500" />
+                  <span>Nonaktifkan</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  <span>Aktifkan</span>
+                </>
+              )}
+            </button>
+          </div>
+        }
+      />
 
       {/* Feedback Banner */}
       {feedbackMessage && (
         <div
-          className={`p-4 rounded-xl flex items-center justify-between transition-all ${
+          className={`p-4 rounded-2xl flex items-center justify-between transition-all ${
             feedbackMessage.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-              : 'bg-rose-50 text-rose-800 border border-rose-200'
+              ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20'
+              : 'bg-rose-500/10 text-rose-800 dark:text-rose-300 border border-rose-500/20'
           }`}
         >
-          <div className="flex items-center space-x-2.5 text-sm font-medium">
+          <div className="flex items-center gap-2.5 text-xs font-semibold">
             {feedbackMessage.type === 'success' ? (
-              <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+              <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
             )}
             <span>{feedbackMessage.text}</span>
           </div>
           <button
             onClick={() => setFeedbackMessage(null)}
-            className="text-xs font-semibold underline ml-4 hover:opacity-80"
+            className="text-xs font-bold underline ml-4 hover:opacity-80"
           >
             Tutup
           </button>
@@ -343,28 +321,27 @@ export const CustomerDetailPage: React.FC = () => {
       )}
 
       {/* Highlight Card: Saldo Deposit Customer */}
-      <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-        <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-64 h-64 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+      <div className="bg-navy-900 dark:bg-slate-900 border border-navy-800 dark:border-blue-900/40 rounded-3xl p-6 text-white shadow-bento relative overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center space-x-2 text-indigo-200 text-xs font-semibold uppercase tracking-wider">
-              <Wallet className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-brand-300 text-xs font-bold uppercase tracking-wider">
+              <Wallet className="w-4 h-4 text-amber-400" />
               <span>Saldo Deposit Pelanggan (Customer Deposit Balance)</span>
             </div>
-            <div className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-1.5 text-white">
+            <div className="text-3xl sm:text-4xl font-black font-mono tracking-tight mt-2 text-amber-400">
               {formatRupiah(customer.depositBalance)}
             </div>
-            <p className="text-xs text-indigo-200/80 mt-2 max-w-xl leading-relaxed">
-              Saldo deposit bersumber dari kelebihan pembayaran (overpayment) atau alokasi deposit. Saldo ini dilindungi secara mutlak dan hanya dapat bermutasi melalui transaksi ledger pembayaran resmi.
+            <p className="text-xs text-slate-300 dark:text-slate-400 mt-2 max-w-xl leading-relaxed font-medium">
+              Saldo deposit bersumber dari kelebihan pembayaran (overpayment) atau alokasi deposit. Saldo ini dilindungi secara mutlak dan hanya dapat bermutasi melalui transaksi ledger pembayaran resmi (AGENTS.md §10.4).
             </p>
           </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10 text-xs text-indigo-100 shrink-0 sm:w-60">
-            <div className="font-semibold text-white mb-1">Status Keuangan</div>
+          <div className="bg-white/10 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-xs text-slate-200 shrink-0 sm:w-60">
+            <div className="font-bold text-white mb-1">Status Keuangan</div>
             <div className="flex items-center gap-1.5 mt-2">
               <span className={`w-2 h-2 rounded-full ${customer.depositBalance > 0 ? 'bg-emerald-400' : 'bg-slate-400'}`} />
-              <span>{customer.depositBalance > 0 ? 'Tersedia Saldo Deposit' : 'Tidak Ada Saldo Deposit'}</span>
+              <span className="font-semibold">{customer.depositBalance > 0 ? 'Tersedia Saldo Deposit' : 'Tidak Ada Saldo Deposit'}</span>
             </div>
-            <div className="text-[11px] text-indigo-200/70 mt-1">
+            <div className="text-[11px] text-slate-400 mt-1">
               Dapat digunakan otomatis saat pelunasan faktur berikutnya.
             </div>
           </div>
@@ -374,63 +351,63 @@ export const CustomerDetailPage: React.FC = () => {
       {/* Customer Info Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Card 1: Identitas & Kontak */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-3.5">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-            <UserIcon className="w-4 h-4 text-indigo-600" />
+        <BentoCard className="p-5 space-y-3.5">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
+            <UserIcon className="w-4 h-4 text-brand-500" />
             <span>Kontak & PIC</span>
           </h2>
           <div className="space-y-3 text-sm">
             <div>
               <span className="text-xs text-slate-400 block">Person In Charge (PIC)</span>
-              <span className="font-medium text-slate-800">{customer.picName || '-'}</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">{customer.picName || '-'}</span>
             </div>
             <div>
               <span className="text-xs text-slate-400 block">Nomor Telepon / WhatsApp</span>
-              <span className="font-medium text-slate-800 flex items-center gap-1.5 mt-0.5">
+              <span className="font-bold font-mono text-slate-800 dark:text-slate-200 flex items-center gap-1.5 mt-0.5">
                 <Phone className="w-3.5 h-3.5 text-slate-400" />
                 {customer.phone || '-'}
               </span>
             </div>
             <div>
               <span className="text-xs text-slate-400 block">Alamat Email</span>
-              <span className="font-medium text-slate-800 flex items-center gap-1.5 mt-0.5">
+              <span className="font-medium text-slate-800 dark:text-slate-200 flex items-center gap-1.5 mt-0.5">
                 <Mail className="w-3.5 h-3.5 text-slate-400" />
                 {customer.email || '-'}
               </span>
             </div>
           </div>
-        </div>
+        </BentoCard>
 
         {/* Card 2: Alamat & Catatan */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-3.5">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-indigo-600" />
+        <BentoCard className="p-5 space-y-3.5">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-brand-500" />
             <span>Lokasi & Catatan</span>
           </h2>
           <div className="space-y-3 text-sm">
             <div>
               <span className="text-xs text-slate-400 block">Alamat Korespondensi</span>
-              <p className="font-medium text-slate-800 leading-snug mt-0.5">{customer.address || '-'}</p>
+              <p className="font-medium text-slate-800 dark:text-slate-200 leading-snug mt-0.5">{customer.address || '-'}</p>
             </div>
             <div>
               <span className="text-xs text-slate-400 block">Catatan Tambahan</span>
-              <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 mt-1">
+              <p className="text-xs text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 mt-1">
                 {customer.notes || 'Tidak ada catatan khusus.'}
               </p>
             </div>
           </div>
-        </div>
+        </BentoCard>
 
         {/* Card 3: Jejak Audit */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-3.5">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-indigo-600" />
+        <BentoCard className="p-5 space-y-3.5">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-brand-500" />
             <span>Jejak Audit</span>
           </h2>
           <div className="space-y-3 text-sm">
             <div>
               <span className="text-xs text-slate-400 block">Dibuat Pada</span>
-              <span className="font-medium text-slate-800 flex items-center gap-1.5 mt-0.5">
+              <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 mt-0.5">
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
                 {new Date(customer.createdAt).toLocaleString('id-ID')}
               </span>
@@ -440,7 +417,7 @@ export const CustomerDetailPage: React.FC = () => {
             </div>
             <div>
               <span className="text-xs text-slate-400 block">Terakhir Diperbarui</span>
-              <span className="font-medium text-slate-800 flex items-center gap-1.5 mt-0.5">
+              <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 mt-0.5">
                 <Clock className="w-3.5 h-3.5 text-slate-400" />
                 {new Date(customer.updatedAt).toLocaleString('id-ID')}
               </span>
@@ -449,18 +426,18 @@ export const CustomerDetailPage: React.FC = () => {
               )}
             </div>
           </div>
-        </div>
+        </BentoCard>
       </div>
 
       {/* Section Tabs */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="flex border-b border-slate-200 bg-slate-50/50 px-6 pt-3 gap-2 overflow-x-auto">
+      <BentoCard className="overflow-hidden p-0">
+        <div className="flex border-b border-slate-200/80 dark:border-slate-800 bg-slate-100/60 dark:bg-slate-900/60 px-6 pt-3 gap-2 overflow-x-auto">
           <button
             onClick={() => setActiveTab('sph')}
-            className={`flex items-center space-x-2 py-3 px-4 font-semibold text-sm border-b-2 transition shrink-0 ${
+            className={`flex items-center gap-2 py-3 px-4 font-bold text-xs border-b-2 transition shrink-0 ${
               activeTab === 'sph'
-                ? 'border-brand-600 text-brand-600 bg-white rounded-t-lg shadow-sm'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-brand-500 text-brand-600 dark:text-brand-400 bg-white dark:bg-slate-800 rounded-t-xl shadow-xs'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <FileText className="w-4 h-4" />
@@ -468,10 +445,10 @@ export const CustomerDetailPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('activities')}
-            className={`flex items-center space-x-2 py-3 px-4 font-semibold text-sm border-b-2 transition shrink-0 ${
+            className={`flex items-center gap-2 py-3 px-4 font-bold text-xs border-b-2 transition shrink-0 ${
               activeTab === 'activities'
-                ? 'border-brand-600 text-brand-600 bg-white rounded-t-lg shadow-sm'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-brand-500 text-brand-600 dark:text-brand-400 bg-white dark:bg-slate-800 rounded-t-xl shadow-xs'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Layers className="w-4 h-4" />
@@ -479,10 +456,10 @@ export const CustomerDetailPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('attachments')}
-            className={`flex items-center space-x-2 py-3 px-4 font-semibold text-sm border-b-2 transition shrink-0 ${
+            className={`flex items-center gap-2 py-3 px-4 font-bold text-xs border-b-2 transition shrink-0 ${
               activeTab === 'attachments'
-                ? 'border-brand-600 text-brand-600 bg-white rounded-t-lg shadow-sm'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-brand-500 text-brand-600 dark:text-brand-400 bg-white dark:bg-slate-800 rounded-t-xl shadow-xs'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Paperclip className="w-4 h-4" />
@@ -493,14 +470,14 @@ export const CustomerDetailPage: React.FC = () => {
         <div className="p-6">
           {activeTab === 'sph' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-slate-800">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800">Daftar Surat Penawaran Harga (SPH)</h3>
-                  <p className="text-xs text-slate-500">Seluruh dokumen SPH yang dibuat untuk pelanggan ini</p>
+                  <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Daftar Surat Penawaran Harga (SPH)</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Seluruh dokumen SPH yang dibuat untuk pelanggan ini</p>
                 </div>
                 <button
                   onClick={() => navigate(`/penawaran/create?customerId=${customerId}`)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-brand-600 to-brand-500 text-white rounded-xl text-xs font-bold shadow-xs transition"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   <span>+ Buat SPH Baru</span>
@@ -509,58 +486,44 @@ export const CustomerDetailPage: React.FC = () => {
 
               {isPenawaranLoading ? (
                 <div className="py-12 text-center text-slate-400">
-                  <div className="w-6 h-6 border-2 border-brand-600/30 border-t-brand-600 rounded-full animate-spin mx-auto mb-2" />
-                  <p className="text-xs">Memuat daftar SPH...</p>
+                  <div className="w-6 h-6 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-xs font-semibold">Memuat daftar SPH...</p>
                 </div>
               ) : customerPenawaran.length === 0 ? (
-                <div className="py-12 text-center bg-slate-50/50 rounded-xl border border-slate-100 p-6">
-                  <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                  <p className="text-sm font-semibold text-slate-700">Belum ada SPH untuk pelanggan ini</p>
+                <div className="py-12 text-center bg-white/40 dark:bg-slate-900/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6">
+                  <FileText className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Belum ada SPH untuk pelanggan ini</p>
                   <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
                     Buat Surat Penawaran Harga pertama dengan rincian kegiatan dan item pekerjaan untuk diajukan ke pelanggan.
                   </p>
                   <button
                     onClick={() => navigate(`/penawaran/create?customerId=${customerId}`)}
-                    className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
+                    className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-brand-600 to-brand-500 text-white rounded-xl text-xs font-bold shadow-sm transition"
                   >
                     <FileText className="w-3.5 h-3.5" />
                     <span>Buat SPH Sekarang</span>
                   </button>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-100 border border-slate-200/80 rounded-xl overflow-hidden">
+                <div className="divide-y divide-slate-100 dark:divide-slate-800/60 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden">
                   {customerPenawaran.map((sph: Penawaran) => (
                     <div
                       key={sph.id}
-                      className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors"
+                      className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors"
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200/60">
+                          <span className="font-mono text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/20">
                             {sph.number}
                           </span>
                           <span className="text-xs text-slate-400">•</span>
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
                             {new Date(sph.date).toLocaleDateString('id-ID', { dateStyle: 'medium' })}
                           </span>
-                          <span
-                            className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                              sph.status === 'APPROVED'
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : sph.status === 'SENT'
-                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                : sph.status === 'REJECTED'
-                                ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                                : sph.status === 'CANCELLED'
-                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                : 'bg-slate-100 text-slate-700 border border-slate-200'
-                            }`}
-                          >
-                            {sph.status}
-                          </span>
+                          <StatusBadge status={sph.status} />
                         </div>
                         {sph.notes && (
-                          <p className="text-xs text-slate-600 line-clamp-1">{sph.notes}</p>
+                          <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-1">{sph.notes}</p>
                         )}
                         <p className="text-[11px] text-slate-400">
                           {sph.itemCount || (sph.details ? sph.details.length : 0)} rincian item
@@ -570,13 +533,13 @@ export const CustomerDetailPage: React.FC = () => {
                       <div className="flex items-center gap-3 self-end sm:self-center">
                         <div className="text-right">
                           <span className="text-[10px] text-slate-400 uppercase font-semibold block">Total SPH</span>
-                          <span className="font-mono font-bold text-sm text-slate-900">
+                          <span className="font-mono font-bold text-sm text-slate-900 dark:text-white">
                             {formatRupiah(sph.totalAmount)}
                           </span>
                         </div>
                         <Link
                           to={`/penawaran/${sph.id}`}
-                          className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:text-brand-600 bg-white hover:bg-brand-50 border border-slate-200 rounded-lg shadow-sm transition"
+                          className="px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-brand-600 bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl shadow-xs transition"
                         >
                           Lihat Detail
                         </Link>
@@ -591,7 +554,7 @@ export const CustomerDetailPage: React.FC = () => {
           {activeTab === 'attachments' && (
             <div className="space-y-6">
               {/* Upload Box */}
-              <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:border-indigo-400 transition group">
+              <div className="bg-white/40 dark:bg-slate-900/40 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-center hover:border-brand-500 transition group">
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -601,9 +564,9 @@ export const CustomerDetailPage: React.FC = () => {
                   disabled={uploadMutation.isPending}
                 />
                 <div className="flex flex-col items-center justify-center space-y-2">
-                  <div className="p-3 bg-white rounded-full shadow-sm text-indigo-600 group-hover:scale-110 transition">
+                  <div className="p-3 bg-white dark:bg-slate-800 rounded-full shadow-xs text-brand-500 group-hover:scale-110 transition border border-slate-200/80 dark:border-slate-700">
                     {uploadMutation.isPending ? (
-                      <div className="w-6 h-6 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
+                      <div className="w-6 h-6 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
                     ) : (
                       <Upload className="w-6 h-6" />
                     )}
@@ -613,13 +576,13 @@ export const CustomerDetailPage: React.FC = () => {
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploadMutation.isPending}
-                      className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 hover:underline"
+                      className="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline"
                     >
                       Pilih berkas untuk diunggah
                     </button>
-                    <span className="text-sm text-slate-500"> atau tarik berkas ke area ini</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400"> atau tarik berkas ke area ini</span>
                   </div>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-[11px] text-slate-400">
                     Mendukung format PDF, PNG, JPG, DOCX, XLSX (Maksimal 10 MB per file)
                   </p>
                 </div>
@@ -627,14 +590,14 @@ export const CustomerDetailPage: React.FC = () => {
 
               {/* Attachments List */}
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-slate-700">Daftar Dokumen Tersimpan</h3>
+                <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Daftar Dokumen Tersimpan</h3>
                 {isAttachmentsLoading ? (
                   <div className="py-8 text-center text-xs text-slate-400">
                     Memuat daftar lampiran...
                   </div>
                 ) : attachments.length === 0 ? (
-                  <div className="py-8 text-center bg-slate-50/50 rounded-xl border border-slate-100 text-slate-400">
-                    <Paperclip className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <div className="py-8 text-center bg-white/40 dark:bg-slate-900/40 rounded-xl border border-slate-200/80 dark:border-slate-800 text-slate-400">
+                    <Paperclip className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
                     <p className="text-xs">Belum ada berkas lampiran yang diunggah untuk pelanggan ini.</p>
                   </div>
                 ) : (
@@ -642,20 +605,20 @@ export const CustomerDetailPage: React.FC = () => {
                     {attachments.map((att: Attachment) => (
                       <div
                         key={att.id}
-                        className="bg-white border border-slate-200/90 rounded-xl p-3.5 flex items-center justify-between hover:shadow-sm transition"
+                        className="bg-white/60 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-3.5 flex items-center justify-between hover:shadow-xs transition"
                       >
                         <div className="flex items-center space-x-3 overflow-hidden">
-                          <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg shrink-0">
+                          <div className="p-2.5 bg-brand-500/10 text-brand-500 rounded-xl shrink-0">
                             <FileText className="w-5 h-5" />
                           </div>
                           <div className="overflow-hidden">
                             <p
-                              className="text-sm font-medium text-slate-800 truncate"
+                              className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate"
                               title={att.originalFilename}
                             >
                               {att.originalFilename}
                             </p>
-                            <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                            <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
                               <span>{formatFileSize(att.sizeBytes)}</span>
                               <span>•</span>
                               <span>{new Date(att.createdAt).toLocaleDateString('id-ID')}</span>
@@ -668,7 +631,7 @@ export const CustomerDetailPage: React.FC = () => {
                             href={attachmentApi.getDownloadUrl(att.id)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                            className="p-1.5 text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-500/10 rounded-lg transition"
                             title="Unduh Berkas"
                           >
                             <Download className="w-4 h-4" />
@@ -679,7 +642,7 @@ export const CustomerDetailPage: React.FC = () => {
                                 deleteAttachmentMutation.mutate(att.id);
                               }
                             }}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 rounded-lg transition"
                             title="Hapus Berkas"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -695,16 +658,16 @@ export const CustomerDetailPage: React.FC = () => {
 
           {activeTab === 'activities' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between pb-2">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-slate-800">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800">Daftar Kegiatan Customer</h3>
-                  <p className="text-xs text-slate-500">
+                  <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Daftar Kegiatan Customer</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Proyek dan pekerjaan aktif yang terkait langsung dengan pelanggan ini.
                   </p>
                 </div>
                 <button
                   onClick={() => setIsCreateKegiatanOpen(true)}
-                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-brand-600 to-brand-500 text-white text-xs font-bold rounded-xl shadow-xs transition"
                 >
                   <Layers className="w-3.5 h-3.5" />
                   <span>Tambah Kegiatan</span>
@@ -714,34 +677,32 @@ export const CustomerDetailPage: React.FC = () => {
               {isKegiatanLoading ? (
                 <div className="py-8 text-center text-xs text-slate-400">Memuat data kegiatan...</div>
               ) : customerKegiatan.length === 0 ? (
-                <div className="py-8 text-center bg-slate-50/50 rounded-xl border border-slate-100 text-slate-400">
-                  <Layers className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                <div className="py-8 text-center bg-white/40 dark:bg-slate-900/40 rounded-xl border border-slate-200/80 dark:border-slate-800 text-slate-400">
+                  <Layers className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
                   <p className="text-xs">Belum ada kegiatan yang didaftarkan untuk customer ini.</p>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden">
+                <div className="divide-y divide-slate-100 dark:divide-slate-800/60 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden">
                   {customerKegiatan.map((k: Kegiatan) => (
                     <div
                       key={k.id}
-                      className="p-4 bg-white hover:bg-slate-50 flex items-center justify-between transition"
+                      className="p-4 bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-800/60 flex items-center justify-between transition"
                     >
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-700 rounded border border-slate-200">
+                          <span className="font-mono text-xs font-bold px-2 py-0.5 bg-brand-500/10 text-brand-600 dark:text-brand-400 rounded border border-brand-500/20">
                             {k.code}
                           </span>
                           <Link
                             to={`/kegiatan/${k.id}`}
-                            className="font-medium text-sm text-slate-800 hover:text-indigo-600 hover:underline"
+                            className="font-bold text-sm text-slate-800 dark:text-slate-200 hover:text-brand-600 dark:hover:text-brand-400 hover:underline"
                           >
                             {k.name}
                           </Link>
-                          <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                            {k.status}
-                          </span>
+                          <StatusBadge status={k.status} />
                         </div>
                         {k.location && (
-                          <div className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                          <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1">
                             <MapPin className="w-3 h-3 text-slate-400" />
                             <span>{k.location}</span>
                           </div>
@@ -749,7 +710,7 @@ export const CustomerDetailPage: React.FC = () => {
                       </div>
 
                       <div className="text-right shrink-0 ml-4">
-                        <div className="font-mono font-bold text-sm text-slate-900">
+                        <div className="font-mono font-bold text-sm text-slate-900 dark:text-white">
                           {formatRupiah(k.totalAmount)}
                         </div>
                         <div className="text-[11px] text-slate-400 mt-0.5">
@@ -763,7 +724,7 @@ export const CustomerDetailPage: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
+      </BentoCard>
 
       {/* Create Kegiatan Modal */}
       <KegiatanModal
@@ -789,3 +750,5 @@ export const CustomerDetailPage: React.FC = () => {
     </div>
   );
 };
+
+export default CustomerDetailPage;

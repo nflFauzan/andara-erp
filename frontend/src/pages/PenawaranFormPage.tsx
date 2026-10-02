@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowLeft,
   Plus,
   Trash2,
   Save,
@@ -22,6 +21,8 @@ import { Customer } from '../types/customer';
 import { ItemCatalog, CreateItemCatalogInput, UpdateItemCatalogInput } from '../types/itemCatalog';
 import { ItemCatalogModal } from '../components/items/ItemCatalogModal';
 import { formatRupiah } from '../lib/utils';
+import { BentoCard } from '@/components/common/BentoCard';
+import { PageHeader } from '@/components/common/PageHeader';
 
 interface FormItemRow {
   tempId: string;
@@ -430,82 +431,70 @@ export const PenawaranFormPage: React.FC = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-6xl mx-auto pb-16">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="p-2 border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-50 transition shadow-sm"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-slate-900">
-                {isEdit ? 'Ubah Surat Penawaran Harga (SPH)' : 'Buat Surat Penawaran Harga (SPH) Baru'}
-              </h1>
-              <span className="text-xs bg-brand-50 text-brand-700 font-bold px-2 py-0.5 rounded-full border border-brand-200/60">
-                Multi-Kegiatan
-              </span>
-            </div>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Kelompokkan item penawaran berdasarkan nama kegiatan/pekerjaan untuk diterbitkan ke pelanggan
-            </p>
+      <PageHeader
+        icon={Calculator}
+        backUrl="/penawaran"
+        title={isEdit ? 'Ubah Surat Penawaran Harga (SPH)' : 'Buat Surat Penawaran Harga (SPH) Baru'}
+        subtitle="Kelompokkan item penawaran berdasarkan nama kegiatan/pekerjaan untuk diterbitkan ke pelanggan."
+        badge={
+          <span className="text-[11px] bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold px-2.5 py-0.5 rounded-full border border-brand-500/20">
+            Multi-Kegiatan
+          </span>
+        }
+        actions={
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              disabled={loading}
+              className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl transition shadow-xs"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex items-center justify-center gap-2 px-6 py-2 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/25 transition disabled:opacity-50"
+            >
+              <Save className="w-4 h-4" />
+              {loading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan SPH' : 'Terbitkan SPH'}
+            </button>
           </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            disabled={loading}
-            className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition"
-          >
-            Batal
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-sm font-semibold rounded-xl shadow-sm shadow-brand-600/30 transition hover:scale-[1.01] disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" />
-            {loading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan SPH' : 'Terbitkan SPH'}
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Feedback Messages */}
       {feedbackMsg && (
-        <div className="p-4 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-sm flex items-center gap-2 animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+        <div className="p-4 rounded-2xl bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20 text-xs font-semibold flex items-center gap-2 animate-in fade-in shadow-xs">
+          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
           <span>{feedbackMsg}</span>
         </div>
       )}
 
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 text-sm flex items-center gap-2 animate-in fade-in">
-          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+        <div className="p-4 rounded-2xl bg-rose-500/10 text-rose-800 dark:text-rose-300 border border-rose-500/20 text-xs font-semibold flex items-center gap-2 animate-in fade-in shadow-xs">
+          <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {/* Customer & Document Information */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-brand-600" />
+      <BentoCard className="p-6 space-y-4">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-brand-500" />
           Informasi Pelanggan & Penawaran
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Customer */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
               Customer / Pelanggan <span className="text-rose-500">*</span>
             </label>
             <select
               value={selectedCustomerId}
               onChange={(e) => setSelectedCustomerId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none bg-white font-medium"
+              className="w-full px-3.5 py-2.5 text-sm border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-brand-500/30 outline-none bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 font-semibold"
             >
               <option value="">-- Pilih Customer --</option>
               {customers.map((c) => (
@@ -515,8 +504,8 @@ export const PenawaranFormPage: React.FC = () => {
               ))}
             </select>
             {selectedCustomerObj && (
-              <div className="mt-2 p-3 bg-slate-50 rounded-lg border border-slate-200/60 text-xs text-slate-600 space-y-0.5">
-                <p className="font-semibold text-slate-800">{selectedCustomerObj.name}</p>
+              <div className="mt-2.5 p-3 bg-white/50 dark:bg-slate-900/50 rounded-xl border border-slate-200/80 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 space-y-0.5">
+                <p className="font-bold text-slate-800 dark:text-slate-100">{selectedCustomerObj.name}</p>
                 {selectedCustomerObj.address && <p>{selectedCustomerObj.address}</p>}
                 {selectedCustomerObj.phone && <p>Telp/Kontak: {selectedCustomerObj.phone}</p>}
               </div>
@@ -526,19 +515,19 @@ export const PenawaranFormPage: React.FC = () => {
           {/* Date & Notes */}
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                 Tanggal SPH <span className="text-rose-500">*</span>
               </label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+                className="w-full px-3.5 py-2.5 text-sm border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-brand-500/30 outline-none bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 font-medium"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                 Perihal / Catatan Ringkas SPH
               </label>
               <input
@@ -546,32 +535,32 @@ export const PenawaranFormPage: React.FC = () => {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Contoh: Perkiraan Harga Pengadaan dan Pemasangan Atap..."
-                className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+                className="w-full px-3.5 py-2.5 text-sm border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-brand-500/30 outline-none bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100"
               />
             </div>
           </div>
         </div>
-      </div>
+      </BentoCard>
 
       {/* Grouped Kegiatan Section */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Layers className="w-5 h-5 text-brand-600" />
+            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Layers className="w-5 h-5 text-brand-500" />
               Kelompok Kegiatan & Rincian Item Pekerjaan
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Setiap kegiatan memiliki kelompok item dan subtotal masing-masing (TOTAL A, TOTAL B, dst)
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Setiap kegiatan memiliki kelompok item dan subtotal masing-masing (TOTAL A, TOTAL B, dst).
             </p>
           </div>
 
           <button
             type="button"
             onClick={() => handleAddKegiatan('')}
-            className="inline-flex items-center gap-2 px-3.5 py-2 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 rounded-xl text-xs font-bold transition shadow-sm"
+            className="inline-flex items-center gap-2 px-3.5 py-2 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold transition shadow-xs active:scale-95"
           >
-            <FolderPlus className="w-4 h-4" />
+            <FolderPlus className="w-4 h-4 text-amber-500" />
             <span>+ Tambah Kelompok Kegiatan</span>
           </button>
         </div>
@@ -581,18 +570,18 @@ export const PenawaranFormPage: React.FC = () => {
           const subtotalKg = calculateKegiatanSubtotal(kg);
 
           return (
-            <div
+            <BentoCard
               key={kg.tempId}
-              className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden"
+              className="overflow-hidden p-0 border border-slate-200/90 dark:border-blue-900/30"
             >
               {/* Kegiatan Header Bar */}
-              <div className="bg-slate-900 text-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="bg-navy-900 dark:bg-slate-900 text-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-navy-800 dark:border-blue-900/40">
                 <div className="flex items-center gap-3 flex-1">
-                  <span className="w-8 h-8 rounded-lg bg-brand-500 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
+                  <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-500 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-xs border border-brand-300/30">
                     {letterLabel}
                   </span>
                   <div className="flex-1 max-w-xl">
-                    <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">
+                    <label className="text-[10px] text-slate-300 dark:text-slate-400 font-bold uppercase tracking-wider block mb-0.5">
                       Nama Kegiatan {letterLabel} <span className="text-rose-400">*</span>
                     </label>
                     <input
@@ -600,17 +589,17 @@ export const PenawaranFormPage: React.FC = () => {
                       value={kg.name}
                       onChange={(e) => handleKegiatanNameChange(kg.tempId, e.target.value)}
                       placeholder='Contoh: "Pembangunan Ruang Kelas Baru", "Perpustakaan", "Toilet"...'
-                      className="w-full px-3 py-1.5 text-sm bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-brand-400 outline-none font-semibold"
+                      className="w-full px-3 py-1.5 text-sm bg-navy-950/80 dark:bg-slate-950/80 border border-navy-700 dark:border-slate-800 text-white rounded-xl focus:ring-2 focus:ring-brand-400 outline-none font-semibold"
                     />
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 justify-between sm:justify-end">
                   <div className="text-right">
-                    <span className="text-[10px] text-slate-400 uppercase font-semibold block">
+                    <span className="text-[10px] text-slate-300 dark:text-slate-400 uppercase font-semibold block">
                       Subtotal {letterLabel}
                     </span>
-                    <span className="font-mono font-bold text-sm text-emerald-400">
+                    <span className="font-mono font-black text-sm text-amber-400">
                       {formatRupiah(subtotalKg)}
                     </span>
                   </div>
@@ -630,10 +619,10 @@ export const PenawaranFormPage: React.FC = () => {
 
               {/* Items Table for this Kegiatan */}
               <div className="p-4 sm:p-5 space-y-4">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800">
                   <table className="w-full text-left text-sm border-collapse">
                     <thead>
-                      <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      <tr className="bg-slate-100/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                         <th className="py-2.5 px-3 w-10 text-center">No</th>
                         <th className="py-2.5 px-3 min-w-[280px]">Nama Pekerjaan / Uraian Material</th>
                         <th className="py-2.5 px-3 w-28 text-right">Perkiraan Vol</th>
@@ -643,12 +632,12 @@ export const PenawaranFormPage: React.FC = () => {
                         <th className="py-2.5 px-3 w-12 text-center"></th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                       {kg.items.map((it, itIdx) => {
                         const rowTotal = (Number(it.volume) || 0) * (Number(it.unitPrice) || 0);
 
                         return (
-                          <tr key={it.tempId} className="hover:bg-slate-50/50 transition-colors">
+                          <tr key={it.tempId} className="hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors">
                             <td className="py-2.5 px-3 text-center text-xs font-mono text-slate-400">
                               {itIdx + 1}
                             </td>
@@ -662,18 +651,18 @@ export const PenawaranFormPage: React.FC = () => {
                                   handleItemFieldChange(kg.tempId, it.tempId, 'description', e.target.value)
                                 }
                                 placeholder="Pilih dropdown di bawah atau ketik uraian pekerjaan manual..."
-                                className="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none font-medium text-slate-800"
+                                className="w-full px-2.5 py-1.5 text-sm border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-brand-500/30 outline-none font-medium bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100"
                               />
 
                               {/* Master Dropdown Picker */}
-                              <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                                <Package className="w-3.5 h-3.5 text-brand-600 shrink-0" />
+                              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                                <Package className="w-3.5 h-3.5 text-brand-500 shrink-0" />
                                 <select
                                   value={it.itemCatalogId || ''}
                                   onChange={(e) =>
                                     handleSelectMasterItem(kg.tempId, it.tempId, e.target.value)
                                   }
-                                  className="text-xs border border-slate-200 rounded-md px-2 py-0.5 bg-slate-50 text-slate-700 outline-none hover:bg-slate-100 max-w-md truncate"
+                                  className="text-xs border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-0.5 bg-white/50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-300 outline-none hover:bg-white dark:hover:bg-slate-800 max-w-md truncate"
                                 >
                                   <option value="">-- Pilih dari Master Data Item --</option>
                                   {masterItems.map((m) => (
@@ -695,7 +684,7 @@ export const PenawaranFormPage: React.FC = () => {
                                 onChange={(e) =>
                                   handleItemFieldChange(kg.tempId, it.tempId, 'volume', Number(e.target.value))
                                 }
-                                className="w-full px-2 py-1.5 text-sm text-right border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none font-mono"
+                                className="w-full px-2 py-1.5 text-sm text-right border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-brand-500/30 outline-none font-mono bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100"
                               />
                             </td>
 
@@ -708,7 +697,7 @@ export const PenawaranFormPage: React.FC = () => {
                                   handleItemFieldChange(kg.tempId, it.tempId, 'unit', e.target.value)
                                 }
                                 placeholder="m2"
-                                className="w-full px-2 py-1.5 text-sm text-center border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none uppercase font-semibold text-xs"
+                                className="w-full px-2 py-1.5 text-sm text-center border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-brand-500/30 outline-none uppercase font-bold text-xs bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100"
                               />
                             </td>
 
@@ -722,12 +711,12 @@ export const PenawaranFormPage: React.FC = () => {
                                 onChange={(e) =>
                                   handleItemFieldChange(kg.tempId, it.tempId, 'unitPrice', Number(e.target.value))
                                 }
-                                className="w-full px-2 py-1.5 text-sm text-right border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none font-mono"
+                                className="w-full px-2 py-1.5 text-sm text-right border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-brand-500/30 outline-none font-mono bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100"
                               />
                             </td>
 
                             {/* Subtotal */}
-                            <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-800 text-xs">
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-800 dark:text-slate-100 text-xs">
                               {formatRupiah(rowTotal)}
                             </td>
 
@@ -737,7 +726,7 @@ export const PenawaranFormPage: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveItemFromKegiatan(kg.tempId, it.tempId)}
-                                  className="text-slate-400 hover:text-rose-600 p-1 rounded transition"
+                                  className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg transition"
                                   title="Hapus baris item"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -752,12 +741,12 @@ export const PenawaranFormPage: React.FC = () => {
                 </div>
 
                 {/* Sub-Actions & Total for this Kegiatan */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-200/60 dark:border-slate-800">
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => handleAddItemToKegiatan(kg.tempId)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition shadow-xs"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Tambah Baris Kosong</span>
@@ -769,29 +758,29 @@ export const PenawaranFormPage: React.FC = () => {
                         setTargetKegiatanTempId(kg.tempId);
                         setIsAddItemModalOpen(true);
                       }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 text-xs font-semibold rounded-lg transition"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-500/10 hover:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-brand-500/25 text-xs font-bold rounded-xl transition shadow-xs"
                     >
                       <PlusCircle className="w-3.5 h-3.5" />
                       <span>+ Buat Item Baru ke Master</span>
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200/60 self-end sm:self-auto">
-                    <span className="text-xs font-bold text-slate-600">TOTAL {letterLabel} :</span>
-                    <span className="font-mono font-bold text-sm text-slate-900">
+                  <div className="flex items-center gap-2 bg-white/60 dark:bg-slate-900/60 px-4 py-2 rounded-xl border border-slate-200/80 dark:border-slate-800 self-end sm:self-auto">
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">TOTAL {letterLabel} :</span>
+                    <span className="font-mono font-black text-sm text-slate-900 dark:text-white">
                       {formatRupiah(subtotalKg)}
                     </span>
                   </div>
                 </div>
               </div>
-            </div>
+            </BentoCard>
           );
         })}
       </div>
 
       {/* Grand Total Summary Card */}
-      <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-lg space-y-4">
-        <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+      <BentoCard className="bg-navy-900 dark:bg-slate-900 text-white p-6 border-navy-800 dark:border-blue-900/40 shadow-bento space-y-4">
+        <div className="flex items-center gap-2 border-b border-navy-800 dark:border-slate-800 pb-3">
           <Calculator className="w-5 h-5 text-brand-400" />
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">
             Rekapitulasi Total Penawaran SPH
@@ -813,18 +802,18 @@ export const PenawaranFormPage: React.FC = () => {
             );
           })}
 
-          <div className="pt-3 border-t border-slate-800 flex justify-between items-center text-base font-bold text-white">
+          <div className="pt-3 border-t border-navy-800 dark:border-slate-800 flex justify-between items-center text-base font-bold text-white">
             <span className="text-brand-300">
               TOTAL KESELURUHAN (A s/d {String.fromCharCode(65 + kegiatanGroups.length - 1)}) :
             </span>
-            <span className="font-mono text-xl text-emerald-400">{formatRupiah(grandTotalAmount)}</span>
+            <span className="font-mono text-2xl font-black text-amber-400">{formatRupiah(grandTotalAmount)}</span>
           </div>
         </div>
-      </div>
+      </BentoCard>
 
       {/* Terms & Conditions */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
-        <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+      <BentoCard className="p-6 space-y-3">
+        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
           Syarat & Ketentuan Penawaran
         </label>
         <textarea
@@ -832,15 +821,15 @@ export const PenawaranFormPage: React.FC = () => {
           value={terms}
           onChange={(e) => setTerms(e.target.value)}
           placeholder="Tuliskan termin pembayaran, masa garansi, dsb..."
-          className="w-full p-3 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none font-sans"
+          className="w-full p-3.5 text-sm border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-brand-500/30 outline-none bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 font-sans"
         />
-      </div>
+      </BentoCard>
 
       {/* Floating Bottom Action Bar */}
-      <div className="flex items-center justify-between p-4 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-2xl shadow-xl sticky bottom-4">
+      <div className="bento-card flex items-center justify-between p-4 sticky bottom-4 shadow-bento dark:shadow-bento-dark">
         <div>
-          <span className="text-xs text-slate-500 block">Total Nilai Penawaran</span>
-          <span className="font-mono font-bold text-lg text-slate-900">{formatRupiah(grandTotalAmount)}</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 block font-medium">Total Nilai Penawaran</span>
+          <span className="font-mono font-black text-lg text-slate-900 dark:text-white">{formatRupiah(grandTotalAmount)}</span>
         </div>
 
         <div className="flex items-center gap-3">
@@ -848,14 +837,14 @@ export const PenawaranFormPage: React.FC = () => {
             type="button"
             onClick={() => navigate(-1)}
             disabled={loading}
-            className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition"
+            className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl transition shadow-xs"
           >
             Batal
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-sm font-semibold rounded-xl shadow-sm shadow-brand-600/30 transition hover:scale-[1.01] disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/25 transition disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             {loading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan SPH' : 'Terbitkan SPH'}

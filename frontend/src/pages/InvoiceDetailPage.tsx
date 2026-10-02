@@ -1,68 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
-  ArrowLeft,
+  FileText,
   Edit,
   Trash2,
   Printer,
   CheckCircle2,
-  Clock,
-  Ban,
   AlertCircle,
   Lock,
-  FileCheck2,
   Send,
-  AlertTriangle,
+  Ban,
   History,
   MapPin
 } from 'lucide-react';
 import { invoiceApi } from '../api/invoiceApi';
-import { Invoice, InvoiceStatus, InvoicePaymentStatus } from '../types/invoice';
+import { Invoice, InvoiceStatus } from '../types/invoice';
 import { AttachmentSection } from '../components/common/AttachmentSection';
 import { AuditHistoryModal } from '../components/audit/AuditHistoryModal';
 import { AndaraLetterhead } from '../components/common/AndaraLetterhead';
-
-const STATUS_CONFIG: Record<InvoiceStatus, { label: string; bg: string; text: string; icon: React.ComponentType<{ className?: string }> }> = {
-  DRAFT: {
-    label: 'Draft',
-    bg: 'bg-slate-100 text-slate-700 border-slate-200',
-    text: 'text-slate-600',
-    icon: Clock,
-  },
-  ISSUED: {
-    label: 'Diterbitkan (Resmi)',
-    bg: 'bg-blue-50 text-blue-700 border-blue-200',
-    text: 'text-blue-600',
-    icon: FileCheck2,
-  },
-  CANCELLED: {
-    label: 'Dibatalkan',
-    bg: 'bg-amber-50 text-amber-700 border-amber-200',
-    text: 'text-amber-600',
-    icon: Ban,
-  },
-};
-
-const PAYMENT_STATUS_CONFIG: Record<InvoicePaymentStatus, { label: string; bg: string; text: string; icon: React.ComponentType<{ className?: string }> }> = {
-  UNPAID: {
-    label: 'Belum Bayar',
-    bg: 'bg-rose-50 text-rose-700 border-rose-200',
-    text: 'text-rose-600',
-    icon: AlertCircle,
-  },
-  PARTIAL: {
-    label: 'Sebagian Dibayar',
-    bg: 'bg-amber-50 text-amber-700 border-amber-200',
-    text: 'text-amber-600',
-    icon: AlertTriangle,
-  },
-  PAID: {
-    label: 'Lunas',
-    bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    text: 'text-emerald-600',
-    icon: CheckCircle2,
-  },
-};
+import { BentoCard } from '@/components/common/BentoCard';
+import { PageHeader } from '@/components/common/PageHeader';
+import { StatusBadge } from '@/components/common/StatusBadge';
 
 export const InvoiceDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -138,32 +96,27 @@ export const InvoiceDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-16">
-        <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
-        <span className="ml-3 text-sm font-medium text-slate-600">Memuat rincian faktur...</span>
+      <div className="flex items-center justify-center p-20">
+        <div className="w-8 h-8 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin"></div>
+        <span className="ml-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Memuat rincian faktur...</span>
       </div>
     );
   }
 
   if (!invoice) {
     return (
-      <div className="p-8 text-center space-y-3">
+      <BentoCard className="max-w-xl mx-auto p-8 text-center space-y-3">
         <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
-        <p className="text-base font-semibold text-slate-800">Faktur tidak ditemukan</p>
+        <p className="text-base font-bold text-slate-800 dark:text-slate-200">Faktur tidak ditemukan</p>
         <button
           onClick={() => navigate('/faktur')}
-          className="text-xs text-brand-600 font-semibold hover:underline"
+          className="text-xs text-brand-600 dark:text-brand-400 font-bold hover:underline"
         >
           ← Kembali ke daftar faktur
         </button>
-      </div>
+      </BentoCard>
     );
   }
-
-  const statusMeta = STATUS_CONFIG[invoice.status] || STATUS_CONFIG.DRAFT;
-  const StatusIcon = statusMeta.icon;
-  const payMeta = PAYMENT_STATUS_CONFIG[invoice.paymentStatus] || PAYMENT_STATUS_CONFIG.UNPAID;
-  const PayIcon = payMeta.icon;
 
   const hasPayments = invoice.paidAmount > 0;
   const isEditable = !hasPayments && invoice.status !== 'CANCELLED';
@@ -171,157 +124,138 @@ export const InvoiceDetailPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Top Header & Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 print:hidden">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/faktur')}
-            className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-mono">
-                {invoice.number}
-              </h1>
-              <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${statusMeta.bg}`}
-              >
-                <StatusIcon className="w-3.5 h-3.5" />
-                {statusMeta.label}
-              </span>
-              <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${payMeta.bg}`}
-              >
-                <PayIcon className="w-3.5 h-3.5" />
-                {payMeta.label}
-              </span>
-            </div>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Diterbitkan pada {new Date(invoice.date).toLocaleDateString('id-ID', { dateStyle: 'long' })}
-              {invoice.dueDate && (
-                <> • Jatuh Tempo: {new Date(invoice.dueDate).toLocaleDateString('id-ID', { dateStyle: 'long' })}</>
-              )}
-            </p>
+      <PageHeader
+        icon={FileText}
+        backUrl="/faktur"
+        title={invoice.number}
+        subtitle={`Diterbitkan: ${new Date(invoice.date).toLocaleDateString('id-ID', { dateStyle: 'long' })}${
+          invoice.dueDate ? ` • Jatuh Tempo: ${new Date(invoice.dueDate).toLocaleDateString('id-ID', { dateStyle: 'long' })}` : ''
+        }`}
+        badge={
+          <div className="flex items-center gap-2">
+            <StatusBadge status={invoice.status} />
+            <StatusBadge status={invoice.paymentStatus} />
           </div>
-        </div>
-
-        {/* Action Buttons Toolbar */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Print Button */}
-          <button
-            onClick={() => window.open(`/faktur/${invoice.id}/print`, '_blank')}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 shadow-sm transition"
-            title="Buka format cetak resmi CV. ANDARA (siap cetak/simpan PDF)"
-          >
-            <Printer className="w-4 h-4 text-slate-500" />
-            Cetak Format Resmi
-          </button>
-
-          {/* Audit Trail Button */}
-          <button
-            onClick={() => setShowAuditModal(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 shadow-sm transition"
-            title="Lihat riwayat audit dokumen ini"
-          >
-            <History className="w-4 h-4 text-slate-500" />
-            Audit Trail
-          </button>
-
-          {/* Edit Button */}
-          {isEditable && (
+        }
+        actions={
+          <div className="flex flex-wrap items-center gap-2 print:hidden">
+            {/* Print Button */}
             <button
-              disabled={actionLoading}
-              onClick={() => navigate(`/faktur/${invoice.id}/edit`)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 shadow-sm transition"
+              onClick={() => window.open(`/faktur/${invoice.id}/print`, '_blank')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-xs transition"
+              title="Buka format cetak resmi CV. ANDARA (siap cetak/simpan PDF)"
             >
-              <Edit className="w-4 h-4 text-slate-500" />
-              Edit
+              <Printer className="w-4 h-4 text-brand-500" />
+              Cetak Format Resmi
             </button>
-          )}
 
-          {/* DRAFT Actions */}
-          {invoice.status === 'DRAFT' && (
-            <>
+            {/* Audit Trail Button */}
+            <button
+              onClick={() => setShowAuditModal(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-xs transition"
+              title="Lihat riwayat audit dokumen ini"
+            >
+              <History className="w-4 h-4 text-slate-500" />
+              Audit Trail
+            </button>
+
+            {/* Edit Button */}
+            {isEditable && (
               <button
                 disabled={actionLoading}
-                onClick={() => handleStatusChange('ISSUED')}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition"
+                onClick={() => navigate(`/faktur/${invoice.id}/edit`)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-xs transition"
               >
-                <Send className="w-4 h-4" />
-                Terbitkan Faktur (ISSUED)
+                <Edit className="w-4 h-4 text-amber-500" />
+                Edit
               </button>
-              {!hasPayments && (
+            )}
+
+            {/* DRAFT Actions */}
+            {invoice.status === 'DRAFT' && (
+              <>
                 <button
                   disabled={actionLoading}
-                  onClick={handleDelete}
-                  className="p-2 rounded-lg text-rose-500 hover:bg-rose-50 transition"
-                  title="Hapus Faktur Draft"
+                  onClick={() => handleStatusChange('ISSUED')}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 shadow-md shadow-brand-500/25 transition"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Send className="w-4 h-4" />
+                  Terbitkan Faktur
                 </button>
-              )}
-            </>
-          )}
+                {!hasPayments && (
+                  <button
+                    disabled={actionLoading}
+                    onClick={handleDelete}
+                    className="p-2 rounded-xl text-rose-500 hover:bg-rose-500/10 transition border border-rose-500/20"
+                    title="Hapus Faktur Draft"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </>
+            )}
 
-          {/* ISSUED Actions */}
-          {invoice.status === 'ISSUED' && !hasPayments && (
-            <button
-              disabled={actionLoading}
-              onClick={() => {
-                if (window.confirm('Yakin ingin membatalkan faktur ini? Nomor faktur tidak akan digunakan kembali.')) {
-                  handleStatusChange('CANCELLED');
-                }
-              }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 transition"
-            >
-              <Ban className="w-4 h-4" />
-              Batalkan Faktur
-            </button>
-          )}
-        </div>
-      </div>
+            {/* ISSUED Actions */}
+            {invoice.status === 'ISSUED' && !hasPayments && (
+              <button
+                disabled={actionLoading}
+                onClick={() => {
+                  if (window.confirm('Yakin ingin membatalkan faktur ini? Nomor faktur tidak akan digunakan kembali.')) {
+                    handleStatusChange('CANCELLED');
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition"
+              >
+                <Ban className="w-4 h-4" />
+                Batalkan Faktur
+              </button>
+            )}
+          </div>
+        }
+      />
 
       {/* Messages */}
       {successMsg && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-3 text-sm animate-in fade-in">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 flex items-center gap-3 text-xs font-semibold animate-in fade-in">
+          <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-3 text-sm animate-in fade-in">
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300 flex items-center gap-3 text-xs font-semibold animate-in fade-in">
+          <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {/* Financial Locking Banner */}
       {hasPayments && (
-        <div className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-4 text-sm text-indigo-950 flex items-start gap-3 shadow-sm print:hidden">
-          <Lock className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+        <BentoCard className="p-4 bg-brand-500/10 border-brand-500/30 text-brand-950 dark:text-brand-100 flex items-start gap-3 print:hidden">
+          <Lock className="w-5 h-5 text-brand-500 shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold">Terkunci Secara Finansial (Financial Record Locked)</p>
-            <p className="text-xs text-indigo-800 mt-0.5 leading-relaxed">
-              Faktur ini telah memiliki riwayat pembayaran sebesar <strong>{formatCurrency(invoice.paidAmount)}</strong>. Rincian nilai dan jumlah item tidak dapat diubah demi menjaga integritas pembukuan transaksi.
+            <p className="font-bold text-xs uppercase tracking-wider text-brand-700 dark:text-brand-300">
+              Terkunci Secara Finansial (Financial Record Locked)
+            </p>
+            <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed font-medium">
+              Faktur ini telah memiliki riwayat pembayaran sebesar <strong className="text-brand-600 dark:text-brand-400">{formatCurrency(invoice.paidAmount)}</strong>. Rincian nilai dan jumlah item tidak dapat diubah demi menjaga integritas pembukuan transaksi (AGENTS.md §9.8).
             </p>
           </div>
-        </div>
+        </BentoCard>
       )}
 
-      {/* Printable Invoice Sheet */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-10 space-y-8 print:shadow-none print:border-none print:p-0">
+      {/* Printable Invoice Sheet (Paper view with official letterhead) */}
+      <div className="bg-white text-slate-900 rounded-3xl border border-slate-200/90 shadow-bento p-6 sm:p-10 space-y-8 print:shadow-none print:border-none print:p-0">
         {/* Letterhead Resmi CV. ANDARA dengan Pita Divisi Baja Ringan */}
         <AndaraLetterhead showDivisiStrip={true} className="mb-4" />
 
         {/* Customer & Info Details */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200 print:bg-transparent">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50/80 p-5 rounded-2xl border border-slate-200/80 print:bg-transparent">
           <div className="space-y-1 text-xs text-slate-600">
             <p className="font-bold uppercase tracking-wider text-slate-400 text-[10px]">Ditagihkan Kepada (Billed To):</p>
             <p className="text-sm font-bold text-slate-900">{invoice.customerName}</p>
             {invoice.customerAddress && <p className="text-slate-500 max-w-xs">{invoice.customerAddress}</p>}
-            {invoice.customerPhone && <p className="text-slate-500">Kontak: {invoice.customerPhone}</p>}
+            {invoice.customerPhone && <p className="text-slate-500 font-mono">Kontak: {invoice.customerPhone}</p>}
           </div>
 
           <div className="space-y-1 text-xs text-slate-600 sm:text-right">
@@ -332,7 +266,7 @@ export const InvoiceDetailPage: React.FC = () => {
                 Referensi SPH:{' '}
                 <Link
                   to={`/penawaran/${invoice.sourcePenawaranId}`}
-                  className="font-mono font-semibold text-brand-700 hover:underline"
+                  className="font-mono font-bold text-brand-600 hover:underline"
                 >
                   {invoice.sourcePenawaranNumber}
                 </Link>
@@ -358,10 +292,10 @@ export const InvoiceDetailPage: React.FC = () => {
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
             Rincian Item Penagihan
           </h3>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="bg-slate-100 border-b border-slate-300 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <tr className="bg-slate-100/90 border-b border-slate-200 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                   <th className="py-2.5 px-3 w-12 text-center">No</th>
                   <th className="py-2.5 px-3">Deskripsi Pekerjaan / Jasa</th>
                   <th className="py-2.5 px-3 w-28 text-right">Kuantitas</th>
@@ -370,7 +304,7 @@ export const InvoiceDetailPage: React.FC = () => {
                   <th className="py-2.5 px-3 w-40 text-right">Subtotal</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-slate-100">
                 {invoice.details && invoice.details.length > 0 ? (
                   invoice.details.map((detail, idx) => (
                     <tr key={detail.id || idx} className="hover:bg-slate-50/50">
@@ -378,9 +312,9 @@ export const InvoiceDetailPage: React.FC = () => {
                         {idx + 1}
                       </td>
                       <td className="py-3 px-3">
-                        <div className="font-semibold text-slate-800">{detail.description}</div>
+                        <div className="font-bold text-slate-800">{detail.description}</div>
                         {(detail.sphKegiatanName || detail.sourceKegiatanName) && (
-                          <span className="text-[11px] text-brand-600 font-medium">
+                          <span className="text-[11px] text-brand-600 font-semibold">
                             • Kegiatan: {detail.sphKegiatanName || detail.sourceKegiatanName}
                           </span>
                         )}
@@ -418,18 +352,18 @@ export const InvoiceDetailPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-end border-t-2 border-slate-900 pt-4">
           <div className="w-full sm:w-80 space-y-2 text-sm">
             <div className="flex justify-between py-1 text-slate-600">
-              <span>Total Nilai Tagihan:</span>
+              <span className="font-medium">Total Nilai Tagihan:</span>
               <span className="font-mono font-bold text-slate-900">{formatCurrency(invoice.totalAmount)}</span>
             </div>
             <div className="flex justify-between py-1 text-slate-600 border-b border-slate-200 pb-2">
-              <span>Total Telah Dibayar:</span>
+              <span className="font-medium">Total Telah Dibayar:</span>
               <span className="font-mono font-bold text-emerald-700">
                 - {formatCurrency(invoice.paidAmount)}
               </span>
             </div>
-            <div className="flex justify-between py-2 text-base font-bold bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-              <span className="text-slate-800">Sisa Tagihan (Outstanding):</span>
-              <span className={`font-mono ${invoice.outstanding > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
+            <div className="flex justify-between py-2 text-base font-bold bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <span className="text-slate-800">Sisa Tagihan:</span>
+              <span className={`font-mono font-black ${invoice.outstanding > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
                 {formatCurrency(invoice.outstanding)}
               </span>
             </div>
@@ -442,7 +376,7 @@ export const InvoiceDetailPage: React.FC = () => {
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
               Instruksi & Syarat Pembayaran:
             </h4>
-            <div className="text-xs text-slate-600 font-mono whitespace-pre-line bg-slate-50 p-3.5 rounded-lg border border-slate-200 leading-relaxed print:bg-transparent">
+            <div className="text-xs text-slate-600 font-mono whitespace-pre-line bg-slate-50 p-3.5 rounded-xl border border-slate-200 leading-relaxed print:bg-transparent">
               {invoice.terms ||
                 '1. Pembayaran ditransfer ke rekening resmi CV. ANDARA\n2. Jatuh tempo pembayaran 14 hari kalender\n3. Cantumkan nomor faktur pada berita transfer'}
             </div>
@@ -452,7 +386,7 @@ export const InvoiceDetailPage: React.FC = () => {
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
               Catatan Faktur:
             </h4>
-            <div className="text-xs text-slate-600 whitespace-pre-line bg-slate-50 p-3.5 rounded-lg border border-slate-200 leading-relaxed print:bg-transparent">
+            <div className="text-xs text-slate-600 whitespace-pre-line bg-slate-50 p-3.5 rounded-xl border border-slate-200 leading-relaxed print:bg-transparent">
               {invoice.notes || 'Terima kasih atas kerjasama dan kepercayaan Anda kepada CV. ANDARA.'}
             </div>
           </div>
@@ -478,13 +412,16 @@ export const InvoiceDetailPage: React.FC = () => {
 
       {/* Lampiran Berita Acara & Dokumen Pendukung (no-print) */}
       <div className="no-print mt-6 max-w-4xl mx-auto">
-        <AttachmentSection
-          referenceType="INVOICE"
-          referenceId={invoice.id}
-          title="Lampiran Berita Acara & Dokumen Pendukung Faktur"
-          description="Unggah berkas BAST, surat jalan, atau rincian lampiran pekerjaan proyek (tersimpan di Cloudflare R2 / storage)."
-        />
+        <BentoCard className="p-6">
+          <AttachmentSection
+            referenceType="INVOICE"
+            referenceId={invoice.id}
+            title="Lampiran Berita Acara & Dokumen Pendukung Faktur"
+            description="Unggah berkas BAST, surat jalan, atau rincian lampiran pekerjaan proyek (tersimpan di Cloudflare R2)."
+          />
+        </BentoCard>
       </div>
+
       {/* Audit History Modal */}
       {invoice && (
         <AuditHistoryModal

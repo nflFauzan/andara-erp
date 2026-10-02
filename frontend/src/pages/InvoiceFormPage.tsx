@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Receipt,
-  ArrowLeft,
   Plus,
   Trash2,
   Save,
@@ -22,6 +21,8 @@ import { useAuth } from '../context/AuthContext';
 import { Customer } from '../types/customer';
 import { Penawaran } from '../types/penawaran';
 import { CreateInvoiceDetailInput, PenawaranBillableItem } from '../types/invoice';
+import { BentoCard } from '@/components/common/BentoCard';
+import { PageHeader } from '@/components/common/PageHeader';
 
 interface ItemRow extends CreateInvoiceDetailInput {
   tempId: string;
@@ -424,53 +425,53 @@ export const InvoiceFormPage: React.FC = () => {
         <span className="ml-3 text-sm font-medium text-slate-600">Memuat formulir faktur...</span>
       </div>
     );
-  }
-
-  return (
+  }  return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Top Header */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-5">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/faktur')}
-            className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <Receipt className="w-6 h-6 text-brand-600" />
-              <h1 className="text-2xl font-bold tracking-tight text-slate-800">
-                {isEdit ? 'Edit Faktur Penjualan' : 'Buat Faktur Penjualan Baru'}
-              </h1>
-            </div>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Penomoran otomatis atomik, integrasi penawaran disetujui, dan proteksi anti-double-billing.
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        icon={Receipt}
+        backUrl="/faktur"
+        title={isEdit ? 'Edit Faktur Penjualan' : 'Buat Faktur Penjualan Baru'}
+        subtitle="Form penerbitan faktur tagihan terintegrasi penawaran harga resmi CV. ANDARA."
+      />
 
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-3 text-sm">
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
-          <span>{errorMsg}</span>
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 flex items-center gap-3 text-sm shadow-xs">
+          <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
+          <span className="font-medium">{errorMsg}</span>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Document Header Info Card */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-brand-600" />
-            Informasi Dokumen & Customer
-          </h2>
+        <BentoCard className="p-6 space-y-5">
+          <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-3">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-brand-500" />
+              Informasi Dokumen & Customer
+            </h2>
+            {sourcePenawaranNumber && (
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-xs text-blue-700 dark:text-blue-300">
+                <FileCheck2 className="w-3.5 h-3.5 text-blue-500" />
+                <span>SPH: <strong className="font-mono">{sourcePenawaranNumber}</strong></span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSourcePenawaranId(null);
+                    setSourcePenawaranNumber(null);
+                  }}
+                  className="ml-1 text-[11px] text-blue-500 hover:text-rose-500 underline"
+                >
+                  Lepas
+                </button>
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
             {/* Customer Dropdown */}
-            <div className="space-y-1 md:col-span-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                 Pilih Customer <span className="text-rose-500">*</span>
               </label>
               <select
@@ -481,23 +482,23 @@ export const InvoiceFormPage: React.FC = () => {
                   setSourcePenawaranId(null);
                   setSourcePenawaranNumber(null);
                 }}
-                className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:bg-white dark:focus:bg-slate-950 transition"
               >
-                <option value="">-- Pilih Customer --</option>
+                <option value="">-- Pilih Customer Terdaftar --</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.code} - {c.name} {c.companyName ? `(${c.companyName})` : ''}
                   </option>
                 ))}
               </select>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
                 Hanya customer berstatus aktif yang dapat dipilih.
               </p>
             </div>
 
             {/* Date Picker */}
-            <div className="space-y-1">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                 Tanggal Faktur <span className="text-rose-500">*</span>
               </label>
               <input
@@ -505,27 +506,27 @@ export const InvoiceFormPage: React.FC = () => {
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:bg-white dark:focus:bg-slate-950 transition"
               />
             </div>
 
             {/* Due Date Picker */}
-            <div className="space-y-1">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                 Jatuh Tempo (Due Date)
               </label>
               <input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:bg-white dark:focus:bg-slate-950 transition"
               />
             </div>
 
             {/* Work Location */}
-            <div className="space-y-1 md:col-span-4">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-slate-500" />
+            <div className="space-y-1.5 md:col-span-4">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-slate-400" />
                 <span>Lokasi Pekerjaan / Kegiatan (Opsional)</span>
               </label>
               <input
@@ -533,67 +534,43 @@ export const InvoiceFormPage: React.FC = () => {
                 value={workLocation}
                 onChange={(e) => setWorkLocation(e.target.value)}
                 placeholder="Contoh: Gedung SMPN 1 Bojonegoro, Aula Utama, Ruang Kelas Baru, dll."
-                className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:bg-white dark:focus:bg-slate-950 transition"
               />
             </div>
           </div>
 
           {/* Admin Role Constraint Banner */}
           {isAdmin && !sourcePenawaranId && (
-            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
               <div>
-                <p className="font-bold text-amber-900">Otorisasi Role Admin Terdeteksi</p>
-                <p className="text-amber-800 mt-0.5 leading-relaxed">
-                  Sesuai kebijakan tata kelola sistem, role <strong>Admin</strong> wajib membuat Faktur Penjualan berdasarkan <strong>Surat Penawaran Harga (SPH)</strong> yang telah disetujui. Silakan gunakan tombol <em>"Tarik dari Penawaran Disetujui"</em> di bawah untuk memilih rincian kegiatan dan item yang akan ditagihkan.
-                </p>
+                <span className="font-bold">Otorisasi Admin:</span> Faktur wajib diterbitkan berdasarkan SPH yang disetujui. Gunakan tombol <em>"Tarik dari Penawaran Disetujui"</em> di bawah.
               </div>
             </div>
           )}
-
-          {/* Source Penawaran Indicator */}
-          {sourcePenawaranNumber && (
-            <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-medium text-blue-800">
-                <FileCheck2 className="w-4 h-4 text-blue-600" />
-                <span>Terhubung ke Penawaran Harga:</span>
-                <span className="font-mono font-bold">{sourcePenawaranNumber}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setSourcePenawaranId(null);
-                  setSourcePenawaranNumber(null);
-                }}
-                className="text-xs text-blue-600 hover:text-blue-800 underline"
-              >
-                Lepaskan Tautan Penawaran
-              </button>
-            </div>
-          )}
-        </div>
+        </BentoCard>
 
         {/* Items Section */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+        <BentoCard className="p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/60 dark:border-slate-800 pb-4">
             <div>
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-                <Calculator className="w-4 h-4 text-brand-600" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Calculator className="w-4 h-4 text-brand-500" />
                 Rincian Item Penagihan
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Nilai subtotal per baris dan total faktur dihitung secara otoritatif di server.
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Nilai subtotal dan total dihitung secara otoritatif oleh sistem.
               </p>
             </div>
 
-            <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+            <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
               {selectedCustomerId && approvedPenawaranList.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setShowPenawaranModal(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-brand-700 bg-brand-50 border border-brand-200 rounded-lg hover:bg-brand-100 transition shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-500/15 border border-amber-500/30 rounded-xl hover:bg-amber-500/25 transition shadow-xs active:scale-95"
                 >
-                  <DownloadCloud className="w-3.5 h-3.5" />
+                  <DownloadCloud className="w-4 h-4 text-amber-500" />
                   Tarik dari Penawaran Disetujui
                 </button>
               )}
@@ -602,9 +579,9 @@ export const InvoiceFormPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleAddItemRow}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg shadow-sm transition"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 rounded-xl shadow-xs transition active:scale-95"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4" />
                   Tambah Baris Manual
                 </button>
               )}
@@ -612,20 +589,20 @@ export const InvoiceFormPage: React.FC = () => {
           </div>
 
           {/* Items Table */}
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  <th className="py-2.5 px-3 w-12 text-center">#</th>
-                  <th className="py-2.5 px-3 min-w-[280px]">Deskripsi Item Penagihan</th>
-                  <th className="py-2.5 px-3 w-28 text-right">Kuantitas</th>
-                  <th className="py-2.5 px-3 w-24">Satuan</th>
-                  <th className="py-2.5 px-3 w-40 text-right">Harga Satuan (Rp)</th>
-                  <th className="py-2.5 px-3 w-44 text-right">Subtotal</th>
-                  <th className="py-2.5 px-3 w-12 text-center"></th>
+                <tr className="bg-slate-100/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                  <th className="py-3 px-3 w-12 text-center">#</th>
+                  <th className="py-3 px-3 min-w-[280px]">Deskripsi Item Penagihan</th>
+                  <th className="py-3 px-3 w-28 text-right">Kuantitas</th>
+                  <th className="py-3 px-3 w-24">Satuan</th>
+                  <th className="py-3 px-3 w-40 text-right">Harga Satuan (Rp)</th>
+                  <th className="py-3 px-3 w-44 text-right">Subtotal</th>
+                  <th className="py-3 px-3 w-12 text-center"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                 {items.map((row, index) => {
                   const subtotal = (Number(row.quantity) || 0) * (Number(row.unitPrice) || 0);
                   const isExceeding =
@@ -633,16 +610,16 @@ export const InvoiceFormPage: React.FC = () => {
                     Number(row.quantity) > row.maxBillableQuantity;
 
                   return (
-                    <tr key={row.tempId} className="hover:bg-slate-50/50">
-                      <td className="py-2.5 px-3 text-center text-xs font-mono text-slate-400">
+                    <tr key={row.tempId} className="hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3 px-3 text-center text-xs font-mono text-slate-400">
                         {index + 1}
                       </td>
-                      <td className="py-2.5 px-3">
+                      <td className="py-3 px-3">
                         {row.sphKegiatanName && (
-                          <div className="mb-1">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                          <div className="mb-1.5">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
                               <Layers className="w-3 h-3 text-indigo-500" />
-                              Kegiatan: {row.sphKegiatanName}
+                              {row.sphKegiatanName}
                             </span>
                           </div>
                         )}
@@ -652,21 +629,21 @@ export const InvoiceFormPage: React.FC = () => {
                           placeholder="Deskripsi penagihan jasa / barang..."
                           value={row.description}
                           onChange={(e) => handleItemChange(row.tempId, 'description', e.target.value)}
-                          className="w-full text-sm px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                          className="w-full text-sm px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
                         />
                         {row.maxBillableQuantity !== undefined && (
-                          <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-1 font-mono">
-                            <span className="text-brand-600 font-semibold">Tersisa di Penawaran:</span>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1 font-mono">
+                            <span className="text-brand-600 dark:text-brand-400 font-semibold">Tersisa di SPH:</span>
                             <span>{row.maxBillableQuantity} {row.unit}</span>
                             {isExceeding && (
-                              <span className="text-rose-600 font-bold flex items-center gap-0.5 ml-2">
-                                <AlertTriangle className="w-3 h-3" /> Melebihi kuota penawaran!
+                              <span className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-0.5 ml-2">
+                                <AlertTriangle className="w-3 h-3" /> Melebihi kuota!
                               </span>
                             )}
                           </div>
                         )}
                       </td>
-                      <td className="py-2.5 px-3 text-right">
+                      <td className="py-3 px-3 text-right">
                         <input
                           type="number"
                           step="0.01"
@@ -676,24 +653,24 @@ export const InvoiceFormPage: React.FC = () => {
                           onChange={(e) =>
                             handleItemChange(row.tempId, 'quantity', parseFloat(e.target.value) || 0)
                           }
-                          className={`w-full text-right font-mono text-sm px-2.5 py-1.5 rounded-lg border focus:outline-none focus:ring-1 ${
+                          className={`w-full text-right font-mono text-sm px-3 py-1.5 rounded-xl border focus:outline-none focus:ring-2 transition ${
                             isExceeding
-                              ? 'border-rose-500 bg-rose-50 focus:ring-rose-500 text-rose-800'
-                              : 'border-slate-300 focus:ring-brand-500'
+                              ? 'border-rose-500 bg-rose-500/10 focus:ring-rose-500/30 text-rose-600 dark:text-rose-400'
+                              : 'border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:ring-brand-500/30'
                           }`}
                         />
                       </td>
-                      <td className="py-2.5 px-3">
+                      <td className="py-3 px-3">
                         <input
                           type="text"
                           required
                           placeholder="m2, unit"
                           value={row.unit}
                           onChange={(e) => handleItemChange(row.tempId, 'unit', e.target.value)}
-                          className="w-full text-sm px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                          className="w-full text-sm px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
                         />
                       </td>
-                      <td className="py-2.5 px-3 text-right">
+                      <td className="py-3 px-3 text-right">
                         <input
                           type="number"
                           min="0"
@@ -703,18 +680,19 @@ export const InvoiceFormPage: React.FC = () => {
                           onChange={(e) =>
                             handleItemChange(row.tempId, 'unitPrice', parseFloat(e.target.value) || 0)
                           }
-                          className="w-full text-right font-mono text-sm px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                          className="w-full text-right font-mono text-sm px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
                         />
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-800">
+                      <td className="py-3 px-3 text-right font-mono font-bold text-slate-900 dark:text-white">
                         {formatCurrency(subtotal)}
                       </td>
-                      <td className="py-2.5 px-3 text-center">
+                      <td className="py-3 px-3 text-center">
                         <button
                           type="button"
                           disabled={items.length <= 1}
                           onClick={() => handleRemoveItemRow(row.tempId)}
-                          className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition disabled:opacity-30"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition disabled:opacity-20"
+                          title="Hapus baris item"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -727,25 +705,25 @@ export const InvoiceFormPage: React.FC = () => {
           </div>
 
           {/* Subtotal Summary Bar */}
-          <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4">
-            <span className="text-xs text-slate-500 font-medium">
-              Total {items.length} item penagihan
+          <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800 flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              Total <strong>{items.length}</strong> item penagihan
             </span>
-            <div className="flex items-center gap-4 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-sm">
-              <span className="text-xs uppercase tracking-wider font-semibold text-slate-300">
+            <div className="flex items-center gap-4 bg-navy-900 dark:bg-slate-900 text-white px-6 py-3.5 rounded-2xl shadow-bento border border-navy-800 dark:border-blue-900/30">
+              <span className="text-xs uppercase tracking-wider font-bold text-slate-300">
                 Total Nilai Faktur:
               </span>
-              <span className="font-mono text-xl font-bold text-brand-300">
+              <span className="font-mono text-2xl font-black text-amber-400">
                 {formatCurrency(totalAmount)}
               </span>
             </div>
           </div>
-        </div>
+        </BentoCard>
 
         {/* Terms and Notes Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+          <BentoCard className="p-5 space-y-2">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
               Syarat & Rekening Pembayaran (Terms)
             </label>
             <textarea
@@ -753,15 +731,15 @@ export const InvoiceFormPage: React.FC = () => {
               value={terms}
               onChange={(e) => setTerms(e.target.value)}
               placeholder="Instruksi rekening bank dan masa jatuh tempo..."
-              className="w-full text-xs font-mono p-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed"
+              className="w-full text-xs font-mono p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 leading-relaxed"
             />
-            <p className="text-[11px] text-slate-400">
-              Syarat ini tercetak pada lembar faktur penjualan resmi untuk pembayaran oleh customer.
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">
+              Tercetak pada lembar faktur penjualan resmi untuk pembayaran oleh customer.
             </p>
-          </div>
+          </BentoCard>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+          <BentoCard className="p-5 space-y-2">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
               Catatan Faktur (Notes)
             </label>
             <textarea
@@ -769,17 +747,20 @@ export const InvoiceFormPage: React.FC = () => {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Keterangan termin, nomor SPK/Kontrak acuan, atau rincian tambahan..."
-              className="w-full text-xs p-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed"
+              className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 leading-relaxed"
             />
-          </div>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">
+              Catatan internal atau keterangan pekerjaan tambahan.
+            </p>
+          </BentoCard>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+        <div className="flex items-center justify-between pt-4 border-t border-slate-200/80 dark:border-slate-800">
           <button
             type="button"
             onClick={() => navigate('/faktur')}
-            className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
+            className="px-5 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl transition shadow-xs"
           >
             Batal
           </button>
@@ -787,7 +768,7 @@ export const InvoiceFormPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 active:bg-brand-800 shadow-md transition disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 shadow-md shadow-brand-500/25 transition disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             {loading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan Faktur' : 'Terbitkan / Simpan Faktur'}
@@ -797,36 +778,37 @@ export const InvoiceFormPage: React.FC = () => {
 
       {/* Modal Tarik dari Penawaran Disetujui */}
       {showPenawaranModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bento-card max-w-4xl w-full p-6 shadow-2xl border border-slate-200 dark:border-blue-900/40 space-y-4 animate-in fade-in zoom-in-95 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-3 shrink-0">
               <div>
-                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                  <DownloadCloud className="w-5 h-5 text-brand-600" />
+                <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+                  <DownloadCloud className="w-5 h-5 text-brand-500" />
                   Tarik Kegiatan & Item dari SPH Disetujui
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Pilih kegiatan tertentu atau sebagian volume item untuk penagihan parsial / bertahap.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowPenawaranModal(false)}
-                className="text-slate-400 hover:text-slate-700 text-sm font-semibold p-1"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-sm font-semibold p-1"
               >
                 ✕
               </button>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+            {/* SPH Select Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0 bg-white/50 dark:bg-slate-900/50 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
               <div className="flex-1 space-y-1">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                   Pilih Dokumen SPH Acuan:
                 </label>
                 <select
                   value={selectedModalPenawaranId}
                   onChange={(e) => setSelectedModalPenawaranId(e.target.value ? Number(e.target.value) : '')}
-                  className="w-full text-xs font-medium px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                  className="w-full text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                 >
                   {approvedPenawaranList.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -840,25 +822,25 @@ export const InvoiceFormPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleSelectAllBillable(true)}
-                  className="px-2.5 py-1.5 text-xs font-semibold text-brand-700 bg-white border border-brand-200 rounded-lg hover:bg-brand-50 transition shadow-sm"
+                  className="px-3 py-1.5 text-xs font-bold text-brand-700 dark:text-brand-300 bg-brand-500/10 border border-brand-500/25 rounded-xl hover:bg-brand-500/20 transition shadow-xs"
                 >
                   Pilih Semua Item
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSelectAllBillable(false)}
-                  className="px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition shadow-sm"
+                  className="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition shadow-xs"
                 >
-                  Kosongkan Pilihan
+                  Kosongkan
                 </button>
               </div>
             </div>
 
             {/* Billable Items List Grouped by Kegiatan */}
-            <div className="overflow-y-auto flex-1 border border-slate-200 rounded-xl">
+            <div className="overflow-y-auto flex-1 border border-slate-200/80 dark:border-slate-800 rounded-xl">
               {loadingBillable ? (
                 <div className="p-12 text-center text-xs text-slate-500 flex flex-col items-center justify-center gap-2">
-                  <div className="w-6 h-6 border-2 border-brand-600/30 border-t-brand-600 rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
                   <span>Memeriksa rincian kegiatan dan kuota penagihan...</span>
                 </div>
               ) : billableItems.length === 0 ? (
@@ -867,7 +849,7 @@ export const InvoiceFormPage: React.FC = () => {
                 </div>
               ) : (
                 <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider sticky top-0 z-10">
+                  <thead className="bg-slate-100/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider sticky top-0 z-10">
                     <tr>
                       <th className="p-2.5 w-12 text-center">Pilih</th>
                       <th className="p-2.5">Uraian Kegiatan / Item Pekerjaan</th>
@@ -877,7 +859,7 @@ export const InvoiceFormPage: React.FC = () => {
                       <th className="p-2.5 text-right w-36">Tagihkan Sekarang</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                     {groupedBillable.map((group, gIdx) => {
                       const activeGroupItems = group.items.filter((it) => it.remainingBillableVolume > 0);
                       const isGroupAllSelected =
@@ -887,8 +869,8 @@ export const InvoiceFormPage: React.FC = () => {
 
                       return (
                         <React.Fragment key={group.groupKey}>
-                          {/* Group Header with Select All in Group Checkbox */}
-                          <tr className="bg-slate-100/90 font-bold border-t-2 border-b border-slate-300">
+                          {/* Group Header */}
+                          <tr className="bg-slate-100/80 dark:bg-slate-900/80 font-bold border-t border-b border-slate-200 dark:border-slate-800">
                             <td className="p-2 text-center">
                               <input
                                 type="checkbox"
@@ -899,13 +881,13 @@ export const InvoiceFormPage: React.FC = () => {
                                 title={`Pilih seluruh item kegiatan ${group.groupName}`}
                               />
                             </td>
-                            <td colSpan={5} className="p-2 text-slate-900">
+                            <td colSpan={5} className="p-2 text-slate-900 dark:text-slate-100">
                               <div className="flex items-center justify-between">
                                 <span className="flex items-center gap-1.5 uppercase tracking-wide">
-                                  <Layers className="w-3.5 h-3.5 text-brand-600" />
+                                  <Layers className="w-3.5 h-3.5 text-brand-500" />
                                   Kegiatan {letter}: {group.groupName}
                                 </span>
-                                <span className="text-[11px] font-normal text-slate-500">
+                                <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
                                   {group.items.length} item ({activeGroupItems.length} dapat ditagihkan)
                                 </span>
                               </div>
@@ -922,10 +904,10 @@ export const InvoiceFormPage: React.FC = () => {
                                 key={bi.penawaranDetailId}
                                 className={`transition-colors ${
                                   isExhausted
-                                    ? 'bg-slate-50 opacity-50'
+                                    ? 'opacity-40 bg-slate-50 dark:bg-slate-950/40'
                                     : sel.selected
-                                    ? 'bg-brand-50/30'
-                                    : 'hover:bg-slate-50/70'
+                                    ? 'bg-brand-500/10'
+                                    : 'hover:bg-white/40 dark:hover:bg-slate-800/40'
                                 }`}
                               >
                                 <td className="p-2.5 text-center">
@@ -946,20 +928,20 @@ export const InvoiceFormPage: React.FC = () => {
                                   />
                                 </td>
                                 <td className="p-2.5">
-                                  <div className="font-semibold text-slate-800 text-xs">{bi.description}</div>
+                                  <div className="font-bold text-slate-800 dark:text-slate-100 text-xs">{bi.description}</div>
                                   <div className="text-[10px] text-slate-400 font-mono mt-0.5">
                                     Harga Satuan: {formatCurrency(bi.unitPrice)} / {bi.unit}
                                     {bi.notes && <span className="ml-2 italic text-slate-500">• {bi.notes}</span>}
                                   </div>
                                 </td>
-                                <td className="p-2.5 text-right font-mono text-slate-600">
+                                <td className="p-2.5 text-right font-mono text-slate-600 dark:text-slate-400">
                                   {bi.originalVolume} {bi.unit}
                                 </td>
-                                <td className="p-2.5 text-right font-mono text-slate-600">
+                                <td className="p-2.5 text-right font-mono text-slate-600 dark:text-slate-400">
                                   {bi.alreadyBilledVolume} {bi.unit}
                                 </td>
                                 <td className="p-2.5 text-right font-mono font-bold">
-                                  <span className={isExhausted ? 'text-slate-400' : 'text-emerald-700'}>
+                                  <span className={isExhausted ? 'text-slate-400' : 'text-emerald-600 dark:text-emerald-400'}>
                                     {bi.remainingBillableVolume} {bi.unit}
                                   </span>
                                 </td>
@@ -981,7 +963,7 @@ export const InvoiceFormPage: React.FC = () => {
                                         },
                                       }));
                                     }}
-                                    className="w-28 text-right font-mono text-xs px-2.5 py-1 rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:bg-slate-100"
+                                    className="w-28 text-right font-mono text-xs px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
                                   />
                                 </td>
                               </tr>
@@ -995,22 +977,22 @@ export const InvoiceFormPage: React.FC = () => {
               )}
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t border-slate-100 shrink-0">
-              <span className="text-xs text-slate-500 font-medium">
-                Centang kegiatan atau item di atas, lalu sesuaikan volume jika ingin menagihkan secara bertahap / termin.
+            <div className="flex items-center justify-between pt-3 border-t border-slate-200/60 dark:border-slate-800 shrink-0">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Centang kegiatan atau item untuk ditagihkan pada termin ini.
               </span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setShowPenawaranModal(false)}
-                  className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                  className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
                 >
                   Batal
                 </button>
                 <button
                   type="button"
                   onClick={handleImportSelectedFromPenawaran}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition shadow-sm flex items-center gap-1.5"
+                  className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 rounded-xl transition shadow-md shadow-brand-500/25 flex items-center gap-1.5"
                 >
                   <DownloadCloud className="w-3.5 h-3.5" />
                   Tambahkan Item Terpilih

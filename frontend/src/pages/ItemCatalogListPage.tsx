@@ -18,6 +18,8 @@ import { itemCatalogApi } from '../api/itemCatalogApi';
 import { ItemCatalog, CreateItemCatalogInput, UpdateItemCatalogInput, ItemCatalogQueryParams } from '../types/itemCatalog';
 import { ItemCatalogModal } from '../components/items/ItemCatalogModal';
 import { formatRupiah } from '../lib/utils';
+import { BentoCard } from '@/components/common/BentoCard';
+import { PageHeader } from '@/components/common/PageHeader';
 
 export const ItemCatalogListPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -107,12 +109,12 @@ export const ItemCatalogListPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['item-catalog'] });
       setFeedbackMessage({
         type: 'success',
-        text: `Status item '${data.name}' diubah menjadi ${data.active ? 'Aktif' : 'Nonaktif'}.`,
+        text: `Status item '${data.name}' berhasil diubah menjadi ${data.active ? 'Aktif' : 'Nonaktif'}.`,
       });
-      setTimeout(() => setFeedbackMessage(null), 4000);
+      setTimeout(() => setFeedbackMessage(null), 5000);
     },
     onError: (error: any) => {
-      const msg = error.response?.data?.message || 'Gagal mengubah status item.';
+      const msg = error.response?.data?.message || 'Gagal mengubah status item master.';
       setFeedbackMessage({ type: 'error', text: msg });
       setTimeout(() => setFeedbackMessage(null), 5000);
     },
@@ -137,55 +139,48 @@ export const ItemCatalogListPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-brand-500/10 text-brand-600 flex items-center justify-center border border-brand-500/20">
-            <Package className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-slate-900">Master Data Item</h1>
-              <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
-                Katalog Pekerjaan & Material
-              </span>
-            </div>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Pustaka item pekerjaan dan material standar yang dapat dipilih saat pembuatan SPH
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={handleOpenCreateModal}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-sm font-semibold rounded-xl shadow-sm shadow-brand-600/30 transition-all hover:scale-[1.01]"
-        >
-          <Plus className="w-4 h-4" />
-          Tambah Item Master
-        </button>
-      </div>
+      <PageHeader
+        icon={Package}
+        title="Master Data Item"
+        subtitle="Pustaka item pekerjaan dan material standar yang dapat dipilih otomatis saat pembuatan SPH."
+        badge={
+          <span className="text-[11px] bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold px-2.5 py-0.5 rounded-full border border-brand-500/20">
+            Katalog Standar
+          </span>
+        }
+        actions={
+          <button
+            onClick={handleOpenCreateModal}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/25 transition"
+          >
+            <Plus className="w-4 h-4" />
+            Tambah Item Master
+          </button>
+        }
+      />
 
       {/* Feedback Toast Banner */}
       {feedbackMessage && (
         <div
-          className={`p-4 rounded-xl flex items-center gap-3 text-sm animate-in fade-in duration-200 ${
+          className={`p-4 rounded-2xl flex items-center gap-3 text-xs font-semibold animate-in fade-in duration-200 ${
             feedbackMessage.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-              : 'bg-rose-50 text-rose-800 border border-rose-200'
+              ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20'
+              : 'bg-rose-500/10 text-rose-800 dark:text-rose-300 border border-rose-500/20'
           }`}
         >
           {feedbackMessage.type === 'success' ? (
-            <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+            <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
           ) : (
-            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
           )}
           <span>{feedbackMessage.text}</span>
         </div>
       )}
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+      <BentoCard className="p-4 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
         {/* Search */}
         <div className="relative flex-1">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -197,7 +192,7 @@ export const ItemCatalogListPage: React.FC = () => {
               setPage(0);
             }}
             placeholder="Cari uraian pekerjaan, kode, atau spesifikasi..."
-            className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+            className="w-full pl-10 pr-4 py-2 text-xs font-medium bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-brand-500/30 outline-none"
           />
         </div>
 
@@ -210,7 +205,7 @@ export const ItemCatalogListPage: React.FC = () => {
               setCategoryFilter(e.target.value);
               setPage(0);
             }}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-brand-500 outline-none"
+            className="text-xs font-semibold border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-brand-500/30 outline-none"
           >
             <option value="">Semua Kategori</option>
             {categories.map((cat) => (
@@ -227,7 +222,7 @@ export const ItemCatalogListPage: React.FC = () => {
               setStatusFilter(e.target.value as any);
               setPage(0);
             }}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-brand-500 outline-none"
+            className="text-xs font-semibold border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-brand-500/30 outline-none"
           >
             <option value="ALL">Semua Status</option>
             <option value="ACTIVE">Aktif Saja</option>
@@ -237,36 +232,36 @@ export const ItemCatalogListPage: React.FC = () => {
           <button
             onClick={() => refetch()}
             title="Muat ulang data"
-            className="p-2 border border-slate-200 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors"
+            className="p-2 border border-slate-200/80 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
-      </div>
+      </BentoCard>
 
       {/* Table Data */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <BentoCard className="overflow-hidden p-0">
         {isLoading ? (
           <div className="py-20 text-center">
             <RefreshCw className="w-8 h-8 text-brand-500 animate-spin mx-auto mb-3" />
-            <p className="text-sm text-slate-500 font-medium">Memuat data katalog item master...</p>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Memuat data katalog item master...</p>
           </div>
         ) : isError ? (
           <div className="py-16 text-center text-slate-500">
             <AlertCircle className="w-10 h-10 text-rose-500 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-slate-800">Gagal memuat katalog item</p>
+            <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Gagal memuat katalog item</p>
             <p className="text-xs text-slate-400 mt-1">Silakan periksa koneksi atau coba muat ulang.</p>
             <button
               onClick={() => refetch()}
-              className="mt-3 px-4 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg"
+              className="mt-3 px-4 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl"
             >
               Coba Lagi
             </button>
           </div>
         ) : !data || data.content.length === 0 ? (
           <div className="py-20 text-center text-slate-500">
-            <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-base font-semibold text-slate-700">Belum ada item master</p>
+            <Package className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+            <p className="text-base font-bold text-slate-700 dark:text-slate-300">Belum ada item master</p>
             <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
               {searchTerm || categoryFilter || statusFilter !== 'ALL'
                 ? 'Tidak ada item yang cocok dengan kriteria pencarian dan filter.'
@@ -275,7 +270,7 @@ export const ItemCatalogListPage: React.FC = () => {
             {!searchTerm && !categoryFilter && (
               <button
                 onClick={handleOpenCreateModal}
-                className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-xs font-semibold rounded-lg hover:bg-brand-700"
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-600 to-brand-500 text-white text-xs font-bold rounded-xl shadow-sm"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Tambah Item Sekarang
@@ -284,9 +279,9 @@ export const ItemCatalogListPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse text-sm text-slate-600 dark:text-slate-300">
               <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                <tr className="bg-slate-100/70 dark:bg-slate-900/70 border-b border-slate-200/80 dark:border-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                   <th className="py-3.5 px-4">Kode</th>
                   <th className="py-3.5 px-4">Nama Item / Uraian Pekerjaan</th>
                   <th className="py-3.5 px-4">Kategori</th>
@@ -296,28 +291,28 @@ export const ItemCatalogListPage: React.FC = () => {
                   <th className="py-3.5 px-4 text-center">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                 {data.content.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
+                  <tr key={item.id} className="hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors">
                     {/* Code */}
-                    <td className="py-3.5 px-4 font-mono text-xs text-slate-500 font-semibold">
-                      <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+                    <td className="py-3.5 px-4 font-mono text-xs font-bold">
+                      <span className="bg-brand-500/10 text-brand-600 dark:text-brand-400 px-2 py-0.5 rounded border border-brand-500/20">
                         {item.code || '-'}
                       </span>
                     </td>
 
                     {/* Name & Description */}
                     <td className="py-3.5 px-4 max-w-md">
-                      <div className="font-medium text-slate-900 leading-snug">{item.name}</div>
+                      <div className="font-bold text-slate-900 dark:text-slate-100 leading-snug">{item.name}</div>
                       {item.description && (
-                        <div className="text-xs text-slate-500 mt-0.5 line-clamp-1">{item.description}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">{item.description}</div>
                       )}
                     </td>
 
                     {/* Category */}
                     <td className="py-3.5 px-4">
                       {item.category ? (
-                        <span className="inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium">
+                        <span className="inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-200/80 dark:border-slate-700">
                           <Layers className="w-3 h-3 text-slate-400" />
                           {item.category}
                         </span>
@@ -328,13 +323,13 @@ export const ItemCatalogListPage: React.FC = () => {
 
                     {/* Unit */}
                     <td className="py-3.5 px-4">
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-brand-50 text-brand-700 border border-brand-200/50">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-brand-500/10 text-brand-700 dark:text-brand-300 border border-brand-500/20">
                         {item.defaultUnit}
                       </span>
                     </td>
 
                     {/* Default Price */}
-                    <td className="py-3.5 px-4 text-right font-mono font-medium text-slate-900">
+                    <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">
                       {formatRupiah(item.defaultPrice)}
                     </td>
 
@@ -344,10 +339,10 @@ export const ItemCatalogListPage: React.FC = () => {
                         onClick={() => toggleStatusMutation.mutate({ id: item.id, active: !item.active })}
                         disabled={toggleStatusMutation.isPending}
                         title={`Klik untuk ${item.active ? 'menonaktifkan' : 'mengaktifkan'}`}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold transition-colors ${
                           item.active
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                            : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
                         }`}
                       >
                         {item.active ? (
@@ -368,7 +363,7 @@ export const ItemCatalogListPage: React.FC = () => {
                     <td className="py-3.5 px-4 text-center">
                       <button
                         onClick={() => handleOpenEditModal(item)}
-                        className="p-1.5 text-slate-500 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-500/10 rounded-lg transition-colors"
                         title="Ubah data item"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -383,33 +378,33 @@ export const ItemCatalogListPage: React.FC = () => {
 
         {/* Pagination Bar */}
         {data && data.totalPages > 1 && (
-          <div className="bg-slate-50/80 px-4 py-3 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
+          <div className="bg-white/40 dark:bg-slate-900/40 px-5 py-4 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <div>
               Menampilkan {data.number * data.size + 1} -{' '}
               {Math.min((data.number + 1) * data.size, data.totalElements)} dari {data.totalElements} item
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <button
                 disabled={data.first}
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 font-medium"
+                className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition"
               >
-                <ChevronLeft className="w-3.5 h-3.5" /> Sebelumnya
+                <ChevronLeft className="w-3.5 h-3.5 inline mr-1" /> Sebelumnya
               </button>
-              <span className="px-3 py-1 font-semibold text-slate-700">
+              <span className="px-2 font-semibold text-slate-700 dark:text-slate-300">
                 {data.number + 1} / {data.totalPages}
               </span>
               <button
                 disabled={data.last}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 font-medium"
+                className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition"
               >
-                Berikutnya <ChevronRight className="w-3.5 h-3.5" />
+                Berikutnya <ChevronRight className="w-3.5 h-3.5 inline ml-1" />
               </button>
             </div>
           </div>
         )}
-      </div>
+      </BentoCard>
 
       {/* Item Modal Create/Edit */}
       <ItemCatalogModal
@@ -423,3 +418,5 @@ export const ItemCatalogListPage: React.FC = () => {
     </div>
   );
 };
+
+export default ItemCatalogListPage;

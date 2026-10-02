@@ -7,58 +7,16 @@ import {
   Filter,
   Eye,
   CheckCircle2,
-  Clock,
-  Ban,
   FileCheck2,
-  AlertCircle,
-  AlertTriangle
+  AlertCircle
 } from 'lucide-react';
 import { invoiceApi } from '../api/invoiceApi';
 import { customerApi } from '../api/customerApi';
-import { Invoice, InvoiceStatus, InvoicePaymentStatus } from '../types/invoice';
+import { Invoice } from '../types/invoice';
 import { Customer } from '../types/customer';
-
-const STATUS_CONFIG: Record<InvoiceStatus, { label: string; bg: string; text: string; icon: React.ComponentType<{ className?: string }> }> = {
-  DRAFT: {
-    label: 'Draft',
-    bg: 'bg-slate-100 text-slate-700 border-slate-200',
-    text: 'text-slate-600',
-    icon: Clock,
-  },
-  ISSUED: {
-    label: 'Diterbitkan',
-    bg: 'bg-blue-50 text-blue-700 border-blue-200',
-    text: 'text-blue-600',
-    icon: FileCheck2,
-  },
-  CANCELLED: {
-    label: 'Dibatalkan',
-    bg: 'bg-amber-50 text-amber-700 border-amber-200',
-    text: 'text-amber-600',
-    icon: Ban,
-  },
-};
-
-const PAYMENT_STATUS_CONFIG: Record<InvoicePaymentStatus, { label: string; bg: string; text: string; icon: React.ComponentType<{ className?: string }> }> = {
-  UNPAID: {
-    label: 'Belum Bayar',
-    bg: 'bg-rose-50 text-rose-700 border-rose-200',
-    text: 'text-rose-600',
-    icon: AlertCircle,
-  },
-  PARTIAL: {
-    label: 'Sebagian',
-    bg: 'bg-amber-50 text-amber-700 border-amber-200',
-    text: 'text-amber-600',
-    icon: AlertTriangle,
-  },
-  PAID: {
-    label: 'Lunas',
-    bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    text: 'text-emerald-600',
-    icon: CheckCircle2,
-  },
-};
+import { BentoCard } from '@/components/common/BentoCard';
+import { PageHeader } from '@/components/common/PageHeader';
+import { StatusBadge } from '@/components/common/StatusBadge';
 
 export const InvoiceListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -98,7 +56,7 @@ export const InvoiceListPage: React.FC = () => {
       setTotalPages(response.totalPages || 1);
       setTotalElements(response.totalElements || 0);
     } catch (err: any) {
-      setErrorMsg(err.response?.data?.message || 'Gagal memuat data faktur.');
+      setErrorMsg(err.response?.data?.message || 'Gagal memuat daftar faktur.');
     } finally {
       setLoading(false);
     }
@@ -134,88 +92,83 @@ export const InvoiceListPage: React.FC = () => {
   const countUnpaid = invoiceList.filter((inv) => inv.paymentStatus === 'UNPAID').length;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <div className="flex items-center gap-2 text-slate-800">
-            <Receipt className="w-6 h-6 text-brand-600" />
-            <h1 className="text-2xl font-bold tracking-tight">Faktur Penjualan (Invoices)</h1>
-          </div>
-          <p className="text-sm text-slate-500 mt-1">
-            Kelola penagihan piutang, keterkaitan penawaran proyek, termin pembayaran, dan riwayat pelunasan.
-          </p>
-        </div>
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      {/* Top Header */}
+      <PageHeader
+        icon={Receipt}
+        title="Faktur Penjualan (Invoices)"
+        subtitle="Kelola penagihan piutang, keterkaitan SPH proyek, termin pembayaran, dan pelunasan kas."
+        actions={
+          <button
+            onClick={() => navigate('/faktur/create')}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white text-xs font-bold shadow-md shadow-brand-500/25 transition active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            Buat Faktur Baru
+          </button>
+        }
+      />
 
-        <button
-          onClick={() => navigate('/faktur/create')}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 active:bg-brand-800 shadow-sm transition self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          Buat Faktur Baru
-        </button>
-      </div>
-
-      {/* KPI Cards */}
+      {/* KPI Bento Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center shrink-0">
+        <BentoCard className="p-4 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 border border-brand-500/20">
             <Receipt className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-500">Total Faktur</p>
-            <p className="text-xl font-bold text-slate-900">{totalElements}</p>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Faktur</p>
+            <p className="text-xl font-black text-slate-900 dark:text-white mt-0.5">{totalElements}</p>
           </div>
-        </div>
+        </BentoCard>
 
-        <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+        <BentoCard className="p-4 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-500/20">
             <FileCheck2 className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-500">Total Tagihan (Halaman)</p>
-            <p className="text-lg font-bold text-slate-900 truncate">{formatCurrency(totalNominal)}</p>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tagihan (Halaman)</p>
+            <p className="text-base font-black text-slate-900 dark:text-white truncate mt-0.5">{formatCurrency(totalNominal)}</p>
           </div>
-        </div>
+        </BentoCard>
 
-        <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+        <BentoCard className="p-4 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
             <AlertCircle className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-500">Sisa Tagihan / Piutang</p>
-            <p className="text-lg font-bold text-rose-700 truncate">{formatCurrency(totalOutstanding)}</p>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sisa Piutang</p>
+            <p className="text-base font-black text-amber-600 dark:text-amber-400 truncate mt-0.5">{formatCurrency(totalOutstanding)}</p>
           </div>
-        </div>
+        </BentoCard>
 
-        <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+        <BentoCard className="p-4 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
             <CheckCircle2 className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-500">Status Pembayaran</p>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status Bayar</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                 {countPaid} Lunas
               </span>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-rose-100 text-rose-800">
+              <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
                 {countUnpaid} Belum
               </span>
             </div>
           </div>
-        </div>
+        </BentoCard>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3 sm:space-y-0 sm:flex sm:items-center sm:gap-3 flex-wrap">
+      <BentoCard className="p-4 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:gap-3 flex-wrap">
         <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-[200px]">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Cari nomor faktur atau catatan..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full text-sm pl-9 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="w-full text-xs font-medium pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
           />
         </form>
 
@@ -227,7 +180,7 @@ export const InvoiceListPage: React.FC = () => {
               setSelectedStatus(e.target.value);
               setPage(0);
             }}
-            className="text-sm px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+            className="text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
           >
             <option value="">Semua Status Faktur</option>
             <option value="DRAFT">DRAFT</option>
@@ -241,7 +194,7 @@ export const InvoiceListPage: React.FC = () => {
               setSelectedPaymentStatus(e.target.value);
               setPage(0);
             }}
-            className="text-sm px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+            className="text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
           >
             <option value="">Semua Status Bayar</option>
             <option value="UNPAID">Belum Bayar (UNPAID)</option>
@@ -255,7 +208,7 @@ export const InvoiceListPage: React.FC = () => {
               setSelectedCustomer(e.target.value);
               setPage(0);
             }}
-            className="text-sm px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white max-w-[200px] truncate"
+            className="text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 max-w-[200px] truncate"
           >
             <option value="">Semua Customer</option>
             {customers.map((c) => (
@@ -265,60 +218,55 @@ export const InvoiceListPage: React.FC = () => {
             ))}
           </select>
         </div>
-      </div>
+      </BentoCard>
 
       {/* Error Alert */}
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-3 text-sm">
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 flex items-center gap-3 text-sm shadow-xs">
+          <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {/* Data Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <BentoCard className="overflow-hidden p-0">
         {loading ? (
           <div className="p-16 flex items-center justify-center">
-            <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
-            <span className="ml-3 text-sm font-medium text-slate-600">Memuat data faktur...</span>
+            <div className="w-8 h-8 border-3 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="ml-3 text-sm font-semibold text-slate-600 dark:text-slate-400">Memuat data faktur...</span>
           </div>
         ) : invoiceList.length === 0 ? (
           <div className="p-16 text-center space-y-3">
-            <Receipt className="w-12 h-12 text-slate-300 mx-auto" />
-            <p className="text-base font-semibold text-slate-700">Belum ada faktur penjualan</p>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Buat faktur baru secara mandiri atau tarik item kegiatan dari surat penawaran harga yang telah disetujui.
+            <Receipt className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
+            <p className="text-base font-bold text-slate-800 dark:text-slate-200">Belum ada faktur penjualan</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+              Buat faktur baru secara mandiri atau tarik rincian item kegiatan dari surat penawaran harga yang telah disetujui.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  <th className="py-3 px-4">Nomor Faktur</th>
-                  <th className="py-3 px-4">Tanggal / Jatuh Tempo</th>
-                  <th className="py-3 px-4">Customer</th>
-                  <th className="py-3 px-4">Sumber Penawaran</th>
-                  <th className="py-3 px-4 text-right">Total Tagihan</th>
-                  <th className="py-3 px-4 text-right">Sisa (Outstanding)</th>
-                  <th className="py-3 px-4 text-center">Status</th>
-                  <th className="py-3 px-4 text-center">Pembayaran</th>
-                  <th className="py-3 px-4 text-right">Aksi</th>
+                <tr className="bg-slate-100/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                  <th className="py-3.5 px-4">Nomor Faktur</th>
+                  <th className="py-3.5 px-4">Tanggal / Jatuh Tempo</th>
+                  <th className="py-3.5 px-4">Customer</th>
+                  <th className="py-3.5 px-4">Sumber SPH</th>
+                  <th className="py-3.5 px-4 text-right">Total Tagihan</th>
+                  <th className="py-3.5 px-4 text-right">Sisa Piutang</th>
+                  <th className="py-3.5 px-4 text-center">Status</th>
+                  <th className="py-3.5 px-4 text-center">Pembayaran</th>
+                  <th className="py-3.5 px-4 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-200">
                 {invoiceList.map((inv) => {
-                  const statusMeta = STATUS_CONFIG[inv.status] || STATUS_CONFIG.DRAFT;
-                  const StatusIcon = statusMeta.icon;
-                  const payMeta = PAYMENT_STATUS_CONFIG[inv.paymentStatus] || PAYMENT_STATUS_CONFIG.UNPAID;
-                  const PayIcon = payMeta.icon;
-
                   return (
-                    <tr key={inv.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-bold text-brand-700">
+                    <tr key={inv.id} className="hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3.5 px-4 font-mono font-bold text-brand-600 dark:text-brand-400">
                         {inv.number}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-600">
+                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 text-xs font-medium">
                         <div>
                           {new Date(inv.date).toLocaleDateString('id-ID', {
                             day: 'numeric',
@@ -327,7 +275,7 @@ export const InvoiceListPage: React.FC = () => {
                           })}
                         </div>
                         {inv.dueDate && (
-                          <div className="text-xs text-slate-400 mt-0.5">
+                          <div className="text-[11px] text-slate-400 mt-0.5">
                             Tempo: {new Date(inv.dueDate).toLocaleDateString('id-ID', {
                               day: 'numeric',
                               month: 'short',
@@ -337,52 +285,45 @@ export const InvoiceListPage: React.FC = () => {
                         )}
                       </td>
                       <td className="py-3.5 px-4">
-                        <div className="font-semibold text-slate-800">{inv.customerName}</div>
-                        <div className="text-xs text-slate-400 font-mono">{inv.customerCode}</div>
+                        <div className="font-bold text-slate-800 dark:text-slate-100 text-xs">{inv.customerName}</div>
+                        <div className="text-[11px] text-slate-400 font-mono">{inv.customerCode}</div>
                       </td>
                       <td className="py-3.5 px-4">
                         {inv.sourcePenawaranNumber ? (
                           <button
                             onClick={() => navigate(`/penawaran/${inv.sourcePenawaranId}`)}
-                            className="text-xs font-mono font-medium text-brand-600 hover:text-brand-800 hover:underline inline-flex items-center gap-1"
+                            className="text-xs font-mono font-bold text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-1"
                           >
                             <FileCheck2 className="w-3 h-3" />
                             {inv.sourcePenawaranNumber}
                           </button>
                         ) : (
-                          <span className="text-xs text-slate-400 italic">Langsung (Non-Penawaran)</span>
+                          <span className="text-[11px] text-slate-400 italic">Langsung (Non-SPH)</span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900">
+                      <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">
                         {formatCurrency(inv.totalAmount)}
                       </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-semibold">
-                        <span className={inv.outstanding > 0 ? 'text-rose-600' : 'text-slate-400'}>
+                      <td className="py-3.5 px-4 text-right font-mono font-bold">
+                        <span className={inv.outstanding > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'}>
                           {formatCurrency(inv.outstanding)}
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${statusMeta.bg}`}
-                        >
-                          <StatusIcon className="w-3.5 h-3.5" />
-                          {statusMeta.label}
-                        </span>
+                        <StatusBadge status={inv.status} size="sm" />
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${payMeta.bg}`}
-                        >
-                          <PayIcon className="w-3.5 h-3.5" />
-                          {payMeta.label}
-                        </span>
+                        <StatusBadge
+                          status={inv.paymentStatus === 'PAID' ? 'LUNAS' : inv.paymentStatus === 'PARTIAL' ? 'SEBAGIAN' : 'BELUM BAYAR'}
+                          size="sm"
+                        />
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         <button
                           onClick={() => navigate(`/faktur/${inv.id}`)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-white/70 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 transition shadow-xs"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          <Eye className="w-3.5 h-3.5 text-brand-500" />
                           Rincian
                         </button>
                       </td>
@@ -396,29 +337,29 @@ export const InvoiceListPage: React.FC = () => {
 
         {/* Pagination */}
         {!loading && totalPages > 1 && (
-          <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <div className="p-4 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
             <span>
               Menampilkan halaman {page + 1} dari {totalPages} ({totalElements} total faktur)
             </span>
-            <div className="flex gap-1">
+            <div className="flex gap-1.5">
               <button
                 disabled={page === 0}
                 onClick={() => setPage((prev) => Math.max(0, prev - 1))}
-                className="px-3 py-1.5 rounded border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 disabled:opacity-30 hover:bg-white dark:hover:bg-slate-700 transition"
               >
                 Sebelumnya
               </button>
               <button
                 disabled={page >= totalPages - 1}
                 onClick={() => setPage((prev) => prev + 1)}
-                className="px-3 py-1.5 rounded border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 disabled:opacity-30 hover:bg-white dark:hover:bg-slate-700 transition"
               >
                 Berikutnya
               </button>
             </div>
           </div>
         )}
-      </div>
+      </BentoCard>
     </div>
   );
 };

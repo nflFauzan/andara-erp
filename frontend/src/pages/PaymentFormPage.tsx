@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   CreditCard,
-  ArrowLeft,
   Save,
   AlertCircle,
   Building2,
@@ -19,6 +18,8 @@ import { Customer } from '../types/customer';
 import { Invoice } from '../types/invoice';
 import { PaymentMethod } from '../types/payment';
 import { useAuth } from '../context/AuthContext';
+import { BentoCard } from '@/components/common/BentoCard';
+import { PageHeader } from '@/components/common/PageHeader';
 
 export const PaymentFormPage: React.FC = () => {
   const navigate = useNavigate();
@@ -202,78 +203,70 @@ export const PaymentFormPage: React.FC = () => {
 
   if (!isOperator) {
     return (
-      <div className="max-w-2xl mx-auto p-8 text-center bg-white rounded-3xl border border-slate-200 shadow-sm space-y-4">
-        <div className="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl mx-auto flex items-center justify-center">
+      <BentoCard className="max-w-2xl mx-auto p-8 text-center space-y-4">
+        <div className="w-14 h-14 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-2xl mx-auto flex items-center justify-center border border-rose-500/20">
           <AlertCircle className="w-8 h-8" />
         </div>
-        <h2 className="text-xl font-bold text-slate-900">Akses Ditolak (403 Forbidden)</h2>
-        <p className="text-sm text-slate-600">
-          Sesuai tata kelola sistem CV. ANDARA (PRD §5.3 & AGENTS.md §11), hak akses pencatatan transaksi pembayaran dan alokasi finansial secara ketat dibatasi hanya untuk role <strong>OPERATOR</strong>.
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Akses Ditolak (403 Forbidden)</h2>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          Sesuai tata kelola sistem CV. ANDARA (PRD §5.3 & AGENTS.md §11), hak akses pencatatan transaksi pembayaran dan alokasi finansial secara ketat dibatasi hanya untuk role <strong className="text-slate-900 dark:text-white">OPERATOR</strong>.
         </p>
         <button
           onClick={() => navigate('/pembayaran')}
-          className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-medium rounded-xl transition"
+          className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-sm font-semibold rounded-xl transition"
         >
           Kembali ke Daftar Pembayaran
         </button>
-      </div>
+      </BentoCard>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-6 pb-12">
       {/* Top Navigation */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/pembayaran')}
-            className="p-2 hover:bg-slate-200 text-slate-600 rounded-xl transition"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <CreditCard className="w-7 h-7 text-indigo-600" />
-              Catat Pembayaran Baru
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Penerimaan pembayaran dari customer dengan alokasi langsung ke faktur
-            </p>
+      <PageHeader
+        icon={CreditCard}
+        backUrl="/pembayaran"
+        title="Catat Pembayaran Baru"
+        subtitle="Penerimaan pembayaran dari customer dengan alokasi langsung ke faktur penjualan."
+        badge={
+          <span className="text-[11px] bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold px-2.5 py-0.5 rounded-full border border-brand-500/20">
+            Finansial & Kas
+          </span>
+        }
+        actions={
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => navigate('/pembayaran')}
+              className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl transition shadow-xs"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting || isOverAllocated || !selectedCustomerId || totalPaymentNum <= 0}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/25 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Menyimpan...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Simpan & Konfirmasi Pembayaran
+                </>
+              )}
+            </button>
           </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/pembayaran')}
-            className="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-medium transition"
-          >
-            Batal
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting || isOverAllocated || !selectedCustomerId || totalPaymentNum <= 0}
-            className="inline-flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Menyimpan...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                Simpan & Konfirmasi Pembayaran
-              </>
-            )}
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {errorMessage && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3 text-rose-700 text-sm">
-          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+        <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-start gap-3 text-rose-800 dark:text-rose-300 text-sm">
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-rose-500" />
           <div className="flex-1 font-medium">{errorMessage}</div>
         </div>
       )}
@@ -282,22 +275,22 @@ export const PaymentFormPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Payment Details */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
-            <h3 className="font-semibold text-slate-900 text-sm border-b border-slate-100 pb-3 flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-indigo-600" />
+          <BentoCard className="p-5 space-y-4">
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm border-b border-slate-200/80 dark:border-slate-800 pb-3 flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-brand-500" />
               Informasi Transaksi
             </h3>
 
             {/* Customer Select */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Customer *
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                Customer <span className="text-rose-500">*</span>
               </label>
               <select
                 required
                 value={selectedCustomerId}
                 onChange={(e) => setSelectedCustomerId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full px-3 py-2 text-sm bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30 font-semibold"
               >
                 <option value="">-- Pilih Customer --</option>
                 {customers.map((c) => (
@@ -310,8 +303,8 @@ export const PaymentFormPage: React.FC = () => {
 
             {/* Payment Date */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Tanggal Pembayaran *
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                Tanggal Pembayaran <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -320,15 +313,15 @@ export const PaymentFormPage: React.FC = () => {
                   required
                   value={paymentDate}
                   onChange={(e) => setPaymentDate(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full pl-9 pr-3 py-2 text-sm bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30 font-medium"
                 />
               </div>
             </div>
 
             {/* Total Amount */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Nominal Pembayaran (Rp) *
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                Nominal Pembayaran (Rp) <span className="text-rose-500">*</span>
               </label>
               <input
                 type="number"
@@ -338,10 +331,10 @@ export const PaymentFormPage: React.FC = () => {
                 placeholder="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full px-3 py-2.5 text-lg font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full px-3 py-2.5 text-lg font-bold text-slate-900 dark:text-white bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30"
               />
               {totalPaymentNum > 0 && (
-                <div className="text-xs text-indigo-600 font-medium mt-1">
+                <div className="text-xs text-brand-600 dark:text-brand-400 font-bold mt-1">
                   Terbilang: {formatCurrency(totalPaymentNum)}
                 </div>
               )}
@@ -349,13 +342,13 @@ export const PaymentFormPage: React.FC = () => {
 
             {/* Payment Method */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Metode Pembayaran *
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                Metode Pembayaran <span className="text-rose-500">*</span>
               </label>
               <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full px-3 py-2 text-sm bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30 font-medium"
               >
                 <option value="BANK_TRANSFER">Transfer Bank</option>
                 <option value="CASH">Tunai (Cash)</option>
@@ -366,7 +359,7 @@ export const PaymentFormPage: React.FC = () => {
 
             {/* Destination Account */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                 Rekening Tujuan / Kas
               </label>
               <input
@@ -374,13 +367,13 @@ export const PaymentFormPage: React.FC = () => {
                 placeholder="Contoh: Bank Mandiri 142-00-1234567-8"
                 value={destinationAccount}
                 onChange={(e) => setDestinationAccount(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full px-3 py-2 text-sm bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30"
               />
             </div>
 
             {/* Reference */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                 Nomor Referensi / No. Bukti Transfer
               </label>
               <input
@@ -388,13 +381,13 @@ export const PaymentFormPage: React.FC = () => {
                 placeholder="Contoh: TRF-MDR-99210"
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="w-full px-3 py-2 text-sm bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30"
               />
             </div>
 
             {/* Notes */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                 Catatan Pembayaran
               </label>
               <textarea
@@ -402,29 +395,29 @@ export const PaymentFormPage: React.FC = () => {
                 placeholder="Catatan tambahan untuk transaksi ini..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none"
+                className="w-full px-3 py-2 text-sm bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30 resize-none"
               />
             </div>
-          </div>
+          </BentoCard>
         </div>
 
         {/* Right Column: Invoice Allocation Engine */}
         <div className="lg:col-span-2 space-y-6">
           {/* Allocation Table Card */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <BentoCard className="p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-3">
               <div>
-                <h3 className="font-semibold text-slate-900 text-sm flex items-center gap-2">
-                  <Receipt className="w-4 h-4 text-indigo-600" />
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                  <Receipt className="w-4 h-4 text-brand-500" />
                   Alokasi ke Faktur Penjualan (Settlement)
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Tentukan jumlah alokasi pelunasan untuk masing-masing faktur aktif
                 </p>
               </div>
 
               {selectedCustomerId && (
-                <span className="text-xs text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full font-medium">
+                <span className="text-xs text-brand-600 dark:text-brand-400 bg-brand-500/10 px-2.5 py-1 rounded-full font-bold border border-brand-500/20">
                   {invoices.length} faktur belum lunas
                 </span>
               )}
@@ -432,29 +425,29 @@ export const PaymentFormPage: React.FC = () => {
 
             {!selectedCustomerId ? (
               <div className="py-12 text-center text-slate-400">
-                <Building2 className="w-10 h-10 mx-auto text-slate-300 mb-2" />
+                <Building2 className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
                 Pilih Customer di panel kiri untuk memuat daftar faktur yang belum lunas.
               </div>
             ) : loadingInvoices ? (
               <div className="py-12 text-center text-slate-400">
-                <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                 Memuat daftar faktur customer...
               </div>
             ) : invoices.length === 0 ? (
-              <div className="py-8 text-center text-slate-500 bg-slate-50 rounded-2xl p-6 border border-slate-200/60">
+              <div className="py-8 text-center text-slate-500 bg-emerald-500/5 rounded-2xl p-6 border border-emerald-500/20">
                 <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-                <div className="font-medium text-slate-900">Seluruh Faktur Customer Sudah Lunas!</div>
-                <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                <div className="font-bold text-slate-900 dark:text-white">Seluruh Faktur Customer Sudah Lunas!</div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
                   Customer ini tidak memiliki tagihan outstanding. Pembayaran yang dimasukkan sebesar{' '}
-                  <span className="font-semibold text-indigo-600">{formatCurrency(totalPaymentNum)}</span>{' '}
-                  akan dicatat utuh sebagai <span className="font-semibold text-amber-600">Deposit Customer</span>.
+                  <span className="font-bold text-brand-600 dark:text-brand-400">{formatCurrency(totalPaymentNum)}</span>{' '}
+                  akan dicatat utuh sebagai <span className="font-bold text-amber-600 dark:text-amber-400">Deposit Customer</span>.
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm text-slate-600">
-                    <thead className="bg-slate-50/80 border-b border-slate-200/80 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800">
+                  <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                    <thead className="bg-slate-100/70 dark:bg-slate-900/70 border-b border-slate-200/80 dark:border-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                       <tr>
                         <th className="px-3 py-3">No. Faktur</th>
                         <th className="px-3 py-3">Tanggal</th>
@@ -464,25 +457,25 @@ export const PaymentFormPage: React.FC = () => {
                         <th className="px-3 py-3 w-40">Catatan</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                       {invoices.map((inv) => {
                         const allocData = allocations[inv.id] || { amount: '', notes: '' };
                         const allocNum = parseFloat(allocData.amount) || 0;
                         const exceeds = allocNum > inv.outstanding;
 
                         return (
-                          <tr key={inv.id} className="hover:bg-slate-50/50 transition">
-                            <td className="px-3 py-3.5 font-medium text-slate-900">
+                          <tr key={inv.id} className="hover:bg-white/40 dark:hover:bg-slate-800/40 transition">
+                            <td className="px-3 py-3.5 font-bold text-slate-900 dark:text-white">
                               {inv.number}
                             </td>
-                            <td className="px-3 py-3.5 text-xs text-slate-500">
+                            <td className="px-3 py-3.5 text-xs text-slate-500 dark:text-slate-400">
                               {inv.date}
                             </td>
-                            <td className="px-3 py-3.5 text-right font-medium text-slate-700">
+                            <td className="px-3 py-3.5 text-right font-medium text-slate-700 dark:text-slate-300 font-mono">
                               {formatCurrency(inv.totalAmount)}
                             </td>
                             <td className="px-3 py-3.5 text-right">
-                              <span className="font-semibold text-rose-600">
+                              <span className="font-bold text-rose-600 dark:text-rose-400 font-mono">
                                 {formatCurrency(inv.outstanding)}
                               </span>
                             </td>
@@ -496,16 +489,16 @@ export const PaymentFormPage: React.FC = () => {
                                   placeholder="0"
                                   value={allocData.amount}
                                   onChange={(e) => handleAllocationChange(inv.id, e.target.value)}
-                                  className={`w-full px-2.5 py-1.5 text-right font-semibold text-sm bg-slate-50 border rounded-lg focus:outline-none focus:ring-2 ${
+                                  className={`w-full px-2.5 py-1.5 text-right font-mono font-bold text-sm rounded-lg focus:outline-none focus:ring-2 ${
                                     exceeds
-                                      ? 'border-rose-400 text-rose-700 focus:ring-rose-500/20'
-                                      : 'border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'
+                                      ? 'border border-rose-500 text-rose-700 bg-rose-500/10 focus:ring-rose-500/20'
+                                      : 'border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-900 dark:text-white focus:ring-brand-500/30'
                                   }`}
                                 />
                                 <button
                                   type="button"
                                   onClick={() => allocateMaxForInvoice(inv)}
-                                  className="text-xs text-indigo-600 hover:text-indigo-800 underline font-medium block text-right w-full"
+                                  className="text-[11px] text-brand-600 dark:text-brand-400 hover:underline font-bold block text-right w-full"
                                 >
                                   Alokasikan Sisa
                                 </button>
@@ -517,7 +510,7 @@ export const PaymentFormPage: React.FC = () => {
                                 placeholder="Ket. alokasi..."
                                 value={allocData.notes}
                                 onChange={(e) => handleNotesChange(inv.id, e.target.value)}
-                                className="w-full px-2 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                className="w-full px-2 py-1.5 text-xs bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                               />
                             </td>
                           </tr>
@@ -530,45 +523,45 @@ export const PaymentFormPage: React.FC = () => {
             )}
 
             {/* Live Financial Allocation Summary */}
-            <div className="p-4 bg-slate-50/80 border border-slate-200/80 rounded-2xl space-y-3">
+            <div className="p-4 bg-white/50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800 rounded-2xl space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600">Nominal Pembayaran Diterima:</span>
-                <span className="font-bold text-slate-900">{formatCurrency(totalPaymentNum)}</span>
+                <span className="text-slate-600 dark:text-slate-400 font-medium">Nominal Pembayaran Diterima:</span>
+                <span className="font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(totalPaymentNum)}</span>
               </div>
 
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600">Total Alokasi ke Faktur:</span>
-                <span className={`font-bold ${isOverAllocated ? 'text-rose-600' : 'text-emerald-600'}`}>
+                <span className="text-slate-600 dark:text-slate-400 font-medium">Total Alokasi ke Faktur:</span>
+                <span className={`font-mono font-bold ${isOverAllocated ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                   {formatCurrency(totalAllocatedNum)}
                 </span>
               </div>
 
-              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-sm">
-                <span className="text-slate-700 font-medium">Sisa Lebih / Masuk Deposit Customer:</span>
-                <span className="font-bold text-amber-600 text-base">
+              <div className="border-t border-slate-200 dark:border-slate-800 pt-2 flex items-center justify-between text-sm">
+                <span className="text-slate-700 dark:text-slate-300 font-semibold">Sisa Lebih / Masuk Deposit Customer:</span>
+                <span className="font-mono font-black text-amber-500 text-base">
                   {formatCurrency(excessNum)}
                 </span>
               </div>
 
               {/* Status Alert Messages */}
               {isOverAllocated && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-center gap-2 font-medium">
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2 font-semibold">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
                   Total alokasi melebihi nominal pembayaran! Harap sesuaikan alokasi faktur.
                 </div>
               )}
 
               {excessNum > 0 && !isOverAllocated && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-start gap-2 leading-relaxed">
-                  <Wallet className="w-4 h-4 flex-shrink-0 text-amber-600 mt-0.5" />
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-800 dark:text-amber-300 text-xs flex items-start gap-2 leading-relaxed font-medium">
+                  <Wallet className="w-4 h-4 shrink-0 text-amber-500 mt-0.5" />
                   <div>
                     Terdapat sisa pembayaran sebesar <span className="font-bold">{formatCurrency(excessNum)}</span>. 
-                    Sistem akan secara otomatis mencatat kelebihan ini ke <span className="font-semibold underline">Deposit Customer</span> (AGENTS.md §10.3) yang dapat digunakan untuk pemotongan faktur selanjutnya.
+                    Sistem akan secara otomatis mencatat kelebihan ini ke <span className="font-bold underline">Deposit Customer</span> (AGENTS.md §10.3) yang dapat digunakan untuk pemotongan faktur selanjutnya.
                   </div>
                 </div>
               )}
             </div>
-          </div>
+          </BentoCard>
         </div>
       </div>
     </form>

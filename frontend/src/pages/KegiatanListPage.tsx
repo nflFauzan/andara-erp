@@ -23,6 +23,9 @@ import { customerApi } from '../api/customerApi';
 import { Kegiatan, CreateKegiatanInput, UpdateKegiatanInput, KegiatanStatus } from '../types/kegiatan';
 import { KegiatanModal } from '../components/kegiatan/KegiatanModal';
 import { formatRupiah } from '../lib/utils';
+import { BentoCard } from '@/components/common/BentoCard';
+import { PageHeader } from '@/components/common/PageHeader';
+import { StatusBadge } from '@/components/common/StatusBadge';
 
 export const KegiatanListPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -142,99 +145,58 @@ export const KegiatanListPage: React.FC = () => {
   const totalPages = data?.totalPages || 0;
   const totalElements = data?.totalElements || 0;
 
-  const renderStatusBadge = (status: KegiatanStatus) => {
-    switch (status) {
-      case 'ACTIVE':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            Aktif
-          </span>
-        );
-      case 'PLANNED':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-            Direncanakan
-          </span>
-        );
-      case 'COMPLETED':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-            Selesai
-          </span>
-        );
-      case 'CLOSED':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-            Ditutup
-          </span>
-        );
-      case 'CANCELLED':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-            Dibatalkan
-          </span>
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2.5">
-            <Layers className="w-7 h-7 text-indigo-600" />
-            Kegiatan & Rincian Item Pekerjaan
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Pencatatan proyek operasional, rincian volume & harga satuan, serta dasar penawaran dan faktur penjualan.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => refetch()}
-            className="p-2.5 bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 rounded-xl hover:bg-slate-50 transition shadow-sm"
-            title="Refresh Data"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleOpenCreateModal}
-            className="inline-flex items-center space-x-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow transition"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Kegiatan</span>
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        icon={Layers}
+        title="Kegiatan & Rincian Item Pekerjaan"
+        subtitle="Pencatatan proyek operasional, rincian volume & harga satuan, serta dasar penawaran dan faktur penjualan."
+        badge={
+          <span className="text-[11px] bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold px-2.5 py-0.5 rounded-full border border-brand-500/20">
+            Operasional
+          </span>
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => refetch()}
+              className="p-2 bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition shadow-xs"
+              title="Refresh Data"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleOpenCreateModal}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/25 transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tambah Kegiatan</span>
+            </button>
+          </div>
+        }
+      />
 
       {/* Feedback Banner */}
       {feedbackMessage && (
         <div
-          className={`p-4 rounded-xl flex items-center justify-between transition-all ${
+          className={`p-4 rounded-2xl flex items-center justify-between transition-all ${
             feedbackMessage.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-              : 'bg-rose-50 text-rose-800 border border-rose-200'
+              ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20'
+              : 'bg-rose-500/10 text-rose-800 dark:text-rose-300 border border-rose-500/20'
           }`}
         >
-          <div className="flex items-center space-x-2.5 text-sm font-medium">
+          <div className="flex items-center gap-2.5 text-xs font-semibold">
             {feedbackMessage.type === 'success' ? (
-              <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+              <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
             )}
             <span>{feedbackMessage.text}</span>
           </div>
           <button
             onClick={() => setFeedbackMessage(null)}
-            className="text-xs font-semibold underline ml-4 hover:opacity-80"
+            className="text-xs font-bold underline ml-4 hover:opacity-80"
           >
             Tutup
           </button>
@@ -242,7 +204,7 @@ export const KegiatanListPage: React.FC = () => {
       )}
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col lg:flex-row gap-3 items-center justify-between">
+      <BentoCard className="p-4 flex flex-col lg:flex-row gap-3 items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
           {/* Search Box */}
           <div className="relative w-full sm:w-80">
@@ -257,7 +219,7 @@ export const KegiatanListPage: React.FC = () => {
                 setPage(0);
               }}
               placeholder="Cari kode, nama proyek, lokasi..."
-              className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+              className="w-full pl-10 pr-4 py-2 text-xs font-medium bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30"
             />
           </div>
 
@@ -269,7 +231,7 @@ export const KegiatanListPage: React.FC = () => {
                 setSelectedCustomerId(e.target.value ? Number(e.target.value) : undefined);
                 setPage(0);
               }}
-              className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+              className="w-full px-3.5 py-2 text-xs font-semibold bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30"
             >
               <option value="">-- Semua Customer --</option>
               {activeCustomers.map((c) => (
@@ -283,11 +245,11 @@ export const KegiatanListPage: React.FC = () => {
 
         {/* Status Filter */}
         <div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto">
-          <div className="flex items-center gap-1.5 text-xs text-slate-400 shrink-0">
-            <Filter className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0">
+            <Filter className="w-3.5 h-3.5 text-brand-500" />
             <span>Status:</span>
           </div>
-          <div className="inline-flex p-1 bg-slate-100 rounded-xl text-xs font-semibold shrink-0">
+          <div className="inline-flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl text-xs font-bold shrink-0 border border-slate-200/60 dark:border-slate-700/60">
             {(['ALL', 'ACTIVE', 'PLANNED', 'COMPLETED', 'CLOSED', 'CANCELLED'] as const).map((st) => (
               <button
                 key={st}
@@ -297,8 +259,8 @@ export const KegiatanListPage: React.FC = () => {
                 }}
                 className={`px-2.5 py-1.5 rounded-lg transition ${
                   statusFilter === st
-                    ? 'bg-white text-indigo-600 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 {st === 'ALL' ? 'Semua' : st}
@@ -306,14 +268,14 @@ export const KegiatanListPage: React.FC = () => {
             ))}
           </div>
         </div>
-      </div>
+      </BentoCard>
 
       {/* Kegiatan Data Table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <BentoCard className="overflow-hidden p-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse text-sm text-slate-600 dark:text-slate-300">
             <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <tr className="bg-slate-100/70 dark:bg-slate-900/70 border-b border-slate-200/80 dark:border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                 <th className="py-3.5 px-4">Kode & Tanggal</th>
                 <th className="py-3.5 px-4">Nama Kegiatan & Lokasi</th>
                 <th className="py-3.5 px-4">Customer</th>
@@ -323,19 +285,19 @@ export const KegiatanListPage: React.FC = () => {
                 <th className="py-3.5 px-4 text-center">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
               {isLoading ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400">
                     <div className="flex flex-col items-center justify-center space-y-2">
-                      <div className="w-6 h-6 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
-                      <p className="text-xs">Memuat data kegiatan...</p>
+                      <div className="w-6 h-6 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
+                      <p className="text-xs font-semibold">Memuat data kegiatan...</p>
                     </div>
                   </td>
                 </tr>
               ) : isError ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-rose-500 text-sm">
+                  <td colSpan={7} className="py-8 text-center text-rose-500 text-sm font-semibold">
                     Terjadi kesalahan saat memuat data kegiatan. Silakan refresh halaman.
                   </td>
                 </tr>
@@ -343,8 +305,8 @@ export const KegiatanListPage: React.FC = () => {
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400">
                     <div className="flex flex-col items-center justify-center space-y-2">
-                      <Layers className="w-10 h-10 text-slate-300 stroke-[1.5]" />
-                      <p className="font-medium text-slate-600">Tidak ada kegiatan ditemukan</p>
+                      <Layers className="w-10 h-10 text-slate-300 dark:text-slate-600 stroke-[1.5]" />
+                      <p className="font-bold text-slate-700 dark:text-slate-300">Tidak ada kegiatan ditemukan</p>
                       <p className="text-xs text-slate-400">
                         {searchTerm ? 'Coba ubah kata kunci pencarian Anda.' : 'Klik "Tambah Kegiatan" untuk mencatat proyek baru.'}
                       </p>
@@ -353,13 +315,13 @@ export const KegiatanListPage: React.FC = () => {
                 </tr>
               ) : (
                 kegiatanList.map((k) => (
-                  <tr key={k.id} className="hover:bg-slate-50/70 transition-colors group">
+                  <tr key={k.id} className="hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors group">
                     {/* Kode & Tanggal */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span className="font-mono text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md border border-slate-200">
+                      <span className="font-mono text-xs font-bold px-2.5 py-1 bg-brand-500/10 text-brand-600 dark:text-brand-400 rounded-md border border-brand-500/20">
                         {k.code}
                       </span>
-                      <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-1">
+                      <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-1 font-medium">
                         <Calendar className="w-3 h-3" />
                         <span>{new Date(k.createdAt).toLocaleDateString('id-ID')}</span>
                       </div>
@@ -367,16 +329,16 @@ export const KegiatanListPage: React.FC = () => {
 
                     {/* Nama Kegiatan & Lokasi */}
                     <td className="py-3.5 px-4">
-                      <div className="font-medium text-slate-800">
+                      <div className="font-bold text-slate-900 dark:text-slate-100">
                         <Link
                           to={`/kegiatan/${k.id}`}
-                          className="hover:text-indigo-600 transition hover:underline"
+                          className="hover:text-brand-600 dark:hover:text-brand-400 transition hover:underline"
                         >
                           {k.name}
                         </Link>
                       </div>
                       {k.location && (
-                        <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
                           <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                           <span className="truncate max-w-xs">{k.location}</span>
                         </div>
@@ -387,7 +349,7 @@ export const KegiatanListPage: React.FC = () => {
                     <td className="py-3.5 px-4">
                       <Link
                         to={`/customers/${k.customerId}`}
-                        className="font-medium text-slate-700 hover:text-indigo-600 hover:underline flex items-center gap-1 text-xs"
+                        className="font-bold text-slate-800 dark:text-slate-200 hover:text-brand-600 dark:hover:text-brand-400 hover:underline flex items-center gap-1 text-xs"
                       >
                         <Building className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <span>{k.customerName}</span>
@@ -401,19 +363,19 @@ export const KegiatanListPage: React.FC = () => {
 
                     {/* Status */}
                     <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                      {renderStatusBadge(k.status)}
+                      <StatusBadge status={k.status} />
                     </td>
 
                     {/* Jumlah Item */}
                     <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                      <span className="text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md border border-slate-200">
+                      <span className="text-xs font-semibold px-2.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full border border-slate-200/80 dark:border-slate-700">
                         {k.itemsCount} item
                       </span>
                     </td>
 
                     {/* Total Nilai */}
                     <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                      <div className="font-mono font-bold text-sm text-slate-900">
+                      <div className="font-mono font-bold text-sm text-slate-900 dark:text-white">
                         {formatRupiah(k.totalAmount)}
                       </div>
                     </td>
@@ -423,14 +385,14 @@ export const KegiatanListPage: React.FC = () => {
                       <div className="flex items-center justify-center space-x-1">
                         <Link
                           to={`/kegiatan/${k.id}`}
-                          className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                          className="p-1.5 text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-500/10 rounded-lg transition"
                           title="Lihat Detail & Item Pekerjaan"
                         >
                           <Eye className="w-4 h-4" />
                         </Link>
                         <button
                           onClick={() => handleOpenEditModal(k)}
-                          className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                          className="p-1.5 text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition"
                           title="Edit Kegiatan"
                         >
                           <Edit2 className="w-4 h-4" />
@@ -441,7 +403,7 @@ export const KegiatanListPage: React.FC = () => {
                               deleteMutation.mutate(k.id);
                             }
                           }}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 rounded-lg transition"
                           title="Hapus Kegiatan"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -455,54 +417,46 @@ export const KegiatanListPage: React.FC = () => {
           </table>
         </div>
 
-        {/* Pagination */}
-        <div className="px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 bg-slate-50/50">
-          <div>
-            Menampilkan{' '}
-            <span className="font-semibold text-slate-700">
-              {totalElements === 0 ? 0 : page * pageSize + 1}
-            </span>{' '}
-            -{' '}
-            <span className="font-semibold text-slate-700">
-              {Math.min((page + 1) * pageSize, totalElements)}
-            </span>{' '}
-            dari <span className="font-semibold text-slate-700">{totalElements}</span> kegiatan
+        {/* Pagination Bar */}
+        {totalPages > 1 && (
+          <div className="bg-white/40 dark:bg-slate-900/40 px-5 py-4 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <div>
+              Menampilkan {page * pageSize + 1} -{' '}
+              {Math.min((page + 1) * pageSize, totalElements)} dari {totalElements} kegiatan
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                disabled={page === 0 || isLoading}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition"
+              >
+                <ChevronLeft className="w-3.5 h-3.5 inline mr-1" /> Sebelumnya
+              </button>
+              <span className="px-2 font-semibold text-slate-700 dark:text-slate-300">
+                {page + 1} / {totalPages}
+              </span>
+              <button
+                disabled={page >= totalPages - 1 || isLoading}
+                onClick={() => setPage((p) => p + 1)}
+                className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition"
+              >
+                Berikutnya <ChevronRight className="w-3.5 h-3.5 inline ml-1" />
+              </button>
+            </div>
           </div>
+        )}
+      </BentoCard>
 
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0 || isLoading}
-              className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="px-2 font-medium text-slate-700">
-              Halaman {totalPages === 0 ? 0 : page + 1} dari {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1 || isLoading}
-              className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal */}
+      {/* Kegiatan Modal Create/Edit */}
       <KegiatanModal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedKegiatan(null);
-        }}
+        onClose={() => setIsModalOpen(false)}
         onSubmit={handleModalSubmit}
         kegiatan={selectedKegiatan}
-        defaultCustomerId={selectedCustomerId}
         isLoading={createMutation.isPending || updateMutation.isPending}
       />
     </div>
   );
 };
+
+export default KegiatanListPage;

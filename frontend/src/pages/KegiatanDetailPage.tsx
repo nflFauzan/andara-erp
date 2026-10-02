@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowLeft,
   Building,
   MapPin,
   Plus,
@@ -24,11 +23,13 @@ import { KegiatanItemModal } from '../components/kegiatan/KegiatanItemModal';
 import { KegiatanItem, KegiatanItemInput, UpdateKegiatanInput, KegiatanStatus } from '../types/kegiatan';
 import { Attachment } from '../types/attachment';
 import { formatRupiah } from '../lib/utils';
+import { BentoCard } from '@/components/common/BentoCard';
+import { PageHeader } from '@/components/common/PageHeader';
+import { StatusBadge } from '@/components/common/StatusBadge';
 
 export const KegiatanDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const kegiatanId = Number(id);
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -230,7 +231,7 @@ export const KegiatanDetailPage: React.FC = () => {
     return (
       <div className="py-20 flex flex-col items-center justify-center space-y-3">
         <div className="w-8 h-8 border-3 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
-        <p className="text-sm text-slate-500 font-medium">Memuat detail data kegiatan...</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Memuat detail data kegiatan...</p>
       </div>
     );
   }
@@ -239,15 +240,14 @@ export const KegiatanDetailPage: React.FC = () => {
     return (
       <div className="py-16 text-center">
         <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-3" />
-        <h2 className="text-lg font-bold text-slate-800">Kegiatan Tidak Ditemukan</h2>
-        <p className="text-sm text-slate-500 mt-1 mb-6">
+        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Kegiatan Tidak Ditemukan</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-6">
           Data kegiatan dengan ID {id} tidak tersedia atau telah dihapus.
         </p>
         <Link
           to="/kegiatan"
           className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition"
         >
-          <ArrowLeft className="w-4 h-4" />
           <span>Kembali ke Daftar Kegiatan</span>
         </Link>
       </div>
@@ -259,82 +259,68 @@ export const KegiatanDetailPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header & Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => navigate('/kegiatan')}
-            className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-50 transition shadow-sm"
-            title="Kembali"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <span className="font-mono text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md border border-slate-200">
-                {kegiatan.code}
+      <PageHeader
+        title={kegiatan.name}
+        subtitle={
+          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <Link
+              to={`/customers/${kegiatan.customerId}`}
+              className="hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline flex items-center gap-1 font-medium text-slate-600 dark:text-slate-300"
+            >
+              <Building className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+              <span>{kegiatan.customerName}</span>
+              {kegiatan.customerCompanyName && <span>({kegiatan.customerCompanyName})</span>}
+              <ExternalLink className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+            </Link>
+            {kegiatan.location && (
+              <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                <span>{kegiatan.location}</span>
               </span>
-              <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-                {kegiatan.name}
-              </h1>
-            </div>
-            <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
-              <Link
-                to={`/customers/${kegiatan.customerId}`}
-                className="hover:text-indigo-600 hover:underline flex items-center gap-1 font-medium text-slate-600"
-              >
-                <Building className="w-3.5 h-3.5 text-slate-400" />
-                <span>{kegiatan.customerName}</span>
-                {kegiatan.customerCompanyName && <span>({kegiatan.customerCompanyName})</span>}
-                <ExternalLink className="w-3 h-3 text-slate-400" />
-              </Link>
-              {kegiatan.location && (
-                <span className="flex items-center gap-1 text-slate-500">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{kegiatan.location}</span>
-                </span>
-              )}
-            </div>
+            )}
           </div>
-        </div>
-
-        {/* Action Buttons & Status Selector */}
-        <div className="flex items-center gap-2.5">
-          <select
-            value={kegiatan.status}
-            onChange={(e) => updateStatusMutation.mutate(e.target.value as KegiatanStatus)}
-            disabled={updateStatusMutation.isPending}
-            className="px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="PLANNED">Direncanakan (PLANNED)</option>
-            <option value="ACTIVE">Sedang Berjalan (ACTIVE)</option>
-            <option value="COMPLETED">Selesai (COMPLETED)</option>
-            <option value="CLOSED">Ditutup (CLOSED)</option>
-            <option value="CANCELLED">Dibatalkan (CANCELLED)</option>
-          </select>
-          <button
-            onClick={() => setIsEditModalOpen(true)}
-            className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 hover:text-slate-900 text-xs font-semibold rounded-xl hover:bg-slate-50 shadow-sm transition"
-          >
-            <Edit2 className="w-3.5 h-3.5 text-slate-500" />
-            <span>Edit Data</span>
-          </button>
-        </div>
-      </div>
+        }
+        badge={<span className="font-mono text-xs">{kegiatan.code}</span>}
+        backUrl="/kegiatan"
+        actions={
+          <div className="flex items-center gap-2.5">
+            <select
+              value={kegiatan.status}
+              onChange={(e) => updateStatusMutation.mutate(e.target.value as KegiatanStatus)}
+              disabled={updateStatusMutation.isPending}
+              className="px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-navy-700 bg-white dark:bg-navy-900 text-slate-700 dark:text-slate-200 shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="PLANNED">Direncanakan (PLANNED)</option>
+              <option value="ACTIVE">Sedang Berjalan (ACTIVE)</option>
+              <option value="COMPLETED">Selesai (COMPLETED)</option>
+              <option value="CLOSED">Ditutup (CLOSED)</option>
+              <option value="CANCELLED">Dibatalkan (CANCELLED)</option>
+            </select>
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white text-xs font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-navy-800 shadow-xs transition"
+            >
+              <Edit2 className="w-3.5 h-3.5 text-slate-400" />
+              <span>Edit Data</span>
+            </button>
+          </div>
+        }
+      />
 
       {/* Feedback Banner */}
       {feedbackMessage && (
         <div
           className={`p-4 rounded-xl flex items-center justify-between transition-all ${
             feedbackMessage.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-              : 'bg-rose-50 text-rose-800 border border-rose-200'
+              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
+              : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60'
           }`}
         >
           <div className="flex items-center space-x-2.5 text-sm font-medium">
             {feedbackMessage.type === 'success' ? (
-              <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+              <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" />
             )}
             <span>{feedbackMessage.text}</span>
           </div>
@@ -347,8 +333,8 @@ export const KegiatanDetailPage: React.FC = () => {
         </div>
       )}
 
-      {/* Financial Highlight Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden border border-slate-800">
+      {/* Financial Highlight Banner (Deep Navy Bento Style) */}
+      <div className="bg-gradient-to-r from-slate-900 via-navy-950 to-slate-900 rounded-2xl p-6 text-white shadow-bento relative overflow-hidden border border-slate-800/80 dark:border-navy-700/80">
         <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-64 h-64 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
           <div>
@@ -359,34 +345,35 @@ export const KegiatanDetailPage: React.FC = () => {
             <div className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-1.5 text-white font-mono">
               {formatRupiah(kegiatan.totalAmount)}
             </div>
-            <p className="text-xs text-slate-300 mt-2 max-w-xl leading-relaxed">
-              Total nilai dihitung secara mutlak di backend dari penjumlahan rincian seluruh item pekerjaan: <span className="font-mono font-semibold text-white">Σ (Volume × Harga Satuan)</span>.
+            <p className="text-xs text-slate-300 dark:text-slate-400 mt-2 max-w-xl leading-relaxed">
+              Total nilai dihitung secara mutlak di backend dari akumulasi rincian seluruh item pekerjaan:{' '}
+              <span className="font-mono font-semibold text-white">Σ (Volume × Harga Satuan)</span>.
             </p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10 text-xs text-indigo-100 shrink-0 sm:w-60">
+          <div className="bg-white/10 dark:bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10 text-xs text-indigo-100 shrink-0 sm:w-60">
             <div className="font-semibold text-white mb-2">Informasi Rincian</div>
             <div className="flex justify-between py-1 border-b border-white/10">
               <span className="text-indigo-200">Jumlah Item:</span>
               <span className="font-bold text-white">{items.length} item</span>
             </div>
-            <div className="flex justify-between py-1 pt-1.5">
+            <div className="flex justify-between py-1 pt-1.5 items-center">
               <span className="text-indigo-200">Status Proyek:</span>
-              <span className="font-semibold text-emerald-400">{kegiatan.status}</span>
+              <StatusBadge status={kegiatan.status} size="sm" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="flex border-b border-slate-200 bg-slate-50/50 px-6 pt-3">
+      {/* Tabs Card */}
+      <BentoCard padding="none" className="overflow-hidden">
+        <div className="flex border-b border-slate-200/80 dark:border-navy-700/80 bg-slate-50/50 dark:bg-navy-950/40 px-6 pt-3">
           <button
             onClick={() => setActiveTab('items')}
             className={`flex items-center space-x-2 py-3 px-4 font-semibold text-sm border-b-2 transition ${
               activeTab === 'items'
-                ? 'border-indigo-600 text-indigo-600 bg-white rounded-t-lg'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-navy-900 rounded-t-lg'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Calculator className="w-4 h-4" />
@@ -396,8 +383,8 @@ export const KegiatanDetailPage: React.FC = () => {
             onClick={() => setActiveTab('attachments')}
             className={`flex items-center space-x-2 py-3 px-4 font-semibold text-sm border-b-2 transition ${
               activeTab === 'attachments'
-                ? 'border-indigo-600 text-indigo-600 bg-white rounded-t-lg'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-navy-900 rounded-t-lg'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Paperclip className="w-4 h-4" />
@@ -407,8 +394,8 @@ export const KegiatanDetailPage: React.FC = () => {
             onClick={() => setActiveTab('documents')}
             className={`flex items-center space-x-2 py-3 px-4 font-semibold text-sm border-b-2 transition ${
               activeTab === 'documents'
-                ? 'border-indigo-600 text-indigo-600 bg-white rounded-t-lg'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-navy-900 rounded-t-lg'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <FileText className="w-4 h-4" />
@@ -422,8 +409,8 @@ export const KegiatanDetailPage: React.FC = () => {
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2">
                 <div>
-                  <h3 className="text-base font-bold text-slate-800">Daftar Item & Rincian Nilai</h3>
-                  <p className="text-xs text-slate-500">
+                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Daftar Item & Rincian Nilai</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Setiap perubahan volume atau harga satuan langsung memperbarui total nilai kegiatan.
                   </p>
                 </div>
@@ -432,7 +419,7 @@ export const KegiatanDetailPage: React.FC = () => {
                     setSelectedItem(null);
                     setIsItemModalOpen(true);
                   }}
-                  className="inline-flex items-center space-x-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition"
+                  className="inline-flex items-center space-x-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-xs transition"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Tambah Item Pekerjaan</span>
@@ -440,10 +427,10 @@ export const KegiatanDetailPage: React.FC = () => {
               </div>
 
               {/* Items Table */}
-              <div className="overflow-x-auto border border-slate-200 rounded-xl">
+              <div className="overflow-x-auto border border-slate-200/80 dark:border-navy-700/80 rounded-xl">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                    <tr className="bg-slate-50/80 dark:bg-navy-950/60 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200/80 dark:border-navy-700/80">
                       <th className="py-3 px-3 text-center w-12">No</th>
                       <th className="py-3 px-4">Deskripsi / Uraian Pekerjaan</th>
                       <th className="py-3 px-4 text-center">Volume</th>
@@ -453,45 +440,45 @@ export const KegiatanDetailPage: React.FC = () => {
                       <th className="py-3 px-4 text-center w-24">Aksi</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs">
+                  <tbody className="divide-y divide-slate-100 dark:divide-navy-800 text-xs">
                     {items.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="py-10 text-center text-slate-400">
-                          <Calculator className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                          <p className="font-medium text-slate-600">Belum ada item rincian pekerjaan</p>
-                          <p className="text-[11px] text-slate-400">
+                        <td colSpan={7} className="py-10 text-center text-slate-400 dark:text-slate-500">
+                          <Calculator className="w-8 h-8 text-slate-300 dark:text-navy-600 mx-auto mb-2" />
+                          <p className="font-medium text-slate-600 dark:text-slate-400">Belum ada item rincian pekerjaan</p>
+                          <p className="text-[11px] text-slate-400 dark:text-slate-500">
                             Klik tombol "Tambah Item Pekerjaan" untuk mulai memasukkan rincian.
                           </p>
                         </td>
                       </tr>
                     ) : (
                       items.map((item, idx) => (
-                        <tr key={item.id} className="hover:bg-slate-50/70 transition">
-                          <td className="py-3 px-3 text-center text-slate-400 font-mono">
+                        <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-navy-800/40 transition">
+                          <td className="py-3 px-3 text-center text-slate-400 dark:text-slate-500 font-mono">
                             {idx + 1}
                           </td>
                           <td className="py-3 px-4">
-                            <span className="font-medium text-slate-800 block">
+                            <span className="font-medium text-slate-800 dark:text-slate-100 block">
                               {item.description}
                             </span>
                             {item.notes && (
-                              <span className="text-[11px] text-slate-400 block mt-0.5">
+                              <span className="text-[11px] text-slate-400 dark:text-slate-500 block mt-0.5">
                                 Catatan: {item.notes}
                               </span>
                             )}
                           </td>
-                          <td className="py-3 px-4 text-center font-mono font-medium text-slate-700">
+                          <td className="py-3 px-4 text-center font-mono font-medium text-slate-700 dark:text-slate-300">
                             {item.volume}
                           </td>
                           <td className="py-3 px-4 text-center">
-                            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded border border-slate-200 text-[11px]">
+                            <span className="px-2 py-0.5 bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-navy-700 text-[11px]">
                               {item.unit}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-right font-mono text-slate-700">
+                          <td className="py-3 px-4 text-right font-mono text-slate-700 dark:text-slate-300">
                             {formatRupiah(item.unitPrice)}
                           </td>
-                          <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">
+                          <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
                             {formatRupiah(item.subtotal)}
                           </td>
                           <td className="py-3 px-4 text-center">
@@ -501,7 +488,7 @@ export const KegiatanDetailPage: React.FC = () => {
                                   setSelectedItem(item);
                                   setIsItemModalOpen(true);
                                 }}
-                                className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                                className="p-1.5 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-lg transition"
                                 title="Edit Item"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
@@ -512,7 +499,7 @@ export const KegiatanDetailPage: React.FC = () => {
                                     deleteItemMutation.mutate(item.id);
                                   }
                                 }}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition"
                                 title="Hapus Item"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -525,11 +512,11 @@ export const KegiatanDetailPage: React.FC = () => {
                   </tbody>
                   {items.length > 0 && (
                     <tfoot>
-                      <tr className="bg-slate-50/90 font-semibold text-xs border-t-2 border-slate-200">
-                        <td colSpan={5} className="py-3 px-4 text-right text-slate-600 uppercase tracking-wider">
+                      <tr className="bg-slate-50/90 dark:bg-navy-950/80 font-semibold text-xs border-t-2 border-slate-200 dark:border-navy-700">
+                        <td colSpan={5} className="py-3 px-4 text-right text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                           Total Nilai Kegiatan:
                         </td>
-                        <td className="py-3 px-4 text-right font-mono text-sm font-bold text-indigo-900">
+                        <td className="py-3 px-4 text-right font-mono text-sm font-bold text-indigo-900 dark:text-indigo-400">
                           {formatRupiah(kegiatan.totalAmount)}
                         </td>
                         <td />
@@ -545,7 +532,7 @@ export const KegiatanDetailPage: React.FC = () => {
           {activeTab === 'attachments' && (
             <div className="space-y-6">
               {/* Upload Box */}
-              <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:border-indigo-400 transition group">
+              <div className="bg-slate-50 dark:bg-navy-950/50 border-2 border-dashed border-slate-200 dark:border-navy-700/80 rounded-2xl p-6 text-center hover:border-indigo-400 dark:hover:border-indigo-500 transition group">
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -555,7 +542,7 @@ export const KegiatanDetailPage: React.FC = () => {
                   disabled={uploadMutation.isPending}
                 />
                 <div className="flex flex-col items-center justify-center space-y-2">
-                  <div className="p-3 bg-white rounded-full shadow-sm text-indigo-600 group-hover:scale-110 transition">
+                  <div className="p-3 bg-white dark:bg-navy-900 rounded-full shadow-xs text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition">
                     {uploadMutation.isPending ? (
                       <div className="w-6 h-6 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
                     ) : (
@@ -567,13 +554,13 @@ export const KegiatanDetailPage: React.FC = () => {
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploadMutation.isPending}
-                      className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 hover:underline"
+                      className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:underline"
                     >
                       Pilih berkas untuk diunggah
                     </button>
-                    <span className="text-sm text-slate-500"> (Dokumen proyek, SPK, RAB, foto lapangan)</span>
+                    <span className="text-sm text-slate-500 dark:text-slate-400"> (Dokumen proyek, SPK, RAB, foto lapangan)</span>
                   </div>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-400 dark:text-slate-500">
                     Maksimal 10 MB per berkas (PDF, Gambar, Word, Excel)
                   </p>
                 </div>
@@ -581,12 +568,12 @@ export const KegiatanDetailPage: React.FC = () => {
 
               {/* Attachments List */}
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-slate-700">Berkas Lampiran Kegiatan</h3>
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200">Berkas Lampiran Kegiatan</h3>
                 {isAttachmentsLoading ? (
                   <div className="py-8 text-center text-xs text-slate-400">Memuat daftar lampiran...</div>
                 ) : attachments.length === 0 ? (
-                  <div className="py-8 text-center bg-slate-50/50 rounded-xl border border-slate-100 text-slate-400">
-                    <Paperclip className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <div className="py-8 text-center bg-slate-50/50 dark:bg-navy-950/40 rounded-xl border border-slate-100 dark:border-navy-800 text-slate-400 dark:text-slate-500">
+                    <Paperclip className="w-8 h-8 text-slate-300 dark:text-navy-600 mx-auto mb-2" />
                     <p className="text-xs">Belum ada berkas lampiran yang diunggah untuk kegiatan ini.</p>
                   </div>
                 ) : (
@@ -594,17 +581,17 @@ export const KegiatanDetailPage: React.FC = () => {
                     {attachments.map((att: Attachment) => (
                       <div
                         key={att.id}
-                        className="bg-white border border-slate-200/90 rounded-xl p-3.5 flex items-center justify-between hover:shadow-sm transition"
+                        className="bg-white dark:bg-navy-900 border border-slate-200/90 dark:border-navy-700/80 rounded-xl p-3.5 flex items-center justify-between hover:shadow-xs transition"
                       >
                         <div className="flex items-center space-x-3 overflow-hidden">
-                          <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg shrink-0">
+                          <div className="p-2.5 bg-indigo-50 dark:bg-navy-800 text-indigo-600 dark:text-indigo-400 rounded-lg shrink-0">
                             <FileText className="w-5 h-5" />
                           </div>
                           <div className="overflow-hidden">
-                            <p className="text-sm font-medium text-slate-800 truncate" title={att.originalFilename}>
+                            <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate" title={att.originalFilename}>
                               {att.originalFilename}
                             </p>
-                            <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                            <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 mt-0.5">
                               <span>{formatFileSize(att.sizeBytes)}</span>
                               <span>•</span>
                               <span>{new Date(att.createdAt).toLocaleDateString('id-ID')}</span>
@@ -617,7 +604,7 @@ export const KegiatanDetailPage: React.FC = () => {
                             href={attachmentApi.getDownloadUrl(att.id)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-navy-800 rounded-lg transition"
                             title="Unduh Berkas"
                           >
                             <Download className="w-4 h-4" />
@@ -628,7 +615,7 @@ export const KegiatanDetailPage: React.FC = () => {
                                 deleteAttachmentMutation.mutate(att.id);
                               }
                             }}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition"
                             title="Hapus Berkas"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -644,16 +631,16 @@ export const KegiatanDetailPage: React.FC = () => {
 
           {/* TAB 3: PENAWARAN & FAKTUR */}
           {activeTab === 'documents' && (
-            <div className="py-12 text-center text-slate-400 space-y-2">
-              <FileText className="w-10 h-10 text-slate-300 mx-auto" />
-              <p className="font-semibold text-slate-700 text-sm">Integrasi Penawaran & Faktur</p>
-              <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Kegiatan dan rincian item ini siap dipanggil saat pembuatan Penawaran (Fase 5) dan penagihan Faktur Penjualan (Fase 6).
+            <div className="py-12 text-center text-slate-400 dark:text-slate-500 space-y-2">
+              <FileText className="w-10 h-10 text-slate-300 dark:text-navy-600 mx-auto" />
+              <p className="font-semibold text-slate-700 dark:text-slate-300 text-sm">Integrasi Penawaran & Faktur</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 max-w-md mx-auto">
+                Kegiatan dan rincian item ini siap dipanggil saat pembuatan Penawaran dan penagihan Faktur Penjualan.
               </p>
             </div>
           )}
         </div>
-      </div>
+      </BentoCard>
 
       {/* Edit Kegiatan Modal */}
       <KegiatanModal
@@ -680,3 +667,4 @@ export const KegiatanDetailPage: React.FC = () => {
     </div>
   );
 };
+export default KegiatanDetailPage;

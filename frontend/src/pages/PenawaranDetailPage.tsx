@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  ArrowLeft,
+  Calculator,
   Edit,
   Trash2,
   Printer,
   CheckCircle2,
-  Clock,
   XCircle,
   Ban,
   Send,
@@ -22,39 +21,9 @@ import { Penawaran, PenawaranStatus } from '../types/penawaran';
 import { Customer } from '../types/customer';
 import { AuditHistoryModal } from '../components/audit/AuditHistoryModal';
 import { AndaraLetterhead } from '../components/common/AndaraLetterhead';
-
-const STATUS_CONFIG: Record<PenawaranStatus, { label: string; bg: string; text: string; icon: React.ComponentType<{ className?: string }> }> = {
-  DRAFT: {
-    label: 'Draft',
-    bg: 'bg-slate-100 text-slate-700 border-slate-200',
-    text: 'text-slate-600',
-    icon: Clock,
-  },
-  SENT: {
-    label: 'Diajukan / Terkirim',
-    bg: 'bg-blue-50 text-blue-700 border-blue-200',
-    text: 'text-blue-600',
-    icon: Clock,
-  },
-  APPROVED: {
-    label: 'Disetujui / Diterima',
-    bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    text: 'text-emerald-600',
-    icon: CheckCircle2,
-  },
-  REJECTED: {
-    label: 'Ditolak',
-    bg: 'bg-rose-50 text-rose-700 border-rose-200',
-    text: 'text-rose-600',
-    icon: XCircle,
-  },
-  CANCELLED: {
-    label: 'Dibatalkan',
-    bg: 'bg-amber-50 text-amber-700 border-amber-200',
-    text: 'text-amber-600',
-    icon: Ban,
-  },
-};
+import { BentoCard } from '@/components/common/BentoCard';
+import { PageHeader } from '@/components/common/PageHeader';
+import { StatusBadge } from '@/components/common/StatusBadge';
 
 export const PenawaranDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -98,10 +67,9 @@ export const PenawaranDetailPage: React.FC = () => {
       setErrorMsg(null);
       setSuccessMsg(null);
 
-      const note = promptNote !== undefined ? promptNote : '';
       const updated = await penawaranApi.updateStatus(penawaran.id, {
         status: targetStatus,
-        notes: note,
+        notes: promptNote,
       });
 
       setPenawaran(updated);
@@ -115,7 +83,7 @@ export const PenawaranDetailPage: React.FC = () => {
 
   const handleDelete = async () => {
     if (!penawaran) return;
-    if (!window.confirm(`Yakin ingin menghapus penawaran ${penawaran.number}?`)) return;
+    if (!window.confirm(`Yakin ingin menghapus penawaran draft ${penawaran.number}?`)) return;
 
     try {
       setActionLoading(true);
@@ -138,245 +106,226 @@ export const PenawaranDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-16">
-        <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
-        <span className="ml-3 text-sm font-medium text-slate-600">Memuat rincian penawaran...</span>
+      <div className="flex items-center justify-center p-20">
+        <div className="w-8 h-8 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin"></div>
+        <span className="ml-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Memuat rincian penawaran...</span>
       </div>
     );
   }
 
   if (!penawaran) {
     return (
-      <div className="p-8 text-center space-y-3">
+      <BentoCard className="max-w-xl mx-auto p-8 text-center space-y-3">
         <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
-        <p className="text-base font-semibold text-slate-800">Penawaran tidak ditemukan</p>
+        <p className="text-base font-bold text-slate-800 dark:text-slate-200">Penawaran tidak ditemukan</p>
         <button
           onClick={() => navigate('/penawaran')}
-          className="text-xs text-brand-600 font-semibold hover:underline"
+          className="text-xs text-brand-600 dark:text-brand-400 font-bold hover:underline"
         >
           ← Kembali ke daftar penawaran
         </button>
-      </div>
+      </BentoCard>
     );
   }
 
-  const statusMeta = STATUS_CONFIG[penawaran.status] || STATUS_CONFIG.DRAFT;
-  const StatusIcon = statusMeta.icon;
   const isApproved = penawaran.status === 'APPROVED';
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Top Header & Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 print:hidden">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/penawaran')}
-            className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-mono">
-                {penawaran.number}
-              </h1>
-              <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${statusMeta.bg}`}
-              >
-                <StatusIcon className="w-3.5 h-3.5" />
-                {statusMeta.label}
-              </span>
-            </div>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Dibuat pada {new Date(penawaran.date).toLocaleDateString('id-ID', { dateStyle: 'long' })}
-            </p>
-          </div>
-        </div>
-
-        {/* Action Buttons Toolbar */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Print Button */}
-          <button
-            onClick={() => window.open(`/penawaran/${penawaran.id}/print`, '_blank')}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 shadow-sm transition"
-            title="Buka format cetak resmi CV. ANDARA (siap cetak/simpan PDF)"
-          >
-            <Printer className="w-4 h-4 text-slate-500" />
-            Cetak Format Resmi
-          </button>
-
-          {/* Audit Trail Button */}
-          <button
-            onClick={() => setShowAuditModal(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 shadow-sm transition"
-            title="Lihat riwayat audit penawaran ini"
-          >
-            <History className="w-4 h-4 text-slate-500" />
-            Audit Trail
-          </button>
-
-          {/* Buat Faktur Penjualan Button when Approved */}
-          {isApproved && (
+      <PageHeader
+        icon={Calculator}
+        backUrl="/penawaran"
+        title={penawaran.number}
+        subtitle={`Dibuat pada ${new Date(penawaran.date).toLocaleDateString('id-ID', { dateStyle: 'long' })}`}
+        badge={<StatusBadge status={penawaran.status} />}
+        actions={
+          <div className="flex flex-wrap items-center gap-2 print:hidden">
+            {/* Print Button */}
             <button
-              onClick={() => navigate(`/faktur/create?penawaranId=${penawaran.id}`)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition"
+              onClick={() => window.open(`/penawaran/${penawaran.id}/print`, '_blank')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-xs transition"
+              title="Buka format cetak resmi CV. ANDARA (siap cetak/simpan PDF)"
             >
-              <Receipt className="w-4 h-4" />
-              Buat Faktur Penjualan
+              <Printer className="w-4 h-4 text-brand-500" />
+              Cetak Format Resmi
             </button>
-          )}
 
-          {/* DRAFT Actions */}
-          {penawaran.status === 'DRAFT' && (
-            <>
-              <button
-                disabled={actionLoading}
-                onClick={() => navigate(`/penawaran/${penawaran.id}/edit`)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 shadow-sm transition"
-              >
-                <Edit className="w-4 h-4 text-slate-500" />
-                Edit
-              </button>
-              <button
-                disabled={actionLoading}
-                onClick={() => handleStatusChange('SENT', 'Diajukan ke customer')}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition"
-              >
-                <Send className="w-4 h-4" />
-                Ajukan ke Customer
-              </button>
-              <button
-                disabled={actionLoading}
-                onClick={handleDelete}
-                className="p-2 rounded-lg text-rose-500 hover:bg-rose-50 transition"
-                title="Hapus Penawaran Draft"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </>
-          )}
+            {/* Audit Trail Button */}
+            <button
+              onClick={() => setShowAuditModal(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-xs transition"
+              title="Lihat riwayat audit penawaran ini"
+            >
+              <History className="w-4 h-4 text-slate-500" />
+              Audit Trail
+            </button>
 
-          {/* SENT Actions */}
-          {penawaran.status === 'SENT' && (
-            <>
+            {/* Buat Faktur Penjualan Button when Approved */}
+            {isApproved && (
+              <button
+                onClick={() => navigate(`/faktur/create?penawaranId=${penawaran.id}`)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-md shadow-emerald-500/25 transition"
+              >
+                <Receipt className="w-4 h-4" />
+                Buat Faktur Penjualan
+              </button>
+            )}
+
+            {/* DRAFT Actions */}
+            {penawaran.status === 'DRAFT' && (
+              <>
+                <button
+                  disabled={actionLoading}
+                  onClick={() => navigate(`/penawaran/${penawaran.id}/edit`)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-xs transition"
+                >
+                  <Edit className="w-4 h-4 text-amber-500" />
+                  Edit
+                </button>
+                <button
+                  disabled={actionLoading}
+                  onClick={() => handleStatusChange('SENT', 'Diajukan ke customer')}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 shadow-md shadow-brand-500/25 transition"
+                >
+                  <Send className="w-4 h-4" />
+                  Ajukan ke Customer
+                </button>
+                <button
+                  disabled={actionLoading}
+                  onClick={handleDelete}
+                  className="p-2 rounded-xl text-rose-500 hover:bg-rose-500/10 transition border border-rose-500/20"
+                  title="Hapus Penawaran Draft"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </>
+            )}
+
+            {/* SENT Actions */}
+            {penawaran.status === 'SENT' && (
+              <>
+                <button
+                  disabled={actionLoading}
+                  onClick={() => handleStatusChange('APPROVED', 'Disetujui oleh customer')}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-md shadow-emerald-500/25 transition"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Setujui (APPROVED)
+                </button>
+                <button
+                  disabled={actionLoading}
+                  onClick={() => {
+                    const reason = window.prompt('Alasan penolakan penawaran:') || 'Ditolak customer';
+                    handleStatusChange('REJECTED', reason);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 transition"
+                >
+                  <XCircle className="w-4 h-4 text-rose-500" />
+                  Tolak
+                </button>
+                <button
+                  disabled={actionLoading}
+                  onClick={() => handleStatusChange('DRAFT', 'Dikembalikan ke draft')}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Kembali ke Draft
+                </button>
+              </>
+            )}
+
+            {/* REJECTED Actions */}
+            {penawaran.status === 'REJECTED' && (
               <button
                 disabled={actionLoading}
-                onClick={() => handleStatusChange('APPROVED', 'Disetujui oleh customer')}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition"
+                onClick={() => handleStatusChange('DRAFT', 'Revisi dari penolakan')}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-brand-700 dark:text-brand-300 bg-brand-500/10 border border-brand-500/20 hover:bg-brand-500/20 transition"
               >
-                <CheckCircle2 className="w-4 h-4" />
-                Setujui (APPROVED)
+                <RotateCcw className="w-4 h-4 text-brand-500" />
+                Revisi ke Draft
               </button>
+            )}
+
+            {/* CANCELLED / Non-cancelled Cancel button */}
+            {penawaran.status !== 'CANCELLED' && penawaran.status !== 'DRAFT' && (
               <button
                 disabled={actionLoading}
                 onClick={() => {
-                  const reason = window.prompt('Alasan penolakan penawaran:') || 'Ditolak customer';
-                  handleStatusChange('REJECTED', reason);
+                  if (window.confirm('Yakin ingin membatalkan surat penawaran ini?')) {
+                    handleStatusChange('CANCELLED', 'Dibatalkan oleh operator');
+                  }
                 }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 transition border border-amber-500/20"
               >
-                <XCircle className="w-4 h-4" />
-                Tolak
+                <Ban className="w-4 h-4 text-amber-500" />
+                Batalkan
               </button>
-              <button
-                disabled={actionLoading}
-                onClick={() => handleStatusChange('DRAFT', 'Dikembalikan ke draft')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Kembali ke Draft
-              </button>
-            </>
-          )}
-
-          {/* REJECTED Actions */}
-          {penawaran.status === 'REJECTED' && (
-            <button
-              disabled={actionLoading}
-              onClick={() => handleStatusChange('DRAFT', 'Revisi dari penolakan')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-brand-700 bg-brand-50 border border-brand-200 hover:bg-brand-100 transition"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Revisi ke Draft
-            </button>
-          )}
-
-          {/* CANCELLED / Non-cancelled Cancel button */}
-          {penawaran.status !== 'CANCELLED' && penawaran.status !== 'DRAFT' && (
-            <button
-              disabled={actionLoading}
-              onClick={() => {
-                if (window.confirm('Yakin ingin membatalkan surat penawaran ini?')) {
-                  handleStatusChange('CANCELLED', 'Dibatalkan oleh operator');
-                }
-              }}
-              className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium text-amber-700 hover:bg-amber-50 transition"
-            >
-              <Ban className="w-3.5 h-3.5" />
-              Batalkan
-            </button>
-          )}
-        </div>
-      </div>
+            )}
+          </div>
+        }
+      />
 
       {/* Messages */}
       {successMsg && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-3 text-sm animate-in fade-in">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 flex items-center gap-3 text-xs font-semibold animate-in fade-in">
+          <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-3 text-sm animate-in fade-in">
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300 flex items-center gap-3 text-xs font-semibold animate-in fade-in">
+          <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {/* Financial Locking Banner */}
       {isApproved && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm print:hidden">
+        <BentoCard className="p-4 bg-emerald-500/10 border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
           <div className="flex items-start gap-3">
-            <Lock className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+            <Lock className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold">Dokumen Terkunci Secara Finansial (Financial Locked)</p>
-              <p className="text-xs text-emerald-800 mt-0.5 leading-relaxed">
-                Surat penawaran ini telah berstatus <strong>DISETUJUI (APPROVED)</strong>. Nilai total, volume, dan harga satuan telah dikunci untuk melindungi keabsahan penerbitan faktur penjualan berikutnya (anti-manipulation).
+              <p className="font-bold text-xs uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                Dokumen Terkunci Secara Finansial (Financial Locked)
+              </p>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed font-medium">
+                Surat penawaran ini telah berstatus <strong className="text-emerald-600 dark:text-emerald-400">DISETUJUI (APPROVED)</strong>. Nilai total, volume, dan harga satuan telah dikunci untuk melindungi keabsahan penerbitan faktur penjualan berikutnya (AGENTS.md §9.8).
               </p>
             </div>
           </div>
           <button
             onClick={() => navigate(`/faktur/create?penawaranId=${penawaran.id}`)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition shrink-0 whitespace-nowrap self-start sm:self-center"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-md shadow-emerald-500/25 transition shrink-0 whitespace-nowrap self-start sm:self-center"
           >
             <Receipt className="w-4 h-4" />
             Terbitkan Faktur Penjualan
           </button>
-        </div>
+        </BentoCard>
       )}
 
-      {/* Printable Document Sheet */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-10 space-y-8 print:shadow-none print:border-none print:p-0">
+      {/* Printable Document Sheet (Paper view with official letterhead) */}
+      <div className="bg-white text-slate-900 rounded-3xl border border-slate-200/90 shadow-bento p-6 sm:p-10 space-y-8 print:shadow-none print:border-none print:p-0">
         {/* Letterhead Resmi CV. ANDARA */}
         <AndaraLetterhead showDivisiStrip={false} className="mb-4" />
 
         {/* Customer & Info Details */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200 print:bg-transparent">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50/80 p-5 rounded-2xl border border-slate-200/80 print:bg-transparent">
           <div className="space-y-1 text-xs text-slate-600">
             <p className="font-bold uppercase tracking-wider text-slate-400 text-[10px]">Ditujukan Kepada:</p>
             <p className="text-sm font-bold text-slate-900">{customer?.name || penawaran.customerName}</p>
             {customer?.companyName && <p className="font-semibold text-slate-700">{customer.companyName}</p>}
             {customer?.address && <p className="text-slate-500 max-w-xs">{customer.address}</p>}
             {customer?.picName && <p className="text-slate-500">U.p.: Bpk/Ibu {customer.picName}</p>}
-            {customer?.phone && <p className="text-slate-500">Kontak: {customer.phone}</p>}
+            {customer?.phone && <p className="text-slate-500 font-mono">Kontak: {customer.phone}</p>}
           </div>
 
           <div className="space-y-1 text-xs text-slate-600 sm:text-right">
             <p className="font-bold uppercase tracking-wider text-slate-400 text-[10px]">Status & Referensi:</p>
             <p className="text-sm font-bold text-slate-900 font-mono">Kode Customer: {penawaran.customerCode}</p>
             <p className="text-slate-500">
-              Total Rincian: <span className="font-semibold text-slate-700">{penawaran.details?.length || 0} Item</span>
+              Total Rincian: <span className="font-bold text-slate-700">{penawaran.details?.length || 0} Item</span>
             </p>
             <p className="text-slate-500">
               Status Resmi: <span className="font-bold uppercase text-brand-700">{penawaran.status}</span>
@@ -392,10 +341,10 @@ export const PenawaranDetailPage: React.FC = () => {
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
             Daftar Uraian Pekerjaan & Penawaran Harga
           </h3>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="bg-slate-100 border-b border-slate-300 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <tr className="bg-slate-100/90 border-b border-slate-200 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                   <th className="py-2.5 px-3 w-12 text-center">No</th>
                   <th className="py-2.5 px-3">Deskripsi Pekerjaan / Pengadaan</th>
                   <th className="py-2.5 px-3 w-28 text-right">Volume</th>
@@ -404,7 +353,7 @@ export const PenawaranDetailPage: React.FC = () => {
                   <th className="py-2.5 px-3 w-40 text-right">Subtotal</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-slate-100">
                 {penawaran.kegiatanList && penawaran.kegiatanList.length > 0 ? (
                   penawaran.kegiatanList.map((kegiatan, kIdx) => {
                     const letter = String.fromCharCode(65 + kIdx);
@@ -427,7 +376,7 @@ export const PenawaranDetailPage: React.FC = () => {
                                 {itemIdx + 1}
                               </td>
                               <td className="py-2.5 px-3">
-                                <div className="font-semibold text-slate-800 text-xs sm:text-sm">
+                                <div className="font-bold text-slate-800 text-xs sm:text-sm">
                                   {item.description}
                                 </div>
                                 {item.notes && (
@@ -476,9 +425,9 @@ export const PenawaranDetailPage: React.FC = () => {
                         {idx + 1}
                       </td>
                       <td className="py-3 px-3">
-                        <div className="font-semibold text-slate-800">{detail.description}</div>
+                        <div className="font-bold text-slate-800">{detail.description}</div>
                         {detail.kegiatanName && (
-                          <span className="text-[11px] text-brand-600 font-medium">
+                          <span className="text-[11px] text-brand-600 font-semibold">
                             • Kegiatan: {detail.kegiatanName}
                           </span>
                         )}
@@ -509,7 +458,7 @@ export const PenawaranDetailPage: React.FC = () => {
                 )}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-slate-900 bg-slate-50 font-bold">
+                <tr className="border-t-2 border-slate-900 bg-slate-50/80 font-bold">
                   <td colSpan={5} className="py-3.5 px-3 text-right text-xs uppercase tracking-wider text-slate-700">
                     Total Nilai Penawaran (IDR):
                   </td>
@@ -528,7 +477,7 @@ export const PenawaranDetailPage: React.FC = () => {
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
               Syarat & Ketentuan Pembayaran:
             </h4>
-            <div className="text-xs text-slate-600 font-mono whitespace-pre-line bg-slate-50 p-3.5 rounded-lg border border-slate-200 leading-relaxed print:bg-transparent">
+            <div className="text-xs text-slate-600 font-mono whitespace-pre-line bg-slate-50 p-3.5 rounded-xl border border-slate-200 leading-relaxed print:bg-transparent">
               {penawaran.terms || 'Mengikuti ketentuan kontrak dan invoice resmi CV. ANDARA.'}
             </div>
           </div>
@@ -537,7 +486,7 @@ export const PenawaranDetailPage: React.FC = () => {
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
               Catatan Khusus:
             </h4>
-            <div className="text-xs text-slate-600 whitespace-pre-line bg-slate-50 p-3.5 rounded-lg border border-slate-200 leading-relaxed print:bg-transparent">
+            <div className="text-xs text-slate-600 whitespace-pre-line bg-slate-50 p-3.5 rounded-xl border border-slate-200 leading-relaxed print:bg-transparent">
               {penawaran.notes || 'Penawaran berlaku selama 14 hari kalender sejak tanggal penerbitan.'}
             </div>
           </div>
