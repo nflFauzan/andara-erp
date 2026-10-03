@@ -9,7 +9,13 @@ import {
   Wallet,
   CheckCircle2,
   AlertTriangle,
-  Receipt
+  Receipt,
+  Sparkles,
+  RefreshCw,
+  X,
+  ShieldCheck,
+  Check,
+  Info
 } from 'lucide-react';
 import { paymentApi } from '../api/paymentApi';
 import { customerApi } from '../api/customerApi';
@@ -39,6 +45,12 @@ export const PaymentFormPage: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [allocations, setAllocations] = useState<Record<number, { amount: string; notes: string }>>({});
+
+  // Auto-allocation mode (True by default, auto-distributes FIFO when amount changes)
+  const [autoAllocMode, setAutoAllocMode] = useState<boolean>(true);
+
+  // Confirmation Modal state
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -75,11 +87,15 @@ export const PaymentFormPage: React.FC = () => {
         size: 50,
       });
 
-      // Filter only unpaid or partial invoices
-      const unSettled = res.content.filter((inv) => inv.paymentStatus !== 'PAID' && inv.outstanding > 0);
+      // Filter only unpaid or partial invoices and sort by date ascending (oldest first - FIFO)
+      const unSettled = res.content
+        .filter((inv) => inv.paymentStatus !== 'PAID' && inv.outstanding > 0)
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime() || a.id - b.id);
+
       setInvoices(unSettled);
 
-      // Reset allocations map
+      // Reset allocations map and enable auto allocation mode
+      setAutoAllocMode(true);
       const initialMap: Record<number, { amount: string; notes: string }> = {};
       unSettled.forEach((inv) => {
         initialMap[inv.id] = { amount: '', notes: '' };
@@ -92,7 +108,29 @@ export const PaymentFormPage: React.FC = () => {
     }
   };
 
+  // Auto-allocate whenever amount or invoice list changes and autoAllocMode is active
+  useEffect(() => {
+    if (!autoAllocMode || invoices.length === 0) return;
+
+    const totalPay = parseFloat(amount) || 0;
+    let remaining = totalPay;
+    const newAlloc: Record<number, { amount: string; notes: string }> = {};
+
+    for (const inv of invoices) {
+      const fill = Math.min(inv.outstanding, remaining);
+      newAlloc[inv.id] = {
+        amount: fill > 0 ? fill.toString() : '',
+        notes: allocations[inv.id]?.notes || '',
+      };
+      remaining = Math.max(0, remaining - fill);
+    }
+
+    setAllocations(newAlloc);
+  }, [amount, invoices, autoAllocMode]);
+
+  // When user edits allocation manually, disable auto-fill mode
   const handleAllocationChange = (invoiceId: number, val: string) => {
+    setAutoAllocMode(false);
     setAllocations((prev) => ({
       ...prev,
       [invoiceId]: {
@@ -112,7 +150,53 @@ export const PaymentFormPage: React.FC = () => {
     }));
   };
 
+  // Reset & trigger automatic FIFO allocation
+  const handleResetToAuto = () => {
+    setAutoAllocMode(true);
+    const totalPay = parseFloat(amount) || 0;
+    let remaining = totalPay;
+    const newAlloc: Record<number, { amount: string; notes: string }> = {};
+
+    for (const inv of invoices) {
+      const fill = Math.min(inv.outstanding, remaining);
+      newAlloc[inv.id] = {
+        amount: fill > 0 ? fill.toString() : '',
+        notes: allocations[inv.id]?.notes || '',
+      };
+      remaining = Math.max(0, remaining - fill);
+    }
+
+    setAllocations(newAlloc);
+  };
+
+  // Clear all allocations (e.g. if user wants full amount to go to Deposit Customer)
+  const handleClearAllocations = () => {
+    setAutoAllocMode(false);
+    const cleared: Record<number, { amount: string; notes: string }> = {};
+    invoices.forEach((inv) => {
+      cleared[inv.id] = { amount: '', notes: allocations[inv.id]?.notes || '' };
+    });
+    setAllocations(cleared);
+  };
+
+  // Shortcut: Fill nominal and allocate 100% to this specific invoice
+  const handlePayInvoiceFull = (invoice: Invoice) => {
+    setAutoAllocMode(false);
+    setAmount(invoice.outstanding.toString());
+
+    const newMap: Record<number, { amount: string; notes: string }> = {};
+    invoices.forEach((inv) => {
+      newMap[inv.id] = {
+        amount: inv.id === invoice.id ? invoice.outstanding.toString() : '',
+        notes: allocations[inv.id]?.notes || '',
+      };
+    });
+    setAllocations(newMap);
+  };
+
+  // Allocate remaining available payment to this specific invoice
   const allocateMaxForInvoice = (invoice: Invoice) => {
+    setAutoAllocMode(false);
     const parsedTotalPayment = parseFloat(amount) || 0;
     const currentAllocatedElsewhere = Object.entries(allocations).reduce((acc, [id, data]) => {
       if (Number(id) !== invoice.id) {
@@ -122,10 +206,18 @@ export const PaymentFormPage: React.FC = () => {
     }, 0);
 
     const remainingAvailableFromPayment = Math.max(0, parsedTotalPayment - currentAllocatedElsewhere);
-    // Can allocate at most the invoice outstanding or the remaining payment amount
-    const fillAmount = Math.min(invoice.outstanding, remainingAvailableFromPayment > 0 ? remainingAvailableFromPayment : invoice.outstanding);
+    const fillAmount = Math.min(
+      invoice.outstanding,
+      remainingAvailableFromPayment > 0 ? remainingAvailableFromPayment : invoice.outstanding
+    );
 
-    handleAllocationChange(invoice.id, fillAmount > 0 ? fillAmount.toString() : invoice.outstanding.toString());
+    setAllocations((prev) => ({
+      ...prev,
+      [invoice.id]: {
+        ...prev[invoice.id],
+        amount: fillAmount > 0 ? fillAmount.toString() : invoice.outstanding.toString(),
+      },
+    }));
   };
 
   // Calculations
@@ -136,6 +228,8 @@ export const PaymentFormPage: React.FC = () => {
   const excessNum = Math.max(0, totalPaymentNum - totalAllocatedNum);
   const isOverAllocated = totalAllocatedNum > totalPaymentNum;
 
+  const currentCustomer = customers.find((c) => c.id === Number(selectedCustomerId));
+
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -145,7 +239,8 @@ export const PaymentFormPage: React.FC = () => {
     }).format(val);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Validation before opening confirmation modal
+  const handleOpenConfirmModal = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCustomerId) {
       setErrorMessage('Pilih customer terlebih dahulu');
@@ -160,7 +255,24 @@ export const PaymentFormPage: React.FC = () => {
       return;
     }
 
-    // Build allocation list for non-zero items
+    // Validate that no item exceeds outstanding
+    for (const [invId, data] of Object.entries(allocations)) {
+      const val = parseFloat(data.amount) || 0;
+      const inv = invoices.find((i) => i.id === Number(invId));
+      if (inv && val > inv.outstanding) {
+        setErrorMessage(
+          `Alokasi untuk Faktur ${inv.number} (Rp ${val.toLocaleString()}) melebihi sisa tagihan (Rp ${inv.outstanding.toLocaleString()})`
+        );
+        return;
+      }
+    }
+
+    setErrorMessage(null);
+    setShowConfirmModal(true);
+  };
+
+  // Final Submit
+  const handleFinalSubmit = async () => {
     const allocationItems = Object.entries(allocations)
       .map(([invoiceId, data]) => ({
         invoiceId: Number(invoiceId),
@@ -168,15 +280,6 @@ export const PaymentFormPage: React.FC = () => {
         notes: data.notes?.trim() || undefined,
       }))
       .filter((item) => item.amount > 0);
-
-    // Validate that no item exceeds outstanding
-    for (const item of allocationItems) {
-      const inv = invoices.find((i) => i.id === item.invoiceId);
-      if (inv && item.amount > inv.outstanding) {
-        setErrorMessage(`Alokasi untuk Faktur ${inv.number} (Rp ${item.amount.toLocaleString()}) melebihi sisa tagihan (Rp ${inv.outstanding.toLocaleString()})`);
-        return;
-      }
-    }
 
     setIsSubmitting(true);
     setErrorMessage(null);
@@ -193,11 +296,13 @@ export const PaymentFormPage: React.FC = () => {
         allocations: allocationItems,
       });
 
+      setShowConfirmModal(false);
       navigate(`/pembayaran/${created.id}`);
     } catch (err: any) {
       console.error('Gagal mencatat pembayaran:', err);
       setErrorMessage(err.response?.data?.message || 'Gagal menyimpan transaksi pembayaran');
       setIsSubmitting(false);
+      setShowConfirmModal(false);
     }
   };
 
@@ -209,7 +314,8 @@ export const PaymentFormPage: React.FC = () => {
         </div>
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Akses Ditolak (403 Forbidden)</h2>
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          Sesuai tata kelola sistem CV. ANDARA (PRD §5.3 & AGENTS.md §11), hak akses pencatatan transaksi pembayaran dan alokasi finansial secara ketat dibatasi hanya untuk role <strong className="text-slate-900 dark:text-white">OPERATOR</strong>.
+          Sesuai tata kelola sistem CV. ANDARA (PRD §5.3 & AGENTS.md §11), hak akses pencatatan transaksi pembayaran dan alokasi finansial secara ketat dibatasi hanya untuk role{' '}
+          <strong className="text-slate-900 dark:text-white">OPERATOR</strong>.
         </p>
         <button
           onClick={() => navigate('/pembayaran')}
@@ -222,13 +328,13 @@ export const PaymentFormPage: React.FC = () => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-6 pb-12">
+    <form onSubmit={handleOpenConfirmModal} className="max-w-5xl mx-auto space-y-6 pb-12">
       {/* Top Navigation */}
       <PageHeader
         icon={CreditCard}
         backUrl="/pembayaran"
         title="Catat Pembayaran Baru"
-        subtitle="Penerimaan pembayaran dari customer dengan alokasi langsung ke faktur penjualan."
+        subtitle="Penerimaan pembayaran dari customer dengan alokasi otomatis atau kustom ke faktur penjualan."
         badge={
           <span className="text-[11px] bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold px-2.5 py-0.5 rounded-full border border-brand-500/20">
             Finansial & Kas
@@ -248,17 +354,8 @@ export const PaymentFormPage: React.FC = () => {
               disabled={isSubmitting || isOverAllocated || !selectedCustomerId || totalPaymentNum <= 0}
               className="inline-flex items-center justify-center gap-2 px-5 py-2 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/25 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Menyimpan...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Simpan & Konfirmasi Pembayaran
-                </>
-              )}
+              <Save className="w-4 h-4" />
+              Simpan & Konfirmasi Pembayaran
             </button>
           </div>
         }
@@ -295,7 +392,7 @@ export const PaymentFormPage: React.FC = () => {
                 <option value="">-- Pilih Customer --</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.code} - {c.name} {c.depositBalance > 0 ? `(Saldo Deposit: Rp ${c.depositBalance.toLocaleString()})` : ''}
+                    {c.code} - {c.name} {c.depositBalance > 0 ? `(Deposit: Rp ${c.depositBalance.toLocaleString()})` : ''}
                   </option>
                 ))}
               </select>
@@ -320,9 +417,16 @@ export const PaymentFormPage: React.FC = () => {
 
             {/* Total Amount */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                Nominal Pembayaran (Rp) <span className="text-rose-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Nominal Pembayaran (Rp) <span className="text-rose-500">*</span>
+                </label>
+                {autoAllocMode && invoices.length > 0 && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    <Sparkles className="w-3 h-3" /> Auto-Alokasi Aktif
+                  </span>
+                )}
+              </div>
               <input
                 type="number"
                 required
@@ -403,23 +507,77 @@ export const PaymentFormPage: React.FC = () => {
 
         {/* Right Column: Invoice Allocation Engine */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Existing Deposit Notice (Temuan #5) */}
+          {currentCustomer && currentCustomer.depositBalance > 0 && (
+            <div className="p-4 bg-amber-500/10 border border-amber-500/25 rounded-2xl flex items-start justify-between gap-3 text-amber-900 dark:text-amber-200">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-amber-500/20 text-amber-600 dark:text-amber-300 rounded-xl shrink-0 mt-0.5">
+                  <Wallet className="w-5 h-5" />
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                    Informasi Saldo Deposit Customer
+                  </div>
+                  <div className="text-sm font-semibold">
+                    Customer ini memiliki Saldo Deposit aktif sebesar{' '}
+                    <span className="font-mono font-black text-amber-700 dark:text-amber-300 text-base">
+                      {formatCurrency(currentCustomer.depositBalance)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-800/80 dark:text-amber-300/80 leading-relaxed">
+                    Jika pembayaran baru ini memiliki kelebihan nominal setelah alokasi faktur, sisa akan otomatis diakumulasikan ke saldo deposit ini.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Allocation Table Card */}
           <BentoCard className="p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800 pb-3">
               <div>
                 <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                   <Receipt className="w-4 h-4 text-brand-500" />
                   Alokasi ke Faktur Penjualan (Settlement)
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Tentukan jumlah alokasi pelunasan untuk masing-masing faktur aktif
+                  {autoAllocMode
+                    ? 'Mode Otomatis FIFO aktif: Alokasi otomatis terisi saat nominal pembayaran dimasukkan.'
+                    : 'Mode Manual aktif: Anda telah mengkustomisasi alokasi faktur.'}
                 </p>
               </div>
 
-              {selectedCustomerId && (
-                <span className="text-xs text-brand-600 dark:text-brand-400 bg-brand-500/10 px-2.5 py-1 rounded-full font-bold border border-brand-500/20">
-                  {invoices.length} faktur belum lunas
-                </span>
+              {selectedCustomerId && invoices.length > 0 && (
+                <div className="flex items-center gap-2">
+                  {autoAllocMode ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full font-bold border border-emerald-500/20">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Auto-Alokasi FIFO
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleResetToAuto}
+                      className="inline-flex items-center gap-1.5 text-xs text-brand-600 dark:text-brand-400 bg-brand-500/10 hover:bg-brand-500/20 px-2.5 py-1 rounded-full font-bold border border-brand-500/20 transition"
+                      title="Kembalikan ke mode distribusi otomatis dari faktur terlama"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Kembalikan ke Auto-Alokasi
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleClearAllocations}
+                    className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 px-2.5 py-1 rounded-full font-semibold border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 transition"
+                  >
+                    Kosongkan
+                  </button>
+
+                  <span className="text-xs text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full font-bold">
+                    {invoices.length} faktur
+                  </span>
+                </div>
               )}
             </div>
 
@@ -451,9 +609,9 @@ export const PaymentFormPage: React.FC = () => {
                       <tr>
                         <th className="px-3 py-3">No. Faktur</th>
                         <th className="px-3 py-3">Tanggal</th>
-                        <th className="px-3 py-3 text-right">Total Tagihan</th>
                         <th className="px-3 py-3 text-right">Sisa Tagihan</th>
-                        <th className="px-4 py-3 text-right w-44">Alokasi Bayar (Rp)</th>
+                        <th className="px-3 py-3 text-center">Status Alokasi</th>
+                        <th className="px-4 py-3 text-right w-48">Alokasi Bayar (Rp)</th>
                         <th className="px-3 py-3 w-40">Catatan</th>
                       </tr>
                     </thead>
@@ -462,25 +620,48 @@ export const PaymentFormPage: React.FC = () => {
                         const allocData = allocations[inv.id] || { amount: '', notes: '' };
                         const allocNum = parseFloat(allocData.amount) || 0;
                         const exceeds = allocNum > inv.outstanding;
+                        const isFullyCovered = allocNum === inv.outstanding && allocNum > 0;
+                        const isPartiallyCovered = allocNum > 0 && allocNum < inv.outstanding;
 
                         return (
                           <tr key={inv.id} className="hover:bg-white/40 dark:hover:bg-slate-800/40 transition">
                             <td className="px-3 py-3.5 font-bold text-slate-900 dark:text-white">
-                              {inv.number}
+                              <div className="flex items-center gap-1.5">
+                                <span>{inv.number}</span>
+                              </div>
+                              <div className="text-[11px] text-slate-400 font-mono">
+                                Total: {formatCurrency(inv.totalAmount)}
+                              </div>
                             </td>
                             <td className="px-3 py-3.5 text-xs text-slate-500 dark:text-slate-400">
                               {inv.date}
-                            </td>
-                            <td className="px-3 py-3.5 text-right font-medium text-slate-700 dark:text-slate-300 font-mono">
-                              {formatCurrency(inv.totalAmount)}
                             </td>
                             <td className="px-3 py-3.5 text-right">
                               <span className="font-bold text-rose-600 dark:text-rose-400 font-mono">
                                 {formatCurrency(inv.outstanding)}
                               </span>
                             </td>
+                            {/* Visual Status Indicator (Temuan #3) */}
+                            <td className="px-3 py-3.5 text-center">
+                              {exceeds ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20">
+                                  <AlertTriangle className="w-3 h-3" /> Lebih
+                                </span>
+                              ) : isFullyCovered ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                                  <Check className="w-3 h-3" /> Lunas
+                                </span>
+                              ) : isPartiallyCovered ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                                  Sebagian
+                                </span>
+                              ) : (
+                                <span className="text-xs text-slate-400">-</span>
+                              )}
+                            </td>
+                            {/* Allocation Input + Quick Action Buttons (Temuan #1 & #6) */}
                             <td className="px-4 py-3.5 text-right">
-                              <div className="space-y-1">
+                              <div className="space-y-1.5">
                                 <input
                                   type="number"
                                   min="0"
@@ -492,16 +673,31 @@ export const PaymentFormPage: React.FC = () => {
                                   className={`w-full px-2.5 py-1.5 text-right font-mono font-bold text-sm rounded-lg focus:outline-none focus:ring-2 ${
                                     exceeds
                                       ? 'border border-rose-500 text-rose-700 bg-rose-500/10 focus:ring-rose-500/20'
+                                      : isFullyCovered
+                                      ? 'border border-emerald-500/40 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300 focus:ring-emerald-500/30'
                                       : 'border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-900 dark:text-white focus:ring-brand-500/30'
                                   }`}
                                 />
-                                <button
-                                  type="button"
-                                  onClick={() => allocateMaxForInvoice(inv)}
-                                  className="text-[11px] text-brand-600 dark:text-brand-400 hover:underline font-bold block text-right w-full"
-                                >
-                                  Alokasikan Sisa
-                                </button>
+                                <div className="flex items-center justify-end gap-2 text-[11px]">
+                                  {/* Shortcut: Bayar Lunas Faktur Ini (Temuan #6) */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handlePayInvoiceFull(inv)}
+                                    className="text-slate-500 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400 font-semibold transition"
+                                    title="Isi nominal di panel kiri sama dengan faktur ini dan langsung lunasi"
+                                  >
+                                    Bayar Penuh
+                                  </button>
+                                  <span className="text-slate-300 dark:text-slate-700">|</span>
+                                  {/* Alokasikan sisa pembayaran */}
+                                  <button
+                                    type="button"
+                                    onClick={() => allocateMaxForInvoice(inv)}
+                                    className="text-brand-600 dark:text-brand-400 hover:underline font-bold"
+                                  >
+                                    Alokasikan Sisa
+                                  </button>
+                                </div>
                               </div>
                             </td>
                             <td className="px-3 py-3.5">
@@ -531,16 +727,18 @@ export const PaymentFormPage: React.FC = () => {
 
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-600 dark:text-slate-400 font-medium">Total Alokasi ke Faktur:</span>
-                <span className={`font-mono font-bold ${isOverAllocated ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                <span
+                  className={`font-mono font-bold ${
+                    isOverAllocated ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                  }`}
+                >
                   {formatCurrency(totalAllocatedNum)}
                 </span>
               </div>
 
               <div className="border-t border-slate-200 dark:border-slate-800 pt-2 flex items-center justify-between text-sm">
                 <span className="text-slate-700 dark:text-slate-300 font-semibold">Sisa Lebih / Masuk Deposit Customer:</span>
-                <span className="font-mono font-black text-amber-500 text-base">
-                  {formatCurrency(excessNum)}
-                </span>
+                <span className="font-mono font-black text-amber-500 text-base">{formatCurrency(excessNum)}</span>
               </div>
 
               {/* Status Alert Messages */}
@@ -555,8 +753,9 @@ export const PaymentFormPage: React.FC = () => {
                 <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-800 dark:text-amber-300 text-xs flex items-start gap-2 leading-relaxed font-medium">
                   <Wallet className="w-4 h-4 shrink-0 text-amber-500 mt-0.5" />
                   <div>
-                    Terdapat sisa pembayaran sebesar <span className="font-bold">{formatCurrency(excessNum)}</span>. 
-                    Sistem akan secara otomatis mencatat kelebihan ini ke <span className="font-bold underline">Deposit Customer</span> (AGENTS.md §10.3) yang dapat digunakan untuk pemotongan faktur selanjutnya.
+                    Terdapat sisa pembayaran sebesar <span className="font-bold">{formatCurrency(excessNum)}</span>.{' '}
+                    Sistem akan secara otomatis mencatat kelebihan ini ke{' '}
+                    <span className="font-bold underline">Deposit Customer</span> (AGENTS.md §10.3) yang dapat digunakan untuk pemotongan faktur selanjutnya.
                   </div>
                 </div>
               )}
@@ -564,6 +763,165 @@ export const PaymentFormPage: React.FC = () => {
           </BentoCard>
         </div>
       </div>
+
+      {/* Confirmation Modal (Temuan #4) */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-brand-500/10 text-brand-600 dark:text-brand-400 rounded-xl border border-brand-500/20">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                    Konfirmasi Pencatatan Pembayaran
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Pastikan rincian finansial di bawah ini telah sesuai sebelum disimpan
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Meta Grid */}
+              <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                <div>
+                  <span className="text-slate-400 block font-medium">Customer:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">
+                    {currentCustomer?.code} - {currentCustomer?.name}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-medium">Tanggal Bayar:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">{paymentDate}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-medium">Metode / Kas:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">
+                    {paymentMethod === 'BANK_TRANSFER' ? 'Transfer Bank' : paymentMethod}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-medium">No. Referensi:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">
+                    {reference || '-'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Allocation Breakdown */}
+              <div className="space-y-2">
+                <div className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                  <span>Rincian Alokasi Faktur</span>
+                  <span className="text-slate-400 font-normal normal-case">
+                    {Object.values(allocations).filter((a) => (parseFloat(a.amount) || 0) > 0).length} faktur teralokasi
+                  </span>
+                </div>
+
+                <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
+                  {Object.entries(allocations).filter(([, d]) => (parseFloat(d.amount) || 0) > 0).length === 0 ? (
+                    <div className="p-4 text-center text-xs text-amber-700 dark:text-amber-300 bg-amber-500/5">
+                      <Info className="w-4 h-4 mx-auto mb-1 text-amber-500" />
+                      Tidak ada alokasi ke faktur. Seluruh pembayaran akan dicatat penuh sebagai <strong>Deposit Customer</strong>.
+                    </div>
+                  ) : (
+                    invoices
+                      .filter((inv) => (parseFloat(allocations[inv.id]?.amount) || 0) > 0)
+                      .map((inv) => {
+                        const allocAmount = parseFloat(allocations[inv.id]?.amount) || 0;
+                        const isLunas = allocAmount >= inv.outstanding;
+
+                        return (
+                          <div key={inv.id} className="p-3 flex items-center justify-between text-xs hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                            <div>
+                              <div className="font-bold text-slate-900 dark:text-white">{inv.number}</div>
+                              <div className="text-slate-400 text-[11px]">Sisa tagihan: {formatCurrency(inv.outstanding)}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-mono font-bold text-slate-900 dark:text-white">
+                                {formatCurrency(allocAmount)}
+                              </div>
+                              <div className="text-[10px]">
+                                {isLunas ? (
+                                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ Menjadi LUNAS</span>
+                                ) : (
+                                  <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                    Sebagian (Sisa: {formatCurrency(inv.outstanding - allocAmount)})
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                  )}
+                </div>
+              </div>
+
+              {/* Financial Summary Card */}
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Nominal Diterima:</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(totalPaymentNum)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Total Settlement Faktur:</span>
+                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency(totalAllocatedNum)}
+                  </span>
+                </div>
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-1.5 flex items-center justify-between font-semibold">
+                  <span className="text-slate-700 dark:text-slate-300">Masuk Saldo Deposit:</span>
+                  <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
+                    {formatCurrency(excessNum)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                disabled={isSubmitting}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl transition"
+              >
+                Periksa Kembali
+              </button>
+              <button
+                type="button"
+                onClick={handleFinalSubmit}
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/25 transition disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Menyimpan Transaksi...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Ya, Simpan Transaksi
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 };

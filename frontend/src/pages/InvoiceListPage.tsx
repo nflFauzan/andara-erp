@@ -112,7 +112,7 @@ export const InvoiceListPage: React.FC = () => {
       {/* KPI Bento Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <BentoCard className="p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 border border-brand-500/20">
+          <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border-[1.5px] border-blue-200 dark:border-blue-500/20 shadow-xs">
             <Receipt className="w-6 h-6" />
           </div>
           <div>
@@ -122,7 +122,7 @@ export const InvoiceListPage: React.FC = () => {
         </BentoCard>
 
         <BentoCard className="p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-500/20">
+          <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border-[1.5px] border-indigo-200 dark:border-indigo-500/20 shadow-xs">
             <FileCheck2 className="w-6 h-6" />
           </div>
           <div>
@@ -132,7 +132,7 @@ export const InvoiceListPage: React.FC = () => {
         </BentoCard>
 
         <BentoCard className="p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
+          <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border-[1.5px] border-amber-200 dark:border-amber-500/20 shadow-xs">
             <AlertCircle className="w-6 h-6" />
           </div>
           <div>
@@ -142,7 +142,7 @@ export const InvoiceListPage: React.FC = () => {
         </BentoCard>
 
         <BentoCard className="p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border-[1.5px] border-emerald-200 dark:border-emerald-500/20 shadow-xs">
             <CheckCircle2 className="w-6 h-6" />
           </div>
           <div>
@@ -168,7 +168,7 @@ export const InvoiceListPage: React.FC = () => {
             placeholder="Cari nomor faktur atau catatan..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full text-xs font-medium pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
+            className="w-full text-xs font-medium pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
           />
         </form>
 
@@ -180,7 +180,7 @@ export const InvoiceListPage: React.FC = () => {
               setSelectedStatus(e.target.value);
               setPage(0);
             }}
-            className="text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            className="text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           >
             <option value="">Semua Status Faktur</option>
             <option value="DRAFT">DRAFT</option>
@@ -194,7 +194,7 @@ export const InvoiceListPage: React.FC = () => {
               setSelectedPaymentStatus(e.target.value);
               setPage(0);
             }}
-            className="text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            className="text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           >
             <option value="">Semua Status Bayar</option>
             <option value="UNPAID">Belum Bayar (UNPAID)</option>
@@ -208,7 +208,7 @@ export const InvoiceListPage: React.FC = () => {
               setSelectedCustomer(e.target.value);
               setPage(0);
             }}
-            className="text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 max-w-[200px] truncate"
+            className="text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 max-w-[200px] truncate"
           >
             <option value="">Semua Customer</option>
             {customers.map((c) => (
@@ -222,17 +222,17 @@ export const InvoiceListPage: React.FC = () => {
 
       {/* Error Alert */}
       {errorMsg && (
-        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 flex items-center gap-3 text-sm shadow-xs">
-          <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
+        <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-800 dark:text-rose-300 flex items-center gap-3 text-sm shadow-xs">
+          <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {/* Data Table */}
-      <BentoCard className="overflow-hidden p-0">
+      <BentoCard padding="none" className="overflow-hidden">
         {loading ? (
           <div className="p-16 flex items-center justify-center">
-            <div className="w-8 h-8 border-3 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
             <span className="ml-3 text-sm font-semibold text-slate-600 dark:text-slate-400">Memuat data faktur...</span>
           </div>
         ) : invoiceList.length === 0 ? (
@@ -247,7 +247,7 @@ export const InvoiceListPage: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="bg-slate-100/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                   <th className="py-3.5 px-4">Nomor Faktur</th>
                   <th className="py-3.5 px-4">Tanggal / Jatuh Tempo</th>
                   <th className="py-3.5 px-4">Customer</th>
@@ -259,14 +259,20 @@ export const InvoiceListPage: React.FC = () => {
                   <th className="py-3.5 px-4 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-200">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
                 {invoiceList.map((inv) => {
                   return (
-                    <tr key={inv.id} className="hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-bold text-brand-600 dark:text-brand-400">
-                        {inv.number}
+                    <tr key={inv.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/faktur/${inv.id}`)}
+                          className="font-mono font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline cursor-pointer text-left transition"
+                        >
+                          {inv.number}
+                        </button>
                       </td>
-                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 text-xs font-medium">
+                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400 text-xs font-medium">
                         <div>
                           {new Date(inv.date).toLocaleDateString('id-ID', {
                             day: 'numeric',
@@ -275,7 +281,7 @@ export const InvoiceListPage: React.FC = () => {
                           })}
                         </div>
                         {inv.dueDate && (
-                          <div className="text-[11px] text-slate-400 mt-0.5">
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
                             Tempo: {new Date(inv.dueDate).toLocaleDateString('id-ID', {
                               day: 'numeric',
                               month: 'short',
@@ -285,27 +291,27 @@ export const InvoiceListPage: React.FC = () => {
                         )}
                       </td>
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-slate-800 dark:text-slate-100 text-xs">{inv.customerName}</div>
-                        <div className="text-[11px] text-slate-400 font-mono">{inv.customerCode}</div>
+                        <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">{inv.customerName}</div>
+                        <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">{inv.customerCode}</div>
                       </td>
                       <td className="py-3.5 px-4">
                         {inv.sourcePenawaranNumber ? (
                           <button
                             onClick={() => navigate(`/penawaran/${inv.sourcePenawaranId}`)}
-                            className="text-xs font-mono font-bold text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-1"
+                            className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
                           >
                             <FileCheck2 className="w-3 h-3" />
                             {inv.sourcePenawaranNumber}
                           </button>
                         ) : (
-                          <span className="text-[11px] text-slate-400 italic">Langsung (Non-SPH)</span>
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500 italic">Langsung (Non-SPH)</span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">
+                      <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
                         {formatCurrency(inv.totalAmount)}
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono font-bold">
-                        <span className={inv.outstanding > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'}>
+                        <span className={inv.outstanding > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}>
                           {formatCurrency(inv.outstanding)}
                         </span>
                       </td>
@@ -321,9 +327,9 @@ export const InvoiceListPage: React.FC = () => {
                       <td className="py-3.5 px-4 text-right">
                         <button
                           onClick={() => navigate(`/faktur/${inv.id}`)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-white/70 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 transition shadow-xs"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition shadow-xs"
                         >
-                          <Eye className="w-3.5 h-3.5 text-brand-500" />
+                          <Eye className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                           Rincian
                         </button>
                       </td>
