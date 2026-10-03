@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   CreditCard,
   Save,
@@ -29,6 +29,12 @@ import { PageHeader } from '@/components/common/PageHeader';
 
 export const PaymentFormPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const targetInvoiceId = searchParams.get('invoiceId') ? Number(searchParams.get('invoiceId')) : null;
+  const targetCustomerId = searchParams.get('customerId') ? Number(searchParams.get('customerId')) : null;
+  const [targetInvoice, setTargetInvoice] = useState<Invoice | null>(null);
+  const [targetApplied, setTargetApplied] = useState<boolean>(false);
+
   const { user } = useAuth();
   const isOperator = user?.role === 'OPERATOR';
 
@@ -58,6 +64,28 @@ export const PaymentFormPage: React.FC = () => {
   useEffect(() => {
     loadCustomers();
   }, []);
+
+  useEffect(() => {
+    if (targetInvoiceId) {
+      invoiceApi.getInvoiceById(targetInvoiceId)
+        .then((inv) => {
+          setTargetInvoice(inv);
+          if (inv.customerId) {
+            setSelectedCustomerId(inv.customerId);
+          }
+          if (inv.outstanding > 0) {
+            setAmount(inv.outstanding.toString());
+          }
+          setReference(inv.number);
+          setNotes(`Pelunasan Faktur ${inv.number}`);
+        })
+        .catch((err) => {
+          console.error('Gagal memuat rincian faktur target:', err);
+        });
+    } else if (targetCustomerId) {
+      setSelectedCustomerId(targetCustomerId);
+    }
+  }, [targetInvoiceId, targetCustomerId]);
 
   useEffect(() => {
     if (selectedCustomerId) {
@@ -94,12 +122,27 @@ export const PaymentFormPage: React.FC = () => {
 
       setInvoices(unSettled);
 
-      // Reset allocations map and enable auto allocation mode
-      setAutoAllocMode(true);
       const initialMap: Record<number, { amount: string; notes: string }> = {};
       unSettled.forEach((inv) => {
         initialMap[inv.id] = { amount: '', notes: '' };
       });
+
+      if (targetInvoiceId && !targetApplied) {
+        const found = unSettled.find((inv) => inv.id === targetInvoiceId);
+        if (found) {
+          initialMap[targetInvoiceId] = {
+            amount: found.outstanding.toString(),
+            notes: `Pelunasan Faktur ${found.number}`,
+          };
+          setAutoAllocMode(false);
+          setTargetApplied(true);
+        } else {
+          setAutoAllocMode(true);
+        }
+      } else if (!targetApplied) {
+        setAutoAllocMode(true);
+      }
+
       setAllocations(initialMap);
     } catch (err) {
       console.error('Gagal memuat invoice customer:', err);
@@ -365,6 +408,37 @@ export const PaymentFormPage: React.FC = () => {
         <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-start gap-3 text-rose-800 dark:text-rose-300 text-sm">
           <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-rose-500" />
           <div className="flex-1 font-medium">{errorMessage}</div>
+        </div>
+      )}
+
+      {/* Target Invoice Shortcut Banner */}
+      {targetInvoice && (
+        <div className="p-4 bg-emerald-500/10 border border-emerald-500/25 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <CreditCard className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-bold text-slate-900 dark:text-slate-100">
+                Pencatatan Pembayaran Khusus Faktur{' '}
+                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-extrabold">{targetInvoice.number}</span>
+              </p>
+              <p className="text-slate-500 dark:text-slate-400 mt-0.5">
+                Customer: <strong className="text-slate-700 dark:text-slate-300">{targetInvoice.customerName}</strong> • Sisa Tagihan:{' '}
+                <strong className="text-rose-600 dark:text-rose-400 font-mono">{formatCurrency(targetInvoice.outstanding)}</strong>
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setTargetInvoice(null);
+              handleResetToAuto();
+            }}
+            className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 underline shrink-0"
+          >
+            Lepas Fokus Faktur (Gunakan Alokasi Bebas)
+          </button>
         </div>
       )}
 

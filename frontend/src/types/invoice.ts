@@ -54,6 +54,7 @@ export interface Invoice {
 
 export interface InvoicePaymentItem {
   id: number;
+  paymentId?: number;
   paymentNumber: string;
   paymentDate: string;
   paymentMethod: string;

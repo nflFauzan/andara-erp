@@ -97,6 +97,7 @@ public class InvoiceService {
                 if (alloc.getPayment() != null && alloc.getPayment().getStatus() != com.andara.erp.entity.PaymentStatus.CANCELLED) {
                     InvoicePaymentItemDTO pDto = new InvoicePaymentItemDTO();
                     pDto.setId(alloc.getId());
+                    pDto.setPaymentId(alloc.getPayment().getId());
                     pDto.setPaymentNumber(alloc.getPayment().getNumber());
                     pDto.setPaymentDate(alloc.getPayment().getDate());
                     pDto.setPaymentMethod(alloc.getPayment().getPaymentMethod());

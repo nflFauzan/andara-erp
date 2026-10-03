@@ -7,6 +7,7 @@ import java.time.LocalDate;
 public class InvoicePaymentItemDTO {
 
     private Long id;
+    private Long paymentId;
     private String paymentNumber;
     private LocalDate paymentDate;
     private PaymentMethod paymentMethod;
@@ -23,6 +24,14 @@ public class InvoicePaymentItemDTO {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getPaymentId() {
+        return paymentId;
+    }
+
+    public void setPaymentId(Long paymentId) {
+        this.paymentId = paymentId;
     }
 
     public String getPaymentNumber() {

@@ -11,7 +11,11 @@ import {
   Send,
   Ban,
   History,
-  MapPin
+  MapPin,
+  CreditCard,
+  ArrowRight,
+  ExternalLink,
+  Receipt
 } from 'lucide-react';
 import { invoiceApi } from '../api/invoiceApi';
 import { Invoice, InvoiceStatus } from '../types/invoice';
@@ -21,10 +25,13 @@ import { AndaraLetterhead } from '../components/common/AndaraLetterhead';
 import { BentoCard } from '@/components/common/BentoCard';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatusBadge } from '@/components/common/StatusBadge';
+import { useAuth } from '../context/AuthContext';
 
 export const InvoiceDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const isOperator = user?.role === 'OPERATOR';
 
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
@@ -139,6 +146,28 @@ export const InvoiceDetailPage: React.FC = () => {
         }
         actions={
           <div className="flex flex-wrap items-center gap-2 print:hidden">
+            {/* Shortcut Catat Pembayaran */}
+            {invoice.status === 'ISSUED' && invoice.outstanding > 0 && (
+              isOperator ? (
+                <button
+                  onClick={() => navigate(`/pembayaran/create?invoiceId=${invoice.id}&customerId=${invoice.customerId}`)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 shadow-md shadow-emerald-500/25 transition active:scale-95"
+                  title="Catat penerimaan pembayaran untuk faktur ini"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  Catat Pembayaran
+                </button>
+              ) : (
+                <div
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-not-allowed"
+                  title="Sesuai AGENTS.md §11, hak akses pencatatan pembayaran dibatasi khusus Operator."
+                >
+                  <CreditCard className="w-4 h-4 text-slate-400" />
+                  Bayar (Operator Only)
+                </div>
+              )
+            )}
+
             {/* Print Button */}
             <button
               onClick={() => window.open(`/faktur/${invoice.id}/print`, '_blank')}
@@ -367,6 +396,19 @@ export const InvoiceDetailPage: React.FC = () => {
                 {formatCurrency(invoice.outstanding)}
               </span>
             </div>
+
+            {/* Shortcut Bayar Sisa Tagihan */}
+            {invoice.status === 'ISSUED' && invoice.outstanding > 0 && isOperator && (
+              <button
+                type="button"
+                onClick={() => navigate(`/pembayaran/create?invoiceId=${invoice.id}&customerId=${invoice.customerId}`)}
+                className="w-full mt-2 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 shadow-md shadow-emerald-500/25 transition active:scale-95 print:hidden"
+              >
+                <CreditCard className="w-4 h-4" />
+                Bayar Sisa Tagihan ({formatCurrency(invoice.outstanding)})
+                <ArrowRight className="w-3.5 h-3.5 ml-1" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -408,6 +450,120 @@ export const InvoiceDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Riwayat Pembayaran & Pelunasan Faktur (no-print) */}
+      <div className="no-print mt-6 max-w-4xl mx-auto">
+        <BentoCard className="p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/80 dark:border-slate-800">
+            <div>
+              <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-emerald-500" />
+                Riwayat Pembayaran & Pelunasan
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Daftar transaksi penerimaan pembayaran dan alokasi pelunasan untuk faktur ini
+              </p>
+            </div>
+            {invoice.status === 'ISSUED' && invoice.outstanding > 0 && isOperator && (
+              <button
+                type="button"
+                onClick={() => navigate(`/pembayaran/create?invoiceId=${invoice.id}&customerId=${invoice.customerId}`)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 shadow-md shadow-emerald-500/20 transition active:scale-95 shrink-0"
+              >
+                <CreditCard className="w-4 h-4" />
+                Catat Pembayaran Baru
+              </button>
+            )}
+          </div>
+
+          <div className="mt-4">
+            {invoice.payments && invoice.payments.length > 0 ? (
+              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider">
+                      <th className="py-2.5 px-3">No. Transaksi</th>
+                      <th className="py-2.5 px-3">Tanggal</th>
+                      <th className="py-2.5 px-3">Metode</th>
+                      <th className="py-2.5 px-3 text-right">Alokasi Pelunasan</th>
+                      <th className="py-2.5 px-3">Catatan</th>
+                      <th className="py-2.5 px-3 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {invoice.payments.map((p) => (
+                      <tr key={p.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition">
+                        <td className="py-3 px-3">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/pembayaran/${p.paymentId || p.id}`)}
+                            className="font-mono font-bold text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-1"
+                          >
+                            <span>{p.paymentNumber}</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </button>
+                        </td>
+                        <td className="py-3 px-3 text-slate-600 dark:text-slate-400">
+                          {new Date(p.paymentDate).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </td>
+                        <td className="py-3 px-3 text-slate-700 dark:text-slate-300 font-medium">
+                          {p.paymentMethodLabel || p.paymentMethod}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          {formatCurrency(p.amount)}
+                        </td>
+                        <td className="py-3 px-3 text-slate-500 italic max-w-xs truncate">
+                          {p.notes || '-'}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/pembayaran/${p.paymentId || p.id}`)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                          >
+                            <span>Detail</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="py-8 text-center space-y-3 bg-slate-50/50 dark:bg-slate-800/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                <Receipt className="w-9 h-9 text-slate-400 mx-auto" />
+                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  {invoice.status === 'ISSUED' ? (
+                    <>
+                      Belum ada mutasi pembayaran yang dialokasikan ke faktur ini.{' '}
+                      <span className="font-semibold text-rose-500">Sisa piutang: {formatCurrency(invoice.outstanding)}</span>
+                    </>
+                  ) : invoice.status === 'DRAFT' ? (
+                    'Faktur masih berstatus DRAFT. Terbitkan faktur terlebih dahulu sebelum mencatat pembayaran.'
+                  ) : (
+                    'Faktur berstatus BATAL (CANCELLED).'
+                  )}
+                </div>
+                {invoice.status === 'ISSUED' && isOperator && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/pembayaran/create?invoiceId=${invoice.id}&customerId=${invoice.customerId}`)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition"
+                  >
+                    <CreditCard className="w-3.5 h-3.5" />
+                    Catat Pembayaran Sekarang
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </BentoCard>
       </div>
 
       {/* Lampiran Berita Acara & Dokumen Pendukung (no-print) */}
