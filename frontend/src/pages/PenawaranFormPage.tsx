@@ -10,14 +10,18 @@ import {
   Calculator,
   Layers,
   CheckCircle2,
-  FolderPlus
+  FolderPlus,
+  FolderDown
 } from 'lucide-react';
 import { penawaranApi } from '../api/penawaranApi';
 import { customerApi } from '../api/customerApi';
 import { itemCatalogApi } from '../api/itemCatalogApi';
+import { kegiatanApi } from '../api/kegiatanApi';
 import { Customer } from '../types/customer';
+import { Kegiatan } from '../types/kegiatan';
 import { ItemCatalog, CreateItemCatalogInput, UpdateItemCatalogInput } from '../types/itemCatalog';
 import { ItemCatalogModal } from '../components/items/ItemCatalogModal';
+import { ImportKegiatanModal } from '../components/penawaran/ImportKegiatanModal';
 import { ItemSmartInput } from '../components/items/ItemSmartInput';
 import { formatRupiah } from '../lib/utils';
 import { BentoCard } from '@/components/common/BentoCard';
@@ -26,6 +30,8 @@ import { PageHeader } from '@/components/common/PageHeader';
 interface FormItemRow {
   tempId: string;
   itemCatalogId?: number;
+  kegiatanId?: number;
+  kegiatanItemId?: number;
   description: string;
   volume: number;
   unit: string;
@@ -36,6 +42,8 @@ interface FormItemRow {
 
 interface FormKegiatanGroup {
   tempId: string;
+  kegiatanId?: number;
+  kegiatanCode?: string;
   name: string;
   sortOrder: number;
   items: FormItemRow[];
@@ -46,6 +54,7 @@ export const PenawaranFormPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const customerIdFromQuery = searchParams.get('customerId');
+  const kegiatanIdFromQuery = searchParams.get('kegiatanId');
   const isEdit = Boolean(id);
   const queryClient = useQueryClient();
 
@@ -80,6 +89,7 @@ export const PenawaranFormPage: React.FC = () => {
 
   // Modal for quick adding master item
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+  const [isImportKegiatanModalOpen, setIsImportKegiatanModalOpen] = useState(false);
   const [targetKegiatanTempId, setTargetKegiatanTempId] = useState<string | null>(null);
   const [targetItemTempId, setTargetItemTempId] = useState<string | null>(null);
   const [prefillItemName, setPrefillItemName] = useState<string>('');
@@ -100,6 +110,65 @@ export const PenawaranFormPage: React.FC = () => {
       setSelectedCustomerId(Number(customerIdFromQuery));
     }
   }, [customerIdFromQuery, selectedCustomerId]);
+
+  // Pre-fill Kegiatan if kegiatanId is in query params
+  useEffect(() => {
+    if (kegiatanIdFromQuery && !isEdit) {
+      kegiatanApi
+        .getKegiatanById(Number(kegiatanIdFromQuery))
+        .then((k) => {
+          setSelectedCustomerId(k.customerId);
+          if (k.items && k.items.length > 0) {
+            setKegiatanGroups([
+              {
+                tempId: `kg-kegiatan-${k.id}`,
+                kegiatanId: k.id,
+                kegiatanCode: k.code,
+                name: k.name,
+                sortOrder: 1,
+                items: k.items.map((it, idx) => ({
+                  tempId: `item-kegiatan-${it.id || idx + 1}`,
+                  kegiatanId: k.id,
+                  kegiatanItemId: it.id,
+                  description: it.description,
+                  volume: it.volume,
+                  unit: it.unit,
+                  unitPrice: it.unitPrice,
+                  sortOrder: it.sortOrder || idx + 1,
+                  notes: it.notes || '',
+                })),
+              },
+            ]);
+          } else {
+            setKegiatanGroups([
+              {
+                tempId: `kg-kegiatan-${k.id}`,
+                kegiatanId: k.id,
+                kegiatanCode: k.code,
+                name: k.name,
+                sortOrder: 1,
+                items: [
+                  {
+                    tempId: `item-${Date.now()}-1`,
+                    kegiatanId: k.id,
+                    description: '',
+                    volume: 1,
+                    unit: 'm2',
+                    unitPrice: 0,
+                    sortOrder: 1,
+                  },
+                ],
+              },
+            ]);
+          }
+          setFeedbackMsg(`Rincian kegiatan '${k.name}' (${k.code}) berhasil dimuat ke dalam penawaran.`);
+          setTimeout(() => setFeedbackMsg(null), 5000);
+        })
+        .catch((err) => {
+          console.error('Failed to load kegiatan from query', err);
+        });
+    }
+  }, [kegiatanIdFromQuery, isEdit]);
 
   // Fetch Master Catalog Items
   const { data: masterItems = [], refetch: refetchMasterItems } = useQuery({
@@ -202,6 +271,56 @@ export const PenawaranFormPage: React.FC = () => {
       return;
     }
     setKegiatanGroups((prev) => prev.filter((k) => k.tempId !== kegiatanTempId));
+  };
+
+  const handleSelectImportKegiatan = (k: Kegiatan) => {
+    const newGroup: FormKegiatanGroup = {
+      tempId: `kg-kegiatan-${k.id}-${Date.now()}`,
+      kegiatanId: k.id,
+      kegiatanCode: k.code,
+      name: k.name,
+      sortOrder: kegiatanGroups.length + 1,
+      items:
+        k.items && k.items.length > 0
+          ? k.items.map((it, idx) => ({
+              tempId: `item-kegiatan-${it.id || idx + 1}-${Date.now()}`,
+              kegiatanId: k.id,
+              kegiatanItemId: it.id,
+              description: it.description,
+              volume: it.volume,
+              unit: it.unit,
+              unitPrice: it.unitPrice,
+              sortOrder: it.sortOrder || idx + 1,
+              notes: it.notes || '',
+            }))
+          : [
+              {
+                tempId: `item-${Date.now()}-1`,
+                kegiatanId: k.id,
+                description: '',
+                volume: 1,
+                unit: 'm2',
+                unitPrice: 0,
+                sortOrder: 1,
+              },
+            ],
+    };
+
+    const isSingleDefaultBlank =
+      kegiatanGroups.length === 1 &&
+      kegiatanGroups[0].items.length === 1 &&
+      !kegiatanGroups[0].items[0].description.trim() &&
+      !kegiatanGroups[0].kegiatanId;
+
+    if (isSingleDefaultBlank) {
+      setKegiatanGroups([newGroup]);
+    } else {
+      setKegiatanGroups((prev) => [...prev, newGroup]);
+    }
+
+    setIsImportKegiatanModalOpen(false);
+    setFeedbackMsg(`Berhasil menarik kegiatan '${k.name}' (${k.items?.length || 0} item).`);
+    setTimeout(() => setFeedbackMsg(null), 4000);
   };
 
   const handleKegiatanNameChange = (kegiatanTempId: string, name: string) => {
@@ -391,10 +510,13 @@ export const PenawaranFormPage: React.FC = () => {
 
       // Build payload with grouped kegiatan
       const payloadKegiatan = kegiatanGroups.map((kg, kgIdx) => ({
+        kegiatanId: kg.kegiatanId,
         name: kg.name.trim(),
         sortOrder: kgIdx + 1,
         items: kg.items.map((it, itIdx) => ({
           itemCatalogId: it.itemCatalogId,
+          kegiatanId: it.kegiatanId || kg.kegiatanId,
+          kegiatanItemId: it.kegiatanItemId,
           description: it.description.trim(),
           volume: Number(it.volume),
           unit: it.unit.trim(),
@@ -573,14 +695,31 @@ export const PenawaranFormPage: React.FC = () => {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => handleAddKegiatan('')}
-            className="inline-flex items-center gap-2 px-3.5 py-2 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold transition shadow-xs active:scale-95"
-          >
-            <FolderPlus className="w-4 h-4 text-amber-500" />
-            <span>+ Tambah Kelompok Kegiatan</span>
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => {
+                if (!selectedCustomerId) {
+                  setErrorMsg('Pilih customer terlebih dahulu untuk menarik kegiatan proyek.');
+                  return;
+                }
+                setIsImportKegiatanModalOpen(true);
+              }}
+              className="inline-flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold transition shadow-xs"
+            >
+              <FolderDown className="w-4 h-4" />
+              <span>Tarik Kegiatan Proyek</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleAddKegiatan('')}
+              className="inline-flex items-center gap-2 px-3.5 py-2 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold transition shadow-xs active:scale-95"
+            >
+              <FolderPlus className="w-4 h-4 text-amber-500" />
+              <span>Tambah Kelompok Kegiatan</span>
+            </button>
+          </div>
         </div>
 
         {kegiatanGroups.map((kg, kgIdx) => {
@@ -599,9 +738,16 @@ export const PenawaranFormPage: React.FC = () => {
                     {letterLabel}
                   </span>
                   <div className="flex-1 max-w-xl">
-                    <label className="text-[10px] text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider block mb-0.5">
-                      Nama Kegiatan {letterLabel} <span className="text-rose-500">*</span>
-                    </label>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[10px] text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider block">
+                        Nama Kegiatan {letterLabel} <span className="text-rose-500">*</span>
+                      </label>
+                      {kg.kegiatanCode && (
+                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-900">
+                          Terkait Proyek: {kg.kegiatanCode}
+                        </span>
+                      )}
+                    </div>
                     <input
                       type="text"
                       value={kg.name}
@@ -756,7 +902,7 @@ export const PenawaranFormPage: React.FC = () => {
                       className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-50/70 hover:bg-blue-100/70 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 text-xs font-bold rounded-xl transition shadow-xs"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>+ Tambah item untuk kegiatan ini</span>
+                      <span>Tambah item untuk kegiatan ini</span>
                     </button>
                   </div>
 
@@ -860,6 +1006,17 @@ export const PenawaranFormPage: React.FC = () => {
         categories={categories}
         initialName={prefillItemName}
       />
+
+      {/* Import Kegiatan Modal */}
+      {selectedCustomerId && (
+        <ImportKegiatanModal
+          isOpen={isImportKegiatanModalOpen}
+          onClose={() => setIsImportKegiatanModalOpen(false)}
+          customerId={Number(selectedCustomerId)}
+          customerName={selectedCustomerObj?.name}
+          onSelectKegiatan={handleSelectImportKegiatan}
+        />
+      )}
     </form>
   );
 };

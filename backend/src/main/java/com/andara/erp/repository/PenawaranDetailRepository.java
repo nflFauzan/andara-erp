@@ -14,4 +14,7 @@ public interface PenawaranDetailRepository extends JpaRepository<PenawaranDetail
     List<PenawaranDetail> findByKegiatanId(Long kegiatanId);
 
     List<PenawaranDetail> findByKegiatanItemId(Long kegiatanItemId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT d.penawaran FROM PenawaranDetail d WHERE d.kegiatan.id = :kegiatanId ORDER BY d.penawaran.date DESC")
+    List<com.andara.erp.entity.Penawaran> findPenawaranByKegiatanId(@org.springframework.data.repository.query.Param("kegiatanId") Long kegiatanId);
 }

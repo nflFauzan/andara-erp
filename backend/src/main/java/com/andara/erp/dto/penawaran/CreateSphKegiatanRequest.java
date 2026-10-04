@@ -10,6 +10,7 @@ import java.util.List;
 public class CreateSphKegiatanRequest {
 
     private Long id;
+    private Long kegiatanId;
 
     @NotBlank(message = "Nama kegiatan SPH wajib diisi (misal: Pembangunan Ruang Kelas Baru)")
     @Size(max = 500, message = "Nama kegiatan SPH maksimal 500 karakter")
@@ -36,6 +37,14 @@ public class CreateSphKegiatanRequest {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getKegiatanId() {
+        return kegiatanId;
+    }
+
+    public void setKegiatanId(Long kegiatanId) {
+        this.kegiatanId = kegiatanId;
     }
 
     public String getName() {

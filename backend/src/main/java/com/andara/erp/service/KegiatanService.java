@@ -26,15 +26,21 @@ public class KegiatanService {
     private final KegiatanRepository kegiatanRepository;
     private final KegiatanItemRepository kegiatanItemRepository;
     private final CustomerRepository customerRepository;
+    private final com.andara.erp.repository.PenawaranDetailRepository penawaranDetailRepository;
+    private final com.andara.erp.repository.InvoiceDetailRepository invoiceDetailRepository;
 
     public KegiatanService(
             KegiatanRepository kegiatanRepository,
             KegiatanItemRepository kegiatanItemRepository,
-            CustomerRepository customerRepository
+            CustomerRepository customerRepository,
+            com.andara.erp.repository.PenawaranDetailRepository penawaranDetailRepository,
+            com.andara.erp.repository.InvoiceDetailRepository invoiceDetailRepository
     ) {
         this.kegiatanRepository = kegiatanRepository;
         this.kegiatanItemRepository = kegiatanItemRepository;
         this.customerRepository = customerRepository;
+        this.penawaranDetailRepository = penawaranDetailRepository;
+        this.invoiceDetailRepository = invoiceDetailRepository;
     }
 
     @Transactional(readOnly = true)
@@ -234,6 +240,52 @@ public class KegiatanService {
                 .map(KegiatanItem::getSubtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         kegiatan.setTotalAmount(sum);
+    }
+
+    @Transactional(readOnly = true)
+    public KegiatanRelatedDocumentsDTO getRelatedDocuments(Long kegiatanId) {
+        Kegiatan kegiatan = findKegiatanOrThrow(kegiatanId);
+
+        List<com.andara.erp.entity.Penawaran> penawaranList = penawaranDetailRepository.findPenawaranByKegiatanId(kegiatanId);
+        List<com.andara.erp.dto.penawaran.PenawaranDTO> penawaranDTOs = penawaranList.stream()
+                .map(p -> com.andara.erp.dto.penawaran.PenawaranDTO.fromEntity(p, false))
+                .collect(Collectors.toList());
+
+        List<com.andara.erp.entity.Invoice> invoiceList = invoiceDetailRepository.findInvoicesByKegiatanId(kegiatanId);
+        List<com.andara.erp.dto.invoice.InvoiceDTO> invoiceDTOs = invoiceList.stream()
+                .map(inv -> com.andara.erp.dto.invoice.InvoiceDTO.fromEntity(inv, false))
+                .collect(Collectors.toList());
+
+        BigDecimal totalSph = penawaranDTOs.stream()
+                .filter(p -> p.getStatus() != com.andara.erp.entity.PenawaranStatus.CANCELLED)
+                .map(p -> p.getTotalAmount() != null ? p.getTotalAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalInvoiced = invoiceDTOs.stream()
+                .filter(inv -> inv.getStatus() != com.andara.erp.entity.InvoiceStatus.CANCELLED)
+                .map(inv -> inv.getTotalAmount() != null ? inv.getTotalAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalPaid = invoiceDTOs.stream()
+                .filter(inv -> inv.getStatus() != com.andara.erp.entity.InvoiceStatus.CANCELLED)
+                .map(inv -> inv.getPaidAmount() != null ? inv.getPaidAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalOutstanding = totalInvoiced.subtract(totalPaid).max(BigDecimal.ZERO);
+
+        KegiatanRelatedDocumentsDTO dto = new KegiatanRelatedDocumentsDTO();
+        dto.setKegiatanId(kegiatan.getId());
+        dto.setKegiatanCode(kegiatan.getCode());
+        dto.setKegiatanName(kegiatan.getName());
+        dto.setTotalKegiatanAmount(kegiatan.getTotalAmount());
+        dto.setPenawaranList(penawaranDTOs);
+        dto.setInvoiceList(invoiceDTOs);
+        dto.setTotalSphAmount(totalSph);
+        dto.setTotalInvoicedAmount(totalInvoiced);
+        dto.setTotalPaidAmount(totalPaid);
+        dto.setTotalOutstanding(totalOutstanding);
+
+        return dto;
     }
 
     private Kegiatan findKegiatanOrThrow(Long id) {

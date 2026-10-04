@@ -64,6 +64,10 @@ public class NumberingService {
         NumberingConfiguration config = numberingRepository.findByDocumentType(documentType)
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Konfigurasi penomoran untuk " + documentType + " tidak ditemukan"));
 
+        if (!request.getFormatPattern().contains("{COUNTER}")) {
+            throw new AppException(ErrorCode.INVALID_REQUEST, "Format penomoran harus memuat placeholder {COUNTER} agar setiap nomor transaksi selalu unik.");
+        }
+
         config.setPrefix(request.getPrefix().trim());
         config.setSuffix(request.getSuffix() != null ? request.getSuffix().trim() : "");
         config.setCounterDigits(request.getCounterDigits());
@@ -142,6 +146,11 @@ public class NumberingService {
     ) {
         if (pattern == null || pattern.trim().isEmpty()) {
             pattern = "{PREFIX}/{YEAR}/{MONTH}/{COUNTER}";
+        }
+
+        // Safety fallback: every document number pattern MUST include {COUNTER} to prevent duplicate key collisions
+        if (!pattern.contains("{COUNTER}")) {
+            pattern = pattern + "/{COUNTER}";
         }
 
         String paddedCounter = String.format("%0" + counterDigits + "d", counter);

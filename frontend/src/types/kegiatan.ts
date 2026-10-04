@@ -65,3 +65,33 @@ export interface UpdateKegiatanInput {
   notes?: string;
   status: KegiatanStatus;
 }
+
+export interface KegiatanRelatedDocuments {
+  kegiatanId: number;
+  kegiatanCode: string;
+  kegiatanName: string;
+  totalKegiatanAmount: number;
+  penawaranList: Array<{
+    id: number;
+    number: string;
+    date: string;
+    status: string;
+    totalAmount: number;
+  }>;
+  invoiceList: Array<{
+    id: number;
+    number: string;
+    date: string;
+    dueDate?: string;
+    status: string;
+    paymentStatus: string;
+    totalAmount: number;
+    paidAmount: number;
+    outstanding: number;
+  }>;
+  totalSphAmount: number;
+  totalInvoicedAmount: number;
+  totalPaidAmount: number;
+  totalOutstanding: number;
+}
+

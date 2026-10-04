@@ -47,6 +47,11 @@ export const kegiatanApi = {
     return response.data.data || [];
   },
 
+  async getRelatedDocuments(kegiatanId: number): Promise<import('../types/kegiatan').KegiatanRelatedDocuments> {
+    const response = await api.get<ApiResponse<import('../types/kegiatan').KegiatanRelatedDocuments>>(`/kegiatan/${kegiatanId}/documents`);
+    return response.data.data!;
+  },
+
   async createKegiatan(data: CreateKegiatanInput): Promise<Kegiatan> {
     const response = await api.post<ApiResponse<Kegiatan>>('/kegiatan', data);
     return response.data.data!;

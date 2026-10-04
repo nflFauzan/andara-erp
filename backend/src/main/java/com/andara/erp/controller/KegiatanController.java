@@ -48,6 +48,12 @@ public class KegiatanController {
         return ApiResponse.success(dto);
     }
 
+    @GetMapping("/{id}/documents")
+    public ApiResponse<KegiatanRelatedDocumentsDTO> getRelatedDocuments(@PathVariable Long id) {
+        KegiatanRelatedDocumentsDTO dto = kegiatanService.getRelatedDocuments(id);
+        return ApiResponse.success(dto);
+    }
+
     @GetMapping("/customer/{customerId}")
     public ApiResponse<List<KegiatanDTO>> getKegiatanByCustomer(@PathVariable Long customerId) {
         List<KegiatanDTO> list = kegiatanService.getKegiatanByCustomer(customerId);

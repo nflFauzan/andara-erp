@@ -100,4 +100,19 @@ class KegiatanControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.length()", greaterThanOrEqualTo(1)));
     }
+
+    @Test
+    @WithMockUser(username = "operator", roles = {"OPERATOR"})
+    void getRelatedDocuments_ShouldReturnDocumentsSummary() throws Exception {
+        mockMvc.perform(get("/api/kegiatan/1/documents")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.kegiatanId").value(1))
+                .andExpect(jsonPath("$.data.kegiatanCode").value("ACT-2026-001"))
+                .andExpect(jsonPath("$.data.penawaranList").isArray())
+                .andExpect(jsonPath("$.data.invoiceList").isArray())
+                .andExpect(jsonPath("$.data.totalSphAmount").isNumber())
+                .andExpect(jsonPath("$.data.totalInvoicedAmount").isNumber());
+    }
 }

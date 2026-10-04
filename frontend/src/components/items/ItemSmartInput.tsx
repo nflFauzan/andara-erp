@@ -263,7 +263,7 @@ export const ItemSmartInput: React.FC<ItemSmartInputProps> = ({
             }`}
           >
             <Plus className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-            <span>+ Buat item baru ke Master</span>
+            <span>Buat item baru ke Master</span>
           </button>
         </div>
       )}

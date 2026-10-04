@@ -38,6 +38,17 @@ class PenawaranControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private com.andara.erp.repository.PenawaranRepository penawaranRepository;
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        List<com.andara.erp.entity.Penawaran> testPenawaran = penawaranRepository.findAll().stream()
+                .filter(p -> p.getId() > 2)
+                .toList();
+        penawaranRepository.deleteAll(testPenawaran);
+    }
+
     @Test
     @WithMockUser(username = "operator", roles = {"OPERATOR"})
     void getPenawaranList_ShouldReturnPaginatedList() throws Exception {

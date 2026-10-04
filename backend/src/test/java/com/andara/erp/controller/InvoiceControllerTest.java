@@ -43,11 +43,20 @@ class InvoiceControllerTest {
     @Autowired
     private InvoiceRepository invoiceRepository;
 
+    @Autowired
+    private com.andara.erp.repository.PaymentAllocationRepository paymentAllocationRepository;
+
     @org.junit.jupiter.api.AfterEach
     void tearDown() {
         List<Invoice> testInvoices = invoiceRepository.findAll().stream()
                 .filter(inv -> inv.getId() > 2)
                 .toList();
+        for (Invoice inv : testInvoices) {
+            List<com.andara.erp.entity.PaymentAllocation> allocs = paymentAllocationRepository.findByInvoiceId(inv.getId());
+            if (!allocs.isEmpty()) {
+                paymentAllocationRepository.deleteAll(allocs);
+            }
+        }
         invoiceRepository.deleteAll(testInvoices);
     }
 

@@ -66,6 +66,7 @@ export interface CreatePenawaranDetailInput {
 
 export interface CreateSphKegiatanInput {
   id?: number;
+  kegiatanId?: number;
   name: string;
   sortOrder?: number;
   items: CreatePenawaranDetailInput[];

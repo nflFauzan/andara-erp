@@ -15,7 +15,9 @@ import {
   FileText,
   Calculator,
   ExternalLink,
-  HardHat
+  HardHat,
+  Receipt,
+  ArrowUpRight
 } from 'lucide-react';
 import { kegiatanApi } from '../api/kegiatanApi';
 import { attachmentApi } from '../api/attachmentApi';
@@ -60,6 +62,16 @@ export const KegiatanDetailPage: React.FC = () => {
     queryKey: ['attachments', 'KEGIATAN', kegiatanId],
     queryFn: () => attachmentApi.getAttachments('KEGIATAN', kegiatanId),
     enabled: !isNaN(kegiatanId),
+  });
+
+  // Fetch Related Documents (SPH & Faktur)
+  const {
+    data: relatedDocs,
+    isLoading: isRelatedDocsLoading,
+  } = useQuery({
+    queryKey: ['kegiatan-documents', kegiatanId],
+    queryFn: () => kegiatanApi.getRelatedDocuments(kegiatanId),
+    enabled: !isNaN(kegiatanId) && activeTab === 'documents',
   });
 
   // Update Kegiatan Header Mutation
@@ -633,12 +645,237 @@ export const KegiatanDetailPage: React.FC = () => {
 
           {/* TAB 3: PENAWARAN & FAKTUR */}
           {activeTab === 'documents' && (
-            <div className="py-12 text-center text-slate-400 dark:text-slate-500 space-y-2">
-              <FileText className="w-10 h-10 text-slate-300 dark:text-navy-600 mx-auto" />
-              <p className="font-semibold text-slate-700 dark:text-slate-300 text-sm">Integrasi Penawaran & Faktur</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500 max-w-md mx-auto">
-                Kegiatan dan rincian item ini siap dipanggil saat pembuatan Penawaran dan penagihan Faktur Penjualan.
-              </p>
+            <div className="space-y-6 animate-in fade-in duration-300">
+              {isRelatedDocsLoading ? (
+                <div className="py-12 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 space-y-3">
+                  <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm">Memuat dokumen terkait...</p>
+                </div>
+              ) : relatedDocs ? (
+                <>
+                  {/* Financial & Commercial Overview Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    <div className="p-4 bg-slate-50 dark:bg-navy-900/60 rounded-xl border border-slate-200/80 dark:border-navy-700/80">
+                      <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                        Nilai RAB Kegiatan
+                      </span>
+                      <p className="text-base font-bold text-slate-800 dark:text-slate-100 font-mono">
+                        {formatRupiah(relatedDocs.totalKegiatanAmount || kegiatan.totalAmount || 0)}
+                      </p>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
+                        Akumulasi rincian item
+                      </span>
+                    </div>
+
+                    <div className="p-4 bg-blue-50/50 dark:bg-blue-950/20 rounded-xl border border-blue-200/60 dark:border-blue-900/40">
+                      <span className="text-[11px] font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider block mb-1">
+                        Total Nilai SPH
+                      </span>
+                      <p className="text-base font-bold text-blue-900 dark:text-blue-300 font-mono">
+                        {formatRupiah(relatedDocs.totalSphAmount || 0)}
+                      </p>
+                      <span className="text-[10px] text-blue-600/70 dark:text-blue-400/70 mt-1 block">
+                        {relatedDocs.penawaranList.length} Penawaran tercatat
+                      </span>
+                    </div>
+
+                    <div className="p-4 bg-slate-50 dark:bg-navy-900/60 rounded-xl border border-slate-200/80 dark:border-navy-700/80">
+                      <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                        Total Terfaktur
+                      </span>
+                      <p className="text-base font-bold text-slate-800 dark:text-slate-100 font-mono">
+                        {formatRupiah(relatedDocs.totalInvoicedAmount || 0)}
+                      </p>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
+                        {relatedDocs.invoiceList.length} Faktur Penjualan
+                      </span>
+                    </div>
+
+                    <div className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/60 dark:border-emerald-900/40">
+                      <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block mb-1">
+                        Realisasi Pembayaran
+                      </span>
+                      <p className="text-base font-bold text-emerald-700 dark:text-emerald-300 font-mono">
+                        {formatRupiah(relatedDocs.totalPaidAmount || 0)}
+                      </p>
+                      <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 mt-1 block">
+                        Uang masuk teralokasi
+                      </span>
+                    </div>
+
+                    <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl border border-amber-200/60 dark:border-amber-900/40">
+                      <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wider block mb-1">
+                        Sisa Tagihan (Piutang)
+                      </span>
+                      <p className="text-base font-bold text-amber-800 dark:text-amber-300 font-mono">
+                        {formatRupiah(relatedDocs.totalOutstanding || 0)}
+                      </p>
+                      <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 mt-1 block">
+                        Outstanding faktur
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Section 1: Penawaran (SPH) */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <div>
+                          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            Surat Penawaran Harga (SPH)
+                          </h3>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Dokumen penawaran harga yang memuat rincian kegiatan ini
+                          </p>
+                        </div>
+                      </div>
+                      <Link
+                        to={`/penawaran/baru?customerId=${kegiatan.customerId}&kegiatanId=${kegiatan.id}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg shadow-sm transition"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Buat SPH dari Kegiatan Ini
+                      </Link>
+                    </div>
+
+                    {relatedDocs.penawaranList.length === 0 ? (
+                      <div className="p-6 text-center bg-slate-50/50 dark:bg-navy-900/40 rounded-xl border border-dashed border-slate-200 dark:border-navy-700 text-slate-400 dark:text-slate-500 text-xs">
+                        Belum ada SPH yang ditautkan ke kegiatan ini. Anda dapat membuat penawaran langsung dengan item kegiatan ini sebagai dasar rinciannya.
+                      </div>
+                    ) : (
+                      <div className="border border-slate-200/80 dark:border-navy-700 rounded-xl overflow-hidden shadow-xs">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead className="bg-slate-50/80 dark:bg-navy-900/80 text-slate-600 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-navy-700">
+                            <tr>
+                              <th className="py-2.5 px-4">No. Penawaran</th>
+                              <th className="py-2.5 px-4">Tanggal</th>
+                              <th className="py-2.5 px-4">Status</th>
+                              <th className="py-2.5 px-4 text-right">Total Nilai SPH</th>
+                              <th className="py-2.5 px-4 text-center">Aksi</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-navy-800 bg-white dark:bg-navy-800/40">
+                            {relatedDocs.penawaranList.map((sph) => (
+                              <tr key={sph.id} className="hover:bg-slate-50/50 dark:hover:bg-navy-700/40 transition">
+                                <td className="py-3 px-4 font-medium text-slate-900 dark:text-slate-100 font-mono">
+                                  {sph.number}
+                                </td>
+                                <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
+                                  {new Date(sph.date).toLocaleDateString('id-ID', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <StatusBadge status={sph.status} size="sm" />
+                                </td>
+                                <td className="py-3 px-4 text-right font-mono font-semibold text-slate-800 dark:text-slate-200">
+                                  {formatRupiah(sph.totalAmount)}
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <Link
+                                    to={`/penawaran/${sph.id}`}
+                                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium"
+                                  >
+                                    Lihat Detail
+                                    <ArrowUpRight className="w-3.5 h-3.5" />
+                                  </Link>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Section 2: Faktur Penjualan & Pembayaran */}
+                  <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-navy-700/60">
+                    <div className="flex items-center gap-2">
+                      <Receipt className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                          Faktur Penjualan (Invoices)
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Penagihan komersial dan status pembayaran terkait kegiatan ini
+                        </p>
+                      </div>
+                    </div>
+
+                    {relatedDocs.invoiceList.length === 0 ? (
+                      <div className="p-6 text-center bg-slate-50/50 dark:bg-navy-900/40 rounded-xl border border-dashed border-slate-200 dark:border-navy-700 text-slate-400 dark:text-slate-500 text-xs">
+                        Belum ada Faktur Penjualan yang diterbitkan untuk kegiatan ini. Faktur dapat diterbitkan melalui dokumen SPH yang telah disetujui atau langsung melalui modul Faktur.
+                      </div>
+                    ) : (
+                      <div className="border border-slate-200/80 dark:border-navy-700 rounded-xl overflow-hidden shadow-xs">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead className="bg-slate-50/80 dark:bg-navy-900/80 text-slate-600 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-navy-700">
+                            <tr>
+                              <th className="py-2.5 px-4">No. Faktur</th>
+                              <th className="py-2.5 px-4">Tanggal</th>
+                              <th className="py-2.5 px-4">Jatuh Tempo</th>
+                              <th className="py-2.5 px-4 text-right">Nilai Faktur</th>
+                              <th className="py-2.5 px-4 text-right">Dibayar</th>
+                              <th className="py-2.5 px-4 text-right">Sisa Tagihan</th>
+                              <th className="py-2.5 px-4 text-center">Status Bayar</th>
+                              <th className="py-2.5 px-4 text-center">Aksi</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-navy-800 bg-white dark:bg-navy-800/40">
+                            {relatedDocs.invoiceList.map((inv) => (
+                              <tr key={inv.id} className="hover:bg-slate-50/50 dark:hover:bg-navy-700/40 transition">
+                                <td className="py-3 px-4 font-medium text-slate-900 dark:text-slate-100 font-mono">
+                                  {inv.number}
+                                </td>
+                                <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
+                                  {new Date(inv.date).toLocaleDateString('id-ID', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })}
+                                </td>
+                                <td className="py-3 px-4 text-slate-500 dark:text-slate-400">
+                                  {inv.dueDate
+                                    ? new Date(inv.dueDate).toLocaleDateString('id-ID', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric',
+                                      })
+                                    : '-'}
+                                </td>
+                                <td className="py-3 px-4 text-right font-mono font-semibold text-slate-800 dark:text-slate-200">
+                                  {formatRupiah(inv.totalAmount)}
+                                </td>
+                                <td className="py-3 px-4 text-right font-mono text-emerald-600 dark:text-emerald-400 font-medium">
+                                  {formatRupiah(inv.paidAmount)}
+                                </td>
+                                <td className="py-3 px-4 text-right font-mono text-amber-600 dark:text-amber-400 font-medium">
+                                  {formatRupiah(inv.outstanding)}
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <StatusBadge status={inv.paymentStatus || 'BELUM BAYAR'} size="sm" />
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <Link
+                                    to={`/faktur/${inv.id}`}
+                                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium"
+                                  >
+                                    Lihat Faktur
+                                    <ArrowUpRight className="w-3.5 h-3.5" />
+                                  </Link>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : null}
             </div>
           )}
         </div>

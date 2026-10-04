@@ -241,6 +241,9 @@ public class PenawaranService {
                 int itemOrder = 1;
                 if (kReq.getItems() != null && !kReq.getItems().isEmpty()) {
                     for (CreatePenawaranDetailRequest itemReq : kReq.getItems()) {
+                        if (itemReq.getKegiatanId() == null && kReq.getKegiatanId() != null) {
+                            itemReq.setKegiatanId(kReq.getKegiatanId());
+                        }
                         PenawaranDetail detail = createDetailEntity(itemReq, itemOrder++);
                         k.addItem(detail);
                         penawaran.addDetail(detail);

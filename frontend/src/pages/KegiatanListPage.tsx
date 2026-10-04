@@ -16,7 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Trash2,
-  Calendar
+  Calendar,
+  FileText
 } from 'lucide-react';
 import { kegiatanApi, KegiatanQueryParams } from '../api/kegiatanApi';
 import { customerApi } from '../api/customerApi';
@@ -397,6 +398,13 @@ export const KegiatanListPage: React.FC = () => {
                           title="Lihat Detail & Item Pekerjaan"
                         >
                           <Eye className="w-4 h-4" />
+                        </Link>
+                        <Link
+                          to={`/penawaran/baru?customerId=${k.customerId}&kegiatanId=${k.id}`}
+                          className="p-1.5 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition"
+                          title="Buat SPH dari Kegiatan ini"
+                        >
+                          <FileText className="w-4 h-4" />
                         </Link>
                         <button
                           onClick={() => handleOpenEditModal(k)}
