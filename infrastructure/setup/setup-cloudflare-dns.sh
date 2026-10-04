@@ -29,7 +29,7 @@ error() { echo -e "${RED}[✘] $1${NC}"; exit 1; }
 # KONFIGURASI — ISI NILAI INI
 # ============================================================
 CF_ZONE_ID="be7f99482a87a9b958c29de679e927bf"
-CF_API_TOKEN=""           # ← Isi API Token Cloudflare baru (setelah di-revoke dan buat ulang)
+CF_API_TOKEN="${CF_API_TOKEN:-}"  # ← Isi via environment variable atau edit langsung di VPS
 SERVER_IPV4="202.155.14.98"
 SERVER_IPV6="2001:df7:5300:18::5e8"
 DOMAIN="cvandaraerp.web.id"
