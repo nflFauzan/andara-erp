@@ -5,8 +5,11 @@ Desktop.ini
 
 # Environment and Secrets (CRITICAL: Do not commit credentials)
 .env
+.env.production
 .env.local
 .env.*.local
+.env.*
+!.env*.example
 *.pem
 *.key
 *.p12
