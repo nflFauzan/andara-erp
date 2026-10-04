@@ -23,10 +23,13 @@ export const AndaraLetterhead: React.FC<AndaraLetterheadProps> = ({
         />
       </div>
 
-      {/* Pita Divisi: Baja Ringan, Genteng, Plavon dan Alumunium (Background Biru #0070c0 & Teks Kuning #ffff00) */}
+      {/* Pita Divisi: Baja Ringan, Genteng, Plavon dan Alumunium (Background Biru #0070c0 ~58% dari kiri sesuai dokumen real user) */}
       {showDivisiStrip && (
-        <div className="mt-1 py-0.5 px-3 bg-[#0070c0] text-center">
-          <p className="text-[10px] sm:text-[11.5px] font-black uppercase tracking-wider text-[#ffff00] font-sans">
+        <div
+          className="mt-1 py-0.5 px-3 bg-[#0070c0] w-[58%] max-w-[430px] text-center"
+          style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact', backgroundColor: '#0070c0' }}
+        >
+          <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-[#ffff00] font-sans whitespace-nowrap">
             DIVISI : BAJA RINGAN , GENTENG , PLAVON DAN ALUMUNIUM
           </p>
         </div>

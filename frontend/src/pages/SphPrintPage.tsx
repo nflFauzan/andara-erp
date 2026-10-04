@@ -127,7 +127,10 @@ export const SphPrintPage: React.FC = () => {
       </div>
 
       {/* Sheet Dokumen Resmi Cetak SPH */}
-      <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-none sm:rounded-sm border border-slate-300 p-8 sm:p-14 text-slate-900 font-sans print:shadow-none print:border-none print:p-0 print:m-0 text-[11pt] leading-relaxed">
+      <div
+        className="max-w-4xl mx-auto bg-white shadow-xl rounded-none sm:rounded-sm border border-slate-300 p-8 sm:p-14 text-slate-900 font-sans print:shadow-none print:border-none print:p-0 print:m-0 text-[11pt] leading-relaxed"
+        style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+      >
         {/* Kop Surat Resmi CV. ANDARA */}
         <AndaraLetterhead showDivisiStrip={false} className="mb-6" />
 

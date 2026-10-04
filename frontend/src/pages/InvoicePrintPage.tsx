@@ -194,89 +194,118 @@ export const InvoicePrintPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Sheet Dokumen Resmi Cetak Faktur */}
-      <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-none border border-slate-300 p-6 sm:p-10 text-black font-sans print:shadow-none print:border-none print:p-0 print:m-0 text-[9pt] leading-normal">
+      {/* Sheet Dokumen Resmi Cetak Faktur (Ukuran Kertas Standar A4) */}
+      <div
+        className="w-full max-w-[210mm] mx-auto bg-white shadow-xl rounded-none border border-slate-300 p-6 sm:p-8 text-black font-sans print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none text-[8.5pt] sm:text-[9pt] leading-normal"
+        style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+      >
         
-        {/* Kop Surat Resmi CV. ANDARA dengan Pita Divisi Baja Ringan */}
-        <AndaraLetterhead showDivisiStrip={true} className="mb-2" />
+        {/* Kop Surat Resmi CV. ANDARA */}
+        <AndaraLetterhead showDivisiStrip={false} className="mb-1" />
 
-        {/* Badge INVOICE — Kuning cerah dengan font Arial Black / Sans tebal berjarak huruf lebar */}
+        {/* Pita Divisi: Baja Ringan, Genteng, Plavon dan Alumunium dengan Garis Horizontal ke Kanan Sesuai Reference */}
+        <div className="flex items-center my-1.5">
+          <div
+            className="py-0.5 px-3 bg-[#0070c0] text-center whitespace-nowrap"
+            style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact', backgroundColor: '#0070c0' }}
+          >
+            <span className="text-[8.5pt] font-black uppercase tracking-wide text-[#ffff00] font-sans">
+              DIVISI : BAJA RINGAN , GENTENG , PLAVON DAN ALUMUNIUM
+            </span>
+          </div>
+          <div className="flex-1 border-b border-black"></div>
+        </div>
+
+        {/* Badge INVOICE — Kotak Kuning dengan Teks Merah sesuai Dokumen Real CV. ANDARA */}
         <div className="flex justify-center my-2">
-          <div className="bg-[#ffff00] border border-black px-12 py-0.5">
-            <span className="font-black text-xs sm:text-[10.5pt] tracking-[0.25em] text-black uppercase font-sans">
-              I N V O I C E
+          <div
+            className="w-[50%] max-w-[380px] bg-[#ffff00] border border-black py-0.5 text-center"
+            style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact', backgroundColor: '#ffff00' }}
+          >
+            <span className="font-black italic text-[11pt] tracking-[0.25em] text-[#ff0000] uppercase font-sans">
+              INVOICE
             </span>
           </div>
         </div>
 
-        {/* Kotak Dokumen Faktur (Mengelilingi Metadata, Rincian, dan Tanda Tangan) */}
-        <div className="border border-black">
+        {/* Kotak Dokumen Faktur (SATU OUTER FRAME DOUBLE-LINE Mengelilingi Metadata, Rincian, dan Footer/Tanda Tangan) */}
+        <div className="bg-white" style={{ border: '3.5px double #000' }}>
 
-          {/* Tabel Grid Metadata Atas */}
-          <table className="w-full text-left border-collapse text-[8.5pt] sm:text-[9pt]">
-            <tbody>
-              {/* Baris No. */}
-              <tr className="border-b border-black">
-                <td className="w-44 py-1 px-3 font-bold align-top">No.</td>
-                <td className="w-4 py-1 text-center font-bold align-top">:</td>
-                <td className="py-1 px-2 font-bold text-black align-top">{invoice.number}</td>
-              </tr>
+          {/* Section Informasi Atas (Restrukturisasi Total: Alignment Kolom Konsisten, Bukan Spreadsheet Grid) */}
+          <div className="text-[8.5pt] text-black">
+            {/* Baris 1: No. */}
+            <div className="flex items-baseline px-3 pt-2 pb-0.5">
+              <span className="w-[150px] shrink-0 font-bold">No.</span>
+              <span className="w-[18px] shrink-0 font-bold text-center">:</span>
+              <span className="flex-1 font-bold text-black">{invoice.number}</span>
+            </div>
 
-              {/* Baris Diajukan Kepada Yth */}
-              <tr className="border-b border-black">
-                <td className="w-44 py-1 px-3 font-bold align-top">Diajukan Kepada Yth</td>
-                <td className="w-4 py-1 text-center font-bold align-top">:</td>
-                <td className="py-1 px-2 font-bold text-black align-top">
+            {/* Baris 2: Diajukan Kepada Yth */}
+            <div className="flex items-baseline px-3 py-0.5">
+              <span className="w-[150px] shrink-0 font-bold">Diajukan Kepada Yth</span>
+              <span className="w-[18px] shrink-0 font-bold text-center">:</span>
+              <span className="flex-1 font-bold text-black">
+                <span className="inline-block border-b border-black pb-0.5">
                   {customer?.companyName || customer?.name || invoice.customerName}
                   {customer?.picName && (
                     <span className="font-normal text-slate-800 ml-1"> (U.p.: {customer.picName})</span>
                   )}
-                </td>
-              </tr>
+                </span>
+              </span>
+            </div>
 
-              {/* Baris Uang Sejumlah (Times New Roman Bold Italic sesuai contoh fisik) */}
-              <tr className="border-b border-black">
-                <td className="w-44 py-1 px-3 font-bold align-top">Uang sejumlah</td>
-                <td className="w-4 py-1 text-center font-bold align-top">:</td>
-                <td className="py-1 px-2 font-serif italic font-bold text-black align-top text-[9pt] sm:text-[9.5pt]">
+            {/* Baris 3: Uang sejumlah (Times New Roman Serif, Bold, Italic dengan Underline sesuai Master Reference) */}
+            <div className="flex items-baseline px-3 py-0.5">
+              <span className="w-[150px] shrink-0 font-bold">Uang sejumlah</span>
+              <span className="w-[18px] shrink-0 font-bold text-center">:</span>
+              <span className="flex-1">
+                <span className="inline-block border-b border-black pb-0.5 font-serif font-bold italic text-black text-[9.5pt]">
                   {nominalTerbilang}
-                </td>
-              </tr>
+                </span>
+              </span>
+            </div>
 
-              {/* Baris Untuk Pembayaran */}
-              <tr className="border-b border-black">
-                <td className="w-44 py-1 px-3 font-bold align-top">Untuk Pembayaran</td>
-                <td className="w-4 py-1 text-center font-bold align-top">:</td>
-                <td className="py-1 px-2 text-black align-top font-normal leading-snug">
-                  {paymentDescription}
-                </td>
-              </tr>
+            {/* Garis Pembatas Horizontal Antar Bagian Sesuai Master Reference */}
+            <div className="border-b border-black my-1"></div>
 
-              {/* Baris Lokasi Pekerjaan */}
-              <tr>
-                <td className="w-44 py-1 px-3 font-bold align-top">Lokasi Pekerjaan</td>
-                <td className="w-4 py-1 text-center font-bold align-top">:</td>
-                <td className="py-1 px-2 font-bold text-black align-top uppercase">
+            {/* Baris 4: Untuk Pembayaran (Mendukung multiline secara rapi dengan hanging indent) */}
+            <div className="flex items-start px-3 py-0.5">
+              <span className="w-[150px] shrink-0 font-bold">Untuk Pembayaran</span>
+              <span className="w-[18px] shrink-0 font-bold text-center">:</span>
+              <span className="flex-1 text-black font-normal leading-snug">
+                {paymentDescription}
+              </span>
+            </div>
+
+            {/* Baris 5: Lokasi Pekerjaan (Kapital Tebal dengan Underline sesuai Master Reference) */}
+            <div className="flex items-baseline px-3 py-0.5">
+              <span className="w-[150px] shrink-0 font-bold">Lokasi Pekerjaan</span>
+              <span className="w-[18px] shrink-0 font-bold text-center">:</span>
+              <span className="flex-1 font-bold text-black uppercase">
+                <span className="inline-block border-b border-black pb-0.5">
                   {invoice.workLocation || customer?.address || '-'}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </span>
+              </span>
+            </div>
 
-          {/* Baris Judul Header Rincian */}
-          <div className="border-t border-b border-black text-center py-1 font-bold text-[8.5pt] sm:text-[9pt] bg-white">
-            Dengan Rincian Sebagai berikut:
+            {/* Garis Pembatas Horizontal Menuju Header Rincian */}
+            <div className="border-b border-black mt-1.5"></div>
+
+            {/* Sub-header Rincian Tabel */}
+            <div className="py-1 text-center font-bold text-[8.5pt] border-b border-black bg-white">
+              Dengan Rincian Sebagai berikut:
+            </div>
           </div>
 
           {/* Tabel Utama Rincian Pekerjaan */}
-          <table className="w-full text-left border-collapse text-[8pt] sm:text-[8.5pt]">
+          <table className="w-full text-left border-collapse text-[8.5pt]">
             <thead>
               <tr className="border-b border-black text-center font-bold bg-white">
-                <th className="border-r border-black py-1 px-2 text-center w-auto">Keterangan</th>
-                <th className="border-r border-black py-1 px-1 w-16 text-center">Vol</th>
-                <th className="border-r border-black py-1 px-1 w-12 text-center">Sat</th>
-                <th className="border-r border-black py-1 px-2 w-28 text-center">Harga Satuan</th>
-                <th className="py-1 px-2 w-32 text-center">Total</th>
+                <th className="border-r border-black py-1 px-2 text-center" style={{ width: '51%' }}>Keterangan</th>
+                <th className="border-r border-black py-1 px-1 text-center" style={{ width: '9%' }}>Vol</th>
+                <th className="border-r border-black py-1 px-1 text-center" style={{ width: '7%' }}>Sat</th>
+                <th className="border-r border-black py-1 px-2 text-center" style={{ width: '16%' }}>Harga Satuan</th>
+                <th className="py-1 px-2 text-center" style={{ width: '17%' }}>Total</th>
               </tr>
             </thead>
             <tbody>
@@ -297,7 +326,7 @@ export const InvoicePrintPage: React.FC = () => {
                         <td className="border-r border-black py-0.5 px-2 text-left">
                           {detail.description}
                         </td>
-                        <td className="border-r border-black py-0.5 px-1 text-center">
+                        <td className="border-r border-black py-0.5 px-1.5 text-right font-sans">
                           {formatQuantity(detail.quantity)}
                         </td>
                         <td className="border-r border-black py-0.5 px-1 text-center">
@@ -318,32 +347,26 @@ export const InvoicePrintPage: React.FC = () => {
                       </tr>
                     ))}
 
-                    {/* Baris Subtotal Group: TOTAL A / TOTAL B / TOTAL C (Sesuai Contoh Target) */}
+                    {/* Baris Subtotal Group: TOTAL A / TOTAL B / TOTAL C (Sesuai Master Reference: Col 1-3 merged, Col 4 Rp, Col 5 subtotal) */}
                     <tr
-                      className="border-b border-black font-bold"
-                      style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+                      className="border-b border-black font-bold bg-[#b4c6e7]"
+                      style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact', backgroundColor: '#b4c6e7' }}
                     >
                       <td
-                        colSpan={2}
-                        className="border-r border-black py-0.5 px-2 text-right font-bold bg-[#b4c6e7]"
+                        colSpan={3}
+                        className="border-r border-black py-0.5 px-3 text-right font-bold text-black"
                         style={{ backgroundColor: '#b4c6e7' }}
                       >
-                        TOTAL
+                        TOTAL {group.letter}
                       </td>
                       <td
-                        className="border-r border-black py-0.5 px-1 text-center font-black bg-[#0070c0] text-white"
-                        style={{ backgroundColor: '#0070c0', color: '#ffffff' }}
-                      >
-                        {group.letter}
-                      </td>
-                      <td
-                        className="border-r border-black py-0.5 px-1 text-center font-bold bg-[#b4c6e7]"
+                        className="border-r border-black py-0.5 px-1 text-center font-bold text-black"
                         style={{ backgroundColor: '#b4c6e7' }}
                       >
                         Rp
                       </td>
                       <td
-                        className="py-0.5 px-2 text-right font-bold bg-[#b4c6e7]"
+                        className="py-0.5 px-2 text-right font-bold text-black"
                         style={{ backgroundColor: '#b4c6e7' }}
                       >
                         {formatNumber(group.subtotal)}
@@ -358,7 +381,7 @@ export const InvoicePrintPage: React.FC = () => {
                     <td className="border-r border-black py-0.5 px-2 text-left">
                       {detail.description}
                     </td>
-                    <td className="border-r border-black py-0.5 px-1 text-center">
+                    <td className="border-r border-black py-0.5 px-1.5 text-right font-sans">
                       {formatQuantity(detail.quantity)}
                     </td>
                     <td className="border-r border-black py-0.5 px-1 text-center">
@@ -380,28 +403,18 @@ export const InvoicePrintPage: React.FC = () => {
                 ))
               )}
 
-              {/* Baris TOTAL Akumulasi (TOTAL A s/d C jika multi-group, atau TOTAL jika flat) */}
-              <tr
-                className="border-b border-black font-bold"
-                style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
-              >
+              {/* Baris TOTAL Akumulasi (Sesuai Master Reference: Col 1-3 merged, Col 4 Rp, Col 5 total) */}
+              <tr className="border-b border-black font-bold bg-white">
                 <td
                   colSpan={3}
-                  className="border-r border-black py-0.5 px-2 text-right bg-[#b4c6e7]"
-                  style={{ backgroundColor: '#b4c6e7' }}
+                  className="border-r border-black py-0.5 px-3 text-right font-bold text-black bg-white"
                 >
                   {hasGrouping && groups.length > 1 ? `TOTAL A s/d ${lastGroupLetter}` : 'TOTAL'}
                 </td>
-                <td
-                  className="border-r border-black py-0.5 px-1 text-center font-bold bg-[#b4c6e7]"
-                  style={{ backgroundColor: '#b4c6e7' }}
-                >
+                <td className="border-r border-black py-0.5 px-1 text-center font-bold text-black bg-white">
                   Rp
                 </td>
-                <td
-                  className="py-0.5 px-2 text-right font-bold bg-[#b4c6e7]"
-                  style={{ backgroundColor: '#b4c6e7' }}
-                >
+                <td className="py-0.5 px-2 text-right font-bold text-black bg-white">
                   {formatNumber(invoice.totalAmount)}
                 </td>
               </tr>
@@ -409,51 +422,51 @@ export const InvoicePrintPage: React.FC = () => {
               {/* Rincian Riwayat Pembayaran (Pembayaran ke-1, ke-2, dll) */}
               {invoice.payments && invoice.payments.length > 0 ? (
                 invoice.payments.map((p, pIdx) => (
-                  <tr key={p.id || pIdx} className="border-b border-black font-bold">
-                    <td colSpan={3} className="border-r border-black py-0.5 px-2 text-right">
+                  <tr key={p.id || pIdx} className="border-b border-black font-bold bg-white">
+                    <td colSpan={3} className="border-r border-black py-0.5 px-3 text-right font-bold text-black bg-white">
                       Pembayaran ke-{pIdx + 1} {p.paymentMethodLabel || p.paymentMethod || 'Transfer'} Tgl. {formatTanggalResmi(p.paymentDate)}
                     </td>
-                    <td className="border-r border-black py-0.5 px-1 text-center font-bold">
+                    <td className="border-r border-black py-0.5 px-1 text-center font-bold text-black bg-white">
                       Rp
                     </td>
-                    <td className="py-0.5 px-2 text-right font-bold">
+                    <td className="py-0.5 px-2 text-right font-bold text-black bg-white">
                       {formatNumber(p.amount)}
                     </td>
                   </tr>
                 ))
               ) : invoice.paidAmount > 0 ? (
-                <tr className="border-b border-black font-bold">
-                  <td colSpan={3} className="border-r border-black py-0.5 px-2 text-right">
+                <tr className="border-b border-black font-bold bg-white">
+                  <td colSpan={3} className="border-r border-black py-0.5 px-3 text-right font-bold text-black bg-white">
                     Pembayaran Sebelumnya
                   </td>
-                  <td className="border-r border-black py-0.5 px-1 text-center font-bold">
+                  <td className="border-r border-black py-0.5 px-1 text-center font-bold text-black bg-white">
                     Rp
                   </td>
-                  <td className="py-0.5 px-2 text-right font-bold">
+                  <td className="py-0.5 px-2 text-right font-bold text-black bg-white">
                     {formatNumber(invoice.paidAmount)}
                   </td>
                 </tr>
               ) : null}
 
               {/* Baris SISA Tagihan */}
-              <tr className="font-bold">
-                <td colSpan={3} className="border-r border-black py-0.5 px-2 text-right font-black">
+              <tr className="font-bold bg-white">
+                <td colSpan={3} className="border-r border-black py-0.5 px-3 text-right font-black text-black bg-white">
                   SISA
                 </td>
-                <td className="border-r border-black py-0.5 px-1 text-center font-black">
+                <td className="border-r border-black py-0.5 px-1 text-center font-black text-black bg-white">
                   Rp
                 </td>
-                <td className="py-0.5 px-2 text-right font-black">
+                <td className="py-0.5 px-2 text-right font-black text-black bg-white">
                   {formatNumber(invoice.outstanding)}
                 </td>
               </tr>
             </tbody>
           </table>
 
-          {/* Bagian Bawah: Informasi Rekening Bank & Tanda Tangan */}
-          <div className="border-t border-black pt-3 pb-3 px-3 grid grid-cols-12 gap-2 text-[8pt] sm:text-[8.5pt]">
-            {/* Sisi Kiri: Rekening Bank & Kotak Nominal Rp */}
-            <div className="col-span-7 space-y-1">
+          {/* Bagian Bawah: Informasi Rekening Bank & Tanda Tangan dalam Satu Outer Frame */}
+          <div className="pt-3 pb-3 px-3.5 flex justify-between items-start text-[8.5pt]">
+            {/* Sisi Kiri: Rekening Bank & Kotak Nominal Rp (Double Border) */}
+            <div className="w-[58%] space-y-1">
               <p className="text-black font-normal">
                 Pembayaran dapat di transfer ke rekening:
               </p>
@@ -469,11 +482,14 @@ export const InvoicePrintPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* Kotak Nominal Kiri Bawah Sesuai Format Fisik */}
-              <div className="pt-2">
-                <div className="inline-flex items-center border border-black font-bold text-xs sm:text-[9.5pt]">
-                  <span className="px-3 py-1 border-r border-black font-bold">Rp</span>
-                  <span className="px-6 py-1 text-right font-bold tracking-tight">
+              {/* Kotak Nominal Kiri Bawah (DOUBLE BORDER BOX) Sesuai Dokumen Asli Client */}
+              <div className="pt-3">
+                <div
+                  className="inline-flex items-center justify-between w-[240px] px-3 py-1 font-bold text-[9.5pt]"
+                  style={{ border: '3.5px double #000' }}
+                >
+                  <span className="font-bold">Rp</span>
+                  <span className="font-bold tracking-tight">
                     {formatDecimalCurrency(billableAmount)}
                   </span>
                 </div>
@@ -481,20 +497,23 @@ export const InvoicePrintPage: React.FC = () => {
             </div>
 
             {/* Sisi Kanan: Tanggal & Tanda Tangan Direktur */}
-            <div className="col-span-5 text-center space-y-0.5">
-              <p className="italic">
-                Bogor, {formatTanggalResmi(invoice.date)}
+            <div className="w-[38%] text-center space-y-0.5 pr-2">
+              <p className="italic font-normal">
+                Bogor,&nbsp;&nbsp;{formatTanggalResmi(invoice.date)}
               </p>
-              <p className="font-bold text-[#0070c0] tracking-wide">
+              <p
+                className="font-bold italic text-[#0070c0] tracking-wide"
+                style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact', color: '#0070c0' }}
+              >
                 CV. ANDARA
               </p>
-              <div className="h-16 flex items-center justify-center">
-                {/* Tempat tanda tangan & cap stempel */}
+              <div className="h-14 flex items-center justify-center">
+                {/* Tempat tanda tangan & cap stempel fisik */}
               </div>
               <p className="font-bold underline text-black">
                 Eko Sudaryanto
               </p>
-              <p className="text-[8pt] text-black">
+              <p className="font-bold text-black text-[8.5pt]">
                 Direktur
               </p>
             </div>

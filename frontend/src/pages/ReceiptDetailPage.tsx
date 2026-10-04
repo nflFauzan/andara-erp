@@ -165,7 +165,10 @@ export const ReceiptDetailPage: React.FC = () => {
       )}
 
       {/* OFFICIAL PRINTABLE VOUCHER LAYOUT */}
-      <div className="print-area max-w-4xl mx-auto bg-white border border-slate-300 dark:border-slate-300 rounded-2xl p-8 sm:p-10 shadow-bento relative overflow-hidden text-slate-900">
+      <div
+        className="print-area max-w-4xl mx-auto bg-white border border-slate-300 dark:border-slate-300 rounded-2xl p-8 sm:p-10 shadow-bento relative overflow-hidden text-slate-900"
+        style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+      >
         {/* Void Watermark if Cancelled */}
         {isCancelled && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 opacity-15 rotate-[-25deg]">
