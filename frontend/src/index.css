@@ -4,165 +4,616 @@
 
 @layer base {
   :root {
-    /* Image 3 reference: luxurious cool-toned ambient gradient */
-    --bg-canvas: #e8effa;
-    --bg-canvas-gradient: linear-gradient(135deg, #dce6f4 0%, #edf3fb 45%, #dee7f5 100%);
+    /* 💎 Premium Glassmorphism Light Tokens */
+    --glass-canvas: #f0f5fa;
+    --glass-canvas-ambient: radial-gradient(circle at 10% 15%, rgba(219, 234, 254, 0.7) 0%, transparent 45%),
+                            radial-gradient(circle at 88% 80%, rgba(224, 231, 255, 0.6) 0%, transparent 45%),
+                            radial-gradient(circle at 50% 50%, rgba(240, 246, 255, 0.8) 0%, transparent 70%),
+                            #eef4fa;
     
-    /* Tactile Frosted Bento Card in Light Mode */
-    --card-bg: rgba(255, 255, 255, 0.88);
-    --card-border: #bfd4f5;
-    --card-shadow: inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.95), 0 8px 24px -4px rgba(67, 100, 163, 0.10), 0 2px 6px -1px rgba(67, 100, 163, 0.04);
-    --card-shadow-hover: inset 0 1.5px 2px 0 rgba(255, 255, 255, 1), 0 14px 32px -4px rgba(67, 100, 163, 0.16), 0 4px 10px -2px rgba(67, 100, 163, 0.08);
+    --glass-surface: rgba(255, 255, 255, 0.76);
+    --glass-surface-hover: rgba(255, 255, 255, 0.92);
+    --glass-surface-active: rgba(245, 249, 255, 0.95);
     
-    /* Defined outlined fields like Dark Mode & Image 3 */
-    --field-bg: rgba(255, 255, 255, 0.96);
-    --field-border: #bfd4f5;
-    --field-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.95), 0 1px 2px 0 rgba(30, 58, 138, 0.04);
-    
+    --glass-border: rgba(255, 255, 255, 0.75);
+    --glass-border-subtle: rgba(215, 226, 240, 0.65);
+    --glass-border-focus: rgba(37, 99, 235, 0.5);
+
+    --glass-shadow-sm: 0 4px 16px -2px rgba(15, 30, 60, 0.04), 0 2px 6px -1px rgba(15, 30, 60, 0.02);
+    --glass-shadow-md: 0 10px 30px -5px rgba(20, 45, 95, 0.06), 0 4px 12px -2px rgba(15, 30, 60, 0.03);
+    --glass-shadow-lg: 0 18px 45px -8px rgba(20, 50, 110, 0.1), 0 8px 20px -3px rgba(15, 30, 60, 0.04);
+    --glass-inner-highlight: inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
+
+    /* Semantic Accents */
+    --accent-blue: #2563eb;
+    --accent-emerald: #10b981;
+    --accent-amber: #f59e0b;
+    --accent-purple: #8b5cf6;
+
+    /* High contrast text for WCAG 2.1 AA Compliance */
     --text-primary: #0f172a;
-    --text-secondary: #475569;
+    --text-secondary: #334155;
     --text-muted: #64748b;
+
+    /* Backward compatibility bridge for Neumorphism legacy */
+    --neu-canvas: var(--glass-canvas);
+    --neu-surface: var(--glass-surface);
+    --neu-surface-hover: var(--glass-surface-hover);
+    --neu-border-hairline: var(--glass-border);
+    --neu-shadow-dark: rgba(200, 215, 235, 0.4);
+    --neu-shadow-light: #ffffff;
+    --neu-convex-xs: var(--glass-shadow-sm);
+    --neu-convex-sm: var(--glass-shadow-sm);
+    --neu-convex-md: var(--glass-shadow-md);
+    --neu-convex-lg: var(--glass-shadow-lg);
+    --neu-inset-xs: inset 0 1px 2px rgba(15, 30, 60, 0.05);
+    --neu-inset-sm: inset 0 1.5px 3px rgba(15, 30, 60, 0.06);
+    --neu-inset-md: inset 0 2px 5px rgba(15, 30, 60, 0.08);
+    --neu-inset-deep: inset 0 4px 8px rgba(15, 30, 60, 0.1);
+    --neu-accent: #2563eb;
+    --bg-canvas: var(--glass-canvas);
+    --card-bg: var(--glass-surface);
+    --card-border: var(--glass-border);
+    --card-shadow: var(--glass-shadow-md);
+    --card-shadow-hover: var(--glass-shadow-lg);
+    --field-bg: rgba(255, 255, 255, 0.8);
+    --field-border: var(--glass-border-subtle);
+    --field-shadow: inset 0 1px 2px rgba(15, 30, 60, 0.04);
   }
 
   .dark {
-    --bg-canvas: #090e17;
-    --bg-canvas-gradient: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(30, 58, 138, 0.25), transparent), linear-gradient(180deg, #0d1527 0%, #090e17 100%);
-    --card-bg: #111a2e;
-    --card-border: rgba(59, 130, 246, 0.25);
-    --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    --card-shadow-hover: 0 6px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(59, 130, 246, 0.2);
+    /* 💎 Premium Glassmorphism Dark Tokens */
+    --glass-canvas: #090e1a;
+    --glass-canvas-ambient: radial-gradient(circle at 12% 15%, rgba(30, 58, 138, 0.22) 0%, transparent 45%),
+                            radial-gradient(circle at 85% 85%, rgba(20, 30, 55, 0.35) 0%, transparent 50%),
+                            radial-gradient(circle at 50% 40%, rgba(15, 23, 42, 0.5) 0%, transparent 70%),
+                            #080d18;
     
-    --field-bg: #090e17;
-    --field-border: #1e3a5f;
-    --field-shadow: inset 0 1px 1px 0 rgba(0, 0, 0, 0.4);
+    --glass-surface: rgba(14, 23, 42, 0.72);
+    --glass-surface-hover: rgba(22, 36, 65, 0.82);
+    --glass-surface-active: rgba(30, 48, 85, 0.9);
     
+    --glass-border: rgba(255, 255, 255, 0.09);
+    --glass-border-subtle: rgba(255, 255, 255, 0.05);
+    --glass-border-focus: rgba(59, 130, 246, 0.6);
+
+    --glass-shadow-sm: 0 4px 16px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+    --glass-shadow-md: 0 10px 30px -5px rgba(0, 0, 0, 0.55), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+    --glass-shadow-lg: 0 18px 45px -8px rgba(0, 0, 0, 0.7), 0 8px 20px -3px rgba(0, 0, 0, 0.5);
+    --glass-inner-highlight: inset 0 1px 1px 0 rgba(255, 255, 255, 0.07);
+
+    /* Semantic Accents */
+    --accent-blue: #3b82f6;
+    --accent-emerald: #10b981;
+    --accent-amber: #f59e0b;
+    --accent-purple: #a855f7;
+
+    /* High contrast text */
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
     --text-muted: #64748b;
+
+    /* Backward compatibility bridge for Neumorphism legacy */
+    --neu-canvas: var(--glass-canvas);
+    --neu-surface: var(--glass-surface);
+    --neu-surface-hover: var(--glass-surface-hover);
+    --neu-border-hairline: var(--glass-border);
+    --neu-shadow-dark: rgba(0, 0, 0, 0.6);
+    --neu-shadow-light: rgba(255, 255, 255, 0.03);
+    --neu-convex-xs: var(--glass-shadow-sm);
+    --neu-convex-sm: var(--glass-shadow-sm);
+    --neu-convex-md: var(--glass-shadow-md);
+    --neu-convex-lg: var(--glass-shadow-lg);
+    --neu-inset-xs: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+    --neu-inset-sm: inset 0 1.5px 3px rgba(0, 0, 0, 0.6);
+    --neu-inset-md: inset 0 2px 5px rgba(0, 0, 0, 0.7);
+    --neu-inset-deep: inset 0 4px 8px rgba(0, 0, 0, 0.8);
+    --neu-accent: #3b82f6;
+    --bg-canvas: var(--glass-canvas);
+    --card-bg: var(--glass-surface);
+    --card-border: var(--glass-border);
+    --card-shadow: var(--glass-shadow-md);
+    --card-shadow-hover: var(--glass-shadow-lg);
+    --field-bg: rgba(10, 16, 30, 0.85);
+    --field-border: var(--glass-border-subtle);
+    --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
   }
 
   * {
-    border-color: theme('colors.slate.200');
+    border-color: rgba(215, 226, 240, 0.6);
   }
 
   .dark * {
-    border-color: theme('colors.slate.800');
+    border-color: rgba(255, 255, 255, 0.08);
   }
 
   body {
     color: var(--text-primary);
-    background-color: var(--bg-canvas);
+    background: var(--glass-canvas-ambient);
+    background-attachment: fixed;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
   }
 }
 
-/* Luxurious cool ambient canvas background inspired by modern Bento Glass UI */
+/* ========================================================
+   💎 PREMIUM GLASS DESIGN SYSTEM UTILITIES
+   ======================================================== */
+
 .bg-canvas {
-  background-color: var(--bg-canvas);
-  background-image: var(--bg-canvas-gradient);
+  background: var(--glass-canvas-ambient);
+  background-attachment: fixed;
   min-height: 100vh;
 }
 
-/* Tactile Frosted Bento Card components with crisp 1.5px rim outline */
-.bento-card {
-  background-color: var(--card-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1.5px solid var(--card-border);
-  box-shadow: var(--card-shadow);
+/* 1. Core Glass Panel */
+.glass-panel {
+  background: var(--glass-surface);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-md), var(--glass-inner-highlight);
   border-radius: 1.25rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.glass-panel-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glass-shadow-lg), var(--glass-inner-highlight);
+  border-color: rgba(255, 255, 255, 0.9);
+}
+.dark .glass-panel-hover:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+/* 2. Floating Glass Topbar */
+.glass-topbar {
+  background: var(--glass-surface);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 10px 30px -5px rgba(25, 45, 90, 0.07), var(--glass-inner-highlight);
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+}
+
+/* 3. Floating / Semi-Floating Sidebar */
+.glass-sidebar {
+  background: var(--glass-surface);
+  backdrop-filter: blur(20px) saturate(170%);
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-lg), var(--glass-inner-highlight);
+}
+
+/* 4. Glass Buttons */
+.glass-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  background: var(--glass-surface);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-sm), var(--glass-inner-highlight);
+  cursor: pointer;
+  user-select: none;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.bento-card-hover:hover {
-  transform: translateY(-2px);
-  border-color: #93bdf8;
-  box-shadow: var(--card-shadow-hover);
+.glass-btn:hover {
+  background: var(--glass-surface-hover);
+  transform: translateY(-1.5px);
+  box-shadow: var(--glass-shadow-md), var(--glass-inner-highlight);
 }
 
-.dark .bento-card-hover:hover {
-  border-color: rgba(96, 165, 250, 0.5);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(59, 130, 246, 0.2);
+.glass-btn:active {
+  transform: translateY(0.5px);
+  background: var(--glass-surface-active);
 }
 
-/* Tactile Outlined Fields (Search input, selects, filters) like Image 3 & Dark Mode */
-.field-outlined {
-  background-color: var(--field-bg);
-  border: 1.5px solid var(--field-border);
-  border-radius: 0.75rem;
-  box-shadow: var(--field-shadow);
-  transition: all 0.15s ease-in-out;
+/* 5. Primary Illuminated Button (Cobalt Gradient, like "Catat Pembayaran") */
+.glass-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.38), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.field-outlined:hover {
-  border-color: #93bdf8;
+.glass-btn-primary:hover {
+  background: linear-gradient(135deg, #60a5fa 0%, #1d4ed8 100%);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.52), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  transform: translateY(-1.5px);
 }
 
-.dark .field-outlined:hover {
-  border-color: #3b82f6;
+.glass-btn-primary:active {
+  transform: translateY(0.5px);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
 }
 
-.field-outlined:focus,
-.field-outlined:focus-within {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+/* 6. Icon Buttons */
+.glass-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background: var(--glass-surface);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-sm), var(--glass-inner-highlight);
+  color: var(--text-primary);
+  transition: all 0.18s ease;
+  cursor: pointer;
 }
 
-/* Reusable tactile action button like Image 3 */
-.btn-action-tactile {
+.glass-btn-icon:hover {
+  background: var(--glass-surface-hover);
+  transform: scale(1.05);
+  box-shadow: var(--glass-shadow-md);
+}
+
+.glass-btn-icon:active {
+  transform: scale(0.95);
+}
+
+/* 7. Glass Pill Badge & Segmented Control */
+.glass-pill {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.375rem 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--glass-surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-sm);
+}
+
+.glass-segmented-track {
+  display: inline-flex;
+  padding: 0.25rem;
+  border-radius: 9999px;
+  background: rgba(226, 235, 248, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border-subtle);
+}
+.dark .glass-segmented-track {
+  background: rgba(10, 18, 32, 0.6);
+}
+
+.glass-segmented-item {
+  padding: 0.35rem 0.875rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all 0.18s ease-out;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.glass-segmented-item.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* 8. Form Inputs & Selects */
+.glass-input,
+.glass-select {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: 0.875rem;
+  padding: 0.45rem 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+  box-shadow: var(--glass-shadow-sm);
+  transition: all 0.18s ease;
+}
+.dark .glass-input,
+.dark .glass-select {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.glass-input:focus,
+.glass-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+/* 9. Semantic KPI Cards */
+.glass-card-omset {
+  background: linear-gradient(165deg, rgba(239, 246, 255, 0.85) 0%, rgba(255, 255, 255, 0.75) 100%);
+  border: 1px solid rgba(191, 219, 254, 0.7);
+}
+.dark .glass-card-omset {
+  background: linear-gradient(165deg, rgba(15, 30, 60, 0.8) 0%, rgba(14, 23, 42, 0.75) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.glass-card-payment {
+  background: linear-gradient(165deg, rgba(236, 253, 245, 0.85) 0%, rgba(255, 255, 255, 0.75) 100%);
+  border: 1px solid rgba(167, 243, 208, 0.7);
+}
+.dark .glass-card-payment {
+  background: linear-gradient(165deg, rgba(10, 40, 30, 0.8) 0%, rgba(14, 23, 42, 0.75) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.glass-card-piutang {
+  background: linear-gradient(165deg, rgba(255, 251, 235, 0.85) 0%, rgba(255, 255, 255, 0.75) 100%);
+  border: 1px solid rgba(253, 230, 138, 0.7);
+}
+.dark .glass-card-piutang {
+  background: linear-gradient(165deg, rgba(45, 30, 10, 0.8) 0%, rgba(14, 23, 42, 0.75) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.glass-card-deposit {
+  background: linear-gradient(165deg, rgba(250, 245, 255, 0.85) 0%, rgba(255, 255, 255, 0.75) 100%);
+  border: 1px solid rgba(233, 213, 255, 0.7);
+}
+.dark .glass-card-deposit {
+  background: linear-gradient(165deg, rgba(35, 15, 55, 0.8) 0%, rgba(14, 23, 42, 0.75) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+}
+
+/* ========================================================
+   🏛️ BACKWARD-COMPATIBILITY ALIASES FOR NEUMORPHISM
+   ======================================================== */
+.neu-card,
+.bento-card {
+  background: var(--glass-surface);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-md), var(--glass-inner-highlight);
+  border-radius: 1.25rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.neu-card-sm {
+  background: var(--glass-surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-sm), var(--glass-inner-highlight);
+  border-radius: 0.875rem;
+}
+
+.neu-card-lg {
+  background: var(--glass-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-lg), var(--glass-inner-highlight);
+  border-radius: 1.5rem;
+}
+
+.neu-card-hover:hover,
+.bento-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glass-shadow-lg), var(--glass-inner-highlight);
+}
+
+.neu-well,
+.neu-inset-container {
+  background: rgba(220, 230, 245, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: 1rem;
+}
+.dark .neu-well,
+.dark .neu-inset-container {
+  background: rgba(8, 14, 25, 0.65);
+}
+
+.neu-input,
+.field-outlined {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: 0.75rem;
+  color: var(--text-primary);
+  box-shadow: var(--glass-shadow-sm);
+  transition: all 0.15s ease-in-out;
+}
+.dark .neu-input,
+.dark .field-outlined {
+  background: rgba(14, 22, 38, 0.85);
+}
+
+.neu-input:focus,
+.neu-input:focus-within,
+.field-outlined:focus,
+.field-outlined:focus-within {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+  border-color: #3b82f6;
+}
+
+.neu-btn,
+.btn-action-tactile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.45rem 0.875rem;
   border-radius: 0.75rem;
   font-size: 0.75rem;
   font-weight: 600;
-  border: 1.5px solid var(--field-border);
-  background-color: var(--card-bg);
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-  transition: all 0.15s ease-in-out;
+  background: var(--glass-surface);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--text-primary);
+  box-shadow: var(--glass-shadow-sm), var(--glass-inner-highlight);
+  border: 1px solid var(--glass-border);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease-out;
 }
 
+.neu-btn:hover,
 .btn-action-tactile:hover {
-  border-color: #93bdf8;
-  background-color: rgba(239, 246, 255, 0.8);
   transform: translateY(-1px);
+  background: var(--glass-surface-hover);
+  box-shadow: var(--glass-shadow-md), var(--glass-inner-highlight);
 }
 
-.dark .btn-action-tactile {
-  background-color: #1e293b;
-  border-color: #334155;
-  color: #e2e8f0;
+.neu-btn:active,
+.btn-action-tactile:active {
+  transform: translateY(0.5px);
+  background: var(--glass-surface-active);
 }
 
-.dark .btn-action-tactile:hover {
-  border-color: #3b82f6;
-  background-color: #334155;
+.neu-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.38), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Custom modern scrollbars */
+.neu-btn-primary:hover {
+  background: linear-gradient(135deg, #60a5fa 0%, #1d4ed8 100%);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.52), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  transform: translateY(-1.5px);
+}
+
+.neu-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background: var(--glass-surface);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--glass-shadow-sm), var(--glass-inner-highlight);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  transition: all 0.15s ease;
+}
+
+.neu-btn-icon:hover {
+  box-shadow: var(--glass-shadow-md);
+  transform: scale(1.05);
+}
+
+.neu-segmented-track {
+  display: inline-flex;
+  padding: 0.25rem;
+  border-radius: 9999px;
+  background: rgba(226, 235, 248, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border-subtle);
+}
+.dark .neu-segmented-track {
+  background: rgba(10, 18, 32, 0.6);
+}
+
+.neu-segmented-item {
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all 0.15s ease-out;
+  color: var(--text-secondary);
+}
+
+.neu-segmented-item.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  color: #ffffff;
+}
+
+.neu-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: var(--glass-surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--glass-shadow-sm);
+  border: 1px solid var(--glass-border);
+}
+
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.5);
+  border-radius: 9999px;
+  border: 2px solid transparent;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgba(100, 116, 139, 0.8);
 }
-
 .dark ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: rgba(51, 65, 85, 0.6);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(71, 85, 105, 0.9);
 }
 
-/* Formal Document Print Overrides */
+/* Print Overrides */
 @media print {
   body {
     background: #ffffff !important;
@@ -178,5 +629,18 @@
     box-shadow: none !important;
     width: 100% !important;
     max-width: 100% !important;
+    background: #ffffff !important;
+  }
+  .neu-card,
+  .bento-card,
+  .glass-panel,
+  .neu-input,
+  .neu-btn,
+  .neu-well {
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 }

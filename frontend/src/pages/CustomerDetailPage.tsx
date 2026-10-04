@@ -321,27 +321,27 @@ export const CustomerDetailPage: React.FC = () => {
       )}
 
       {/* Highlight Card: Saldo Deposit Customer */}
-      <div className="bg-navy-900 dark:bg-slate-900 border border-navy-800 dark:border-blue-900/40 rounded-3xl p-6 text-white shadow-bento relative overflow-hidden">
+      <div className="bg-neu-surface dark:bg-slate-900 border border-neu-border dark:border-blue-900/40 rounded-3xl p-6 text-slate-900 dark:text-white shadow-neu-convex-md relative overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center gap-2 text-brand-300 text-xs font-bold uppercase tracking-wider">
-              <Wallet className="w-4 h-4 text-amber-400" />
+            <div className="flex items-center gap-2 text-blue-600 dark:text-brand-300 text-xs font-bold uppercase tracking-wider">
+              <Wallet className="w-4 h-4 text-blue-600 dark:text-amber-400" />
               <span>Saldo Deposit Pelanggan (Customer Deposit Balance)</span>
             </div>
-            <div className="text-3xl sm:text-4xl font-black font-mono tracking-tight mt-2 text-amber-400">
+            <div className="text-3xl sm:text-4xl font-black font-mono tracking-tight mt-2 text-blue-600 dark:text-amber-400">
               {formatRupiah(customer.depositBalance)}
             </div>
-            <p className="text-xs text-slate-300 dark:text-slate-400 mt-2 max-w-xl leading-relaxed font-medium">
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 max-w-xl leading-relaxed font-medium">
               Saldo deposit bersumber dari kelebihan pembayaran (overpayment) atau alokasi deposit. Saldo ini dilindungi secara mutlak dan hanya dapat bermutasi melalui transaksi ledger pembayaran resmi (AGENTS.md §10.4).
             </p>
           </div>
-          <div className="bg-white/10 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-xs text-slate-200 shrink-0 sm:w-60">
-            <div className="font-bold text-white mb-1">Status Keuangan</div>
+          <div className="bg-neu-canvas/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl p-4 border border-neu-border dark:border-white/10 text-xs text-slate-700 dark:text-slate-200 shrink-0 sm:w-60 shadow-neu-inset-xs">
+            <div className="font-bold text-slate-900 dark:text-white mb-1">Status Keuangan</div>
             <div className="flex items-center gap-1.5 mt-2">
-              <span className={`w-2 h-2 rounded-full ${customer.depositBalance > 0 ? 'bg-emerald-400' : 'bg-slate-400'}`} />
+              <span className={`w-2 h-2 rounded-full ${customer.depositBalance > 0 ? 'bg-emerald-500' : 'bg-slate-400'}`} />
               <span className="font-semibold">{customer.depositBalance > 0 ? 'Tersedia Saldo Deposit' : 'Tidak Ada Saldo Deposit'}</span>
             </div>
-            <div className="text-[11px] text-slate-400 mt-1">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
               Dapat digunakan otomatis saat pelunasan faktur berikutnya.
             </div>
           </div>

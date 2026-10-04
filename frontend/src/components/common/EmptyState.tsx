@@ -19,11 +19,11 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`bento-card flex flex-col items-center justify-center p-10 text-center ${className}`}>
-      <div className="w-16 h-16 rounded-2xl bg-brand-500/10 dark:bg-blue-500/15 flex items-center justify-center text-brand-600 dark:text-blue-400 mb-4 border border-brand-500/20">
+    <div className={`p-10 flex flex-col items-center justify-center text-center rounded-2xl bg-neu-canvas shadow-neu-inset-sm border border-slate-300/40 dark:border-slate-800/40 ${className}`}>
+      <div className="w-16 h-16 rounded-2xl bg-neu-surface shadow-neu-convex-sm flex items-center justify-center text-brand-600 dark:text-blue-400 mb-4 border border-neu-border">
         <Icon className="w-8 h-8" />
       </div>
-      <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">{title}</h3>
+      <h3 className="text-base font-black text-slate-800 dark:text-slate-100">{title}</h3>
       {description && (
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 max-w-sm leading-relaxed">
           {description}
@@ -33,7 +33,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         <button
           type="button"
           onClick={onAction}
-          className="mt-5 px-5 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-brand-500/25 transition active:scale-95"
+          className="mt-5 neu-btn-primary"
         >
           {actionText}
         </button>
@@ -41,3 +41,5 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     </div>
   );
 };
+
+export default EmptyState;

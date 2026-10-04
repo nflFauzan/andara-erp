@@ -5,7 +5,7 @@ import {
   Users,
   Receipt,
   CreditCard,
-  Briefcase,
+  HardHat,
   Search,
   Printer,
   ChevronLeft,
@@ -138,7 +138,7 @@ export const RekapPage: React.FC = () => {
         actions={
           <button
             onClick={handlePrint}
-            className="print:hidden inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-semibold transition shadow-xs"
+            className="print:hidden neu-btn-primary text-xs"
           >
             <Printer className="w-4 h-4" />
             <span>Cetak / PDF</span>
@@ -195,7 +195,7 @@ export const RekapPage: React.FC = () => {
                 : 'bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-700'
             }`}
           >
-            <Briefcase className="w-4 h-4" />
+            <HardHat className="w-4 h-4" />
             Rekap Kegiatan Proyek
           </button>
         </div>

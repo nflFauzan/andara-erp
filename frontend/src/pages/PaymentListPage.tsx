@@ -8,7 +8,8 @@ import {
   Eye,
   Wallet,
   ArrowUpRight,
-  ShieldAlert
+  ShieldAlert,
+  Info
 } from 'lucide-react';
 import { paymentApi } from '../api/paymentApi';
 import { customerApi } from '../api/customerApi';
@@ -124,9 +125,10 @@ export const PaymentListPage: React.FC = () => {
       <PageHeader
         icon={CreditCard}
         title="Pembayaran & Alokasi Pelunasan"
-        subtitle="Pencatatan bukti penerimaan uang, alokasi settlement faktur, dan manajemen deposit pelanggan."
+        subtitle="Pencatatan bukti penerimaan uang kas/bank dari pelanggan, alokasi settlement faktur, dan manajemen deposit."
         badge={
-          <span className="text-[11px] bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold px-2.5 py-0.5 rounded-full border border-brand-500/20">
+          <span className="neu-badge">
+            <CreditCard className="w-3.5 h-3.5" />
             Kas & Settlement
           </span>
         }
@@ -134,36 +136,50 @@ export const PaymentListPage: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => navigate('/deposits')}
-              className="inline-flex items-center gap-2 px-3.5 py-2 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold transition shadow-xs"
+              className="neu-btn text-amber-700 dark:text-amber-300"
             >
               <Wallet className="w-4 h-4 text-amber-500" />
-              Deposit Customer
+              <span>Deposit Customer</span>
             </button>
 
             {isOperator ? (
               <button
                 onClick={() => navigate('/pembayaran/create')}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/25 transition"
+                className="neu-btn-primary"
               >
                 <Plus className="w-4 h-4" />
-                Catat Pembayaran Baru
+                <span>Catat Pembayaran Baru</span>
               </button>
             ) : (
-              <div className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 flex items-center gap-1.5" title="Hanya Operator yang berhak mencatat mutasi pembayaran">
-                <ShieldAlert className="w-4 h-4 text-slate-400" />
-                Mode Read-Only (Admin)
+              <div className="neu-badge text-slate-500" title="Hanya Operator yang berhak mencatat mutasi pembayaran">
+                <ShieldAlert className="w-3.5 h-3.5 text-slate-400" />
+                <span>Mode Read-Only (Admin)</span>
               </div>
             )}
           </div>
         }
       />
 
+      {/* 💡 Panduan Cepat untuk Orang Awam */}
+      <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-start gap-3 shadow-neu-convex-xs">
+        <Info className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+        <div className="text-xs space-y-1">
+          <p className="font-black text-emerald-950 dark:text-emerald-200">
+            Alur Pembayaran & Deposit Pelanggan
+          </p>
+          <p className="text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+            Menu ini mencatat uang fisik atau transfer bank yang diterima dari pelanggan. Dana yang masuk langsung dialokasikan untuk melunasi tagihan faktur. 
+            Jika pelanggan mentransfer lebih dari nilai tagihan, uang lebih tersebut otomatis aman tersimpan sebagai <strong className="text-emerald-700 dark:text-emerald-300">Deposit Customer</strong> untuk digunakan melunasi faktur di masa depan.
+          </p>
+        </div>
+      </div>
+
       {/* Admin Notice Banner if logged in as Admin */}
       {!isOperator && (
-        <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-3">
+        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-3 shadow-neu-convex-xs">
           <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-          <div className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed font-medium">
-            <span className="font-bold">Catatan Akses Admin:</span> Sesuai regulasi sistem CV. ANDARA & dokumen tata kelola (AGENTS.md §11), hak akses Admin dibatasi untuk membaca rekap/faktur. Pencatatan pembayaran, pembatalan, dan alokasi saldo deposit dilindungi ketat dan hanya dapat dijalankan oleh <span className="font-bold underline">Operator</span>.
+          <div className="text-xs text-amber-900 dark:text-amber-300 leading-relaxed font-medium">
+            <span className="font-black">Catatan Akses Admin:</span> Sesuai regulasi sistem CV. ANDARA & dokumen tata kelola (AGENTS.md §11), hak akses Admin dibatasi untuk membaca rekap/faktur. Pencatatan pembayaran, pembatalan, dan alokasi saldo deposit dilindungi ketat dan hanya dapat dijalankan oleh <span className="font-black underline">Operator</span>.
           </div>
         </div>
       )}
@@ -172,52 +188,51 @@ export const PaymentListPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <BentoCard className="p-5 flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
-              Total Pembayaran
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+              Total Pembayaran Masuk
             </span>
             <div className="mt-2 text-2xl font-black font-mono text-slate-900 dark:text-white">
               {formatCurrency(totalPaymentAmount)}
             </div>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 font-medium">Akumulasi penerimaan pembayaran aktif di halaman ini</p>
+            <p className="text-[10px] text-slate-400 mt-1 font-medium">Akumulasi uang kas/transfer aktif (halaman ini)</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 border border-brand-500/20">
+          <div className="w-12 h-12 rounded-xl bg-neu-canvas shadow-neu-inset-xs text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 border border-neu-border/60">
             <CreditCard className="w-6 h-6" />
           </div>
         </BentoCard>
 
         <BentoCard className="p-5 flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
               Teralokasi ke Faktur
             </span>
             <div className="mt-2 text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
               {formatCurrency(totalAllocatedAmount)}
             </div>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 font-medium">Settlement langsung terhadap tagihan faktur</p>
+            <p className="text-[10px] text-slate-400 mt-1 font-medium">Dana yang sudah memotong tagihan piutang</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
+          <div className="w-12 h-12 rounded-xl bg-neu-canvas shadow-neu-inset-xs text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-neu-border/60">
             <ArrowUpRight className="w-6 h-6" />
           </div>
         </BentoCard>
 
         <BentoCard className="p-5 flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
               Masuk Deposit Customer
             </span>
-            <div className="mt-2 text-2xl font-black font-mono text-amber-500">
+            <div className="mt-2 text-2xl font-black font-mono text-purple-600 dark:text-purple-400">
               {formatCurrency(totalExcessAmount)}
             </div>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 font-medium">Kelebihan bayar otomatis masuk ledger deposit</p>
+            <p className="text-[10px] text-slate-400 mt-1 font-medium">Kelebihan transfer tersimpan untuk faktur nanti</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
+          <div className="w-12 h-12 rounded-xl bg-neu-canvas shadow-neu-inset-xs text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 border border-neu-border/60">
             <Wallet className="w-6 h-6" />
           </div>
         </BentoCard>
       </div>
 
-      {/* Filter Bar */}
-      {/* Filter Bar with Defined 1.5px Outlines */}
+      {/* Filter Bar with Neumorphic Inset Wells */}
       <BentoCard className="p-4 space-y-3">
         <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           <Filter className="w-4 h-4 text-brand-500" />
@@ -235,7 +250,7 @@ export const PaymentListPage: React.FC = () => {
                 setSearch(e.target.value);
                 setCurrentPage(0);
               }}
-              className="w-full pl-9 pr-3 py-2 text-xs font-medium bg-white/95 dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-xl border-[1.5px] border-blue-200/90 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 shadow-xs transition"
+              className="neu-input w-full pl-9 pr-3 py-2 text-xs font-semibold"
             />
           </div>
 
@@ -247,7 +262,7 @@ export const PaymentListPage: React.FC = () => {
                 setSelectedCustomer(e.target.value ? Number(e.target.value) : undefined);
                 setCurrentPage(0);
               }}
-              className="w-full px-3 py-2 text-xs font-semibold bg-white/95 dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-xl border-[1.5px] border-blue-200/90 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 shadow-xs transition truncate"
+              className="neu-input w-full px-3 py-2 text-xs font-bold truncate cursor-pointer"
             >
               <option value="">Semua Customer</option>
               {customers.map((c) => (
@@ -266,7 +281,7 @@ export const PaymentListPage: React.FC = () => {
                 setSelectedMethod(e.target.value ? (e.target.value as PaymentMethod) : undefined);
                 setCurrentPage(0);
               }}
-              className="w-full px-3 py-2 text-xs font-semibold bg-white/95 dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-xl border-[1.5px] border-blue-200/90 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 shadow-xs transition"
+              className="neu-input w-full px-3 py-2 text-xs font-bold cursor-pointer"
             >
               <option value="">Semua Metode</option>
               <option value="BANK_TRANSFER">Transfer Bank</option>
@@ -284,10 +299,10 @@ export const PaymentListPage: React.FC = () => {
                 setSelectedStatus(e.target.value ? (e.target.value as PaymentStatus) : undefined);
                 setCurrentPage(0);
               }}
-              className="w-full px-3 py-2 text-xs font-semibold bg-white/95 dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-xl border-[1.5px] border-blue-200/90 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 shadow-xs transition"
+              className="neu-input w-full px-3 py-2 text-xs font-bold cursor-pointer"
             >
               <option value="">Semua Status</option>
-              <option value="CONFIRMED">Dikonfirmasi</option>
+              <option value="CONFIRMED">Dikonfirmasi (Sah)</option>
               <option value="CANCELLED">Dibatalkan</option>
             </select>
           </div>
@@ -304,7 +319,7 @@ export const PaymentListPage: React.FC = () => {
                 setEndDate('');
                 setCurrentPage(0);
               }}
-              className="w-full px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/95 dark:bg-slate-900 hover:bg-blue-50/60 dark:hover:bg-slate-800 border-[1.5px] border-blue-200/90 dark:border-slate-700 rounded-xl transition shadow-xs"
+              className="neu-btn w-full text-xs"
             >
               Reset Filter
             </button>
@@ -315,33 +330,33 @@ export const PaymentListPage: React.FC = () => {
       {/* Main Table */}
       <BentoCard className="overflow-hidden p-0">
         {errorMsg && (
-          <div className="p-4 bg-rose-500/10 border-b border-rose-500/20 text-rose-800 dark:text-rose-300 text-xs font-semibold">
+          <div className="p-4 bg-rose-500/10 border-b border-rose-500/20 text-rose-800 dark:text-rose-300 text-xs font-bold">
             {errorMsg}
           </div>
         )}
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-            <thead className="bg-slate-50/90 dark:bg-slate-900/90 border-b-[1.5px] border-blue-100 dark:border-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+            <thead className="bg-neu-canvas border-b border-neu-border/60 text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">
               <tr>
                 <th className="px-5 py-4">No. Pembayaran</th>
-                <th className="px-4 py-4">Tanggal</th>
-                <th className="px-4 py-4">Customer</th>
-                <th className="px-4 py-4">Metode & Rekening</th>
-                <th className="px-4 py-4 text-right">Jumlah Bayar</th>
+                <th className="px-4 py-4">Tanggal Masuk</th>
+                <th className="px-4 py-4">Pelanggan</th>
+                <th className="px-4 py-4">Metode Bayar</th>
+                <th className="px-4 py-4 text-right">Uang Diterima</th>
                 <th className="px-4 py-4 text-right">Teralokasi</th>
-                <th className="px-4 py-4 text-right">Kelebihan / Deposit</th>
+                <th className="px-4 py-4 text-right">Masuk Deposit</th>
                 <th className="px-4 py-4 text-center">Status</th>
-                <th className="px-5 py-4 text-center">Aksi</th>
+                <th className="px-5 py-4 text-center">Aksi Cepat</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+            <tbody className="divide-y divide-neu-border/40">
               {loading ? (
                 <tr>
                   <td colSpan={9} className="px-5 py-12 text-center text-slate-400">
                     <div className="inline-flex items-center gap-2">
                       <div className="w-6 h-6 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
-                      <span className="text-xs font-semibold">Memuat data pembayaran...</span>
+                      <span className="text-xs font-bold">Memuat data pembayaran...</span>
                     </div>
                   </td>
                 </tr>
@@ -355,9 +370,9 @@ export const PaymentListPage: React.FC = () => {
               ) : (
                 paymentList.map((payment) => {
                   return (
-                    <tr key={payment.id} className="hover:bg-blue-50/50 dark:hover:bg-slate-800/40 transition group">
+                    <tr key={payment.id} className="hover:bg-neu-canvas/50 transition group">
                       <td className="px-5 py-4">
-                        <span className="font-bold text-brand-600 dark:text-brand-400 font-mono">
+                        <span className="font-black text-brand-600 dark:text-brand-400 font-mono text-xs">
                           {payment.number}
                         </span>
                         {payment.reference && (
@@ -367,17 +382,17 @@ export const PaymentListPage: React.FC = () => {
                         )}
                       </td>
 
-                      <td className="px-4 py-4 whitespace-nowrap text-xs text-slate-600 dark:text-slate-300 font-medium">
+                      <td className="px-4 py-4 whitespace-nowrap text-xs text-slate-600 dark:text-slate-300 font-semibold">
                         {payment.date}
                       </td>
 
                       <td className="px-4 py-4">
-                        <div className="font-bold text-slate-900 dark:text-slate-100">{payment.customerName}</div>
-                        <div className="text-xs text-slate-400 font-mono">{payment.customerCode}</div>
+                        <div className="font-black text-slate-900 dark:text-slate-100 text-xs">{payment.customerName}</div>
+                        <div className="text-xs text-slate-400 font-mono font-bold">{payment.customerCode}</div>
                       </td>
 
                       <td className="px-4 py-4">
-                        <div className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
+                        <div className="font-bold text-slate-800 dark:text-slate-200 text-xs">
                           {METHOD_LABELS[payment.paymentMethod] || payment.paymentMethod}
                         </div>
                         {payment.destinationAccount && (
@@ -387,22 +402,22 @@ export const PaymentListPage: React.FC = () => {
                         )}
                       </td>
 
-                      <td className="px-4 py-4 text-right font-bold text-slate-900 dark:text-white font-mono">
+                      <td className="px-4 py-4 text-right font-black text-slate-900 dark:text-white font-mono">
                         {formatCurrency(payment.amount)}
                       </td>
 
                       <td className="px-4 py-4 text-right">
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                        <span className="font-black text-emerald-600 dark:text-emerald-400 font-mono">
                           {formatCurrency(payment.allocatedAmount)}
                         </span>
-                        <div className="text-[11px] text-slate-400">
-                          {payment.allocations?.length || 0} faktur
+                        <div className="text-[10.5px] text-slate-400 font-medium">
+                          {payment.allocations?.length || 0} faktur terpotong
                         </div>
                       </td>
 
                       <td className="px-4 py-4 text-right">
                         {Number(payment.excessAmount) > 0 ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                          <span className="neu-badge text-purple-700 dark:text-purple-400 bg-purple-500/10 border-purple-500/30">
                             +{formatCurrency(payment.excessAmount)}
                           </span>
                         ) : (
@@ -411,16 +426,17 @@ export const PaymentListPage: React.FC = () => {
                       </td>
 
                       <td className="px-4 py-4 text-center whitespace-nowrap">
-                        <StatusBadge status={payment.status} />
+                        <StatusBadge status={payment.status} size="sm" />
                       </td>
 
                       <td className="px-5 py-4 text-center whitespace-nowrap">
                         <button
                           onClick={() => navigate(`/pembayaran/${payment.id}`)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-blue-50/80 dark:bg-slate-800 dark:hover:bg-slate-700 border-[1.5px] border-blue-200 dark:border-slate-700 text-blue-600 dark:text-slate-200 rounded-xl text-xs font-bold shadow-xs transition"
+                          className="neu-btn text-xs py-1.5 px-3 cursor-pointer"
+                          title="Buka rincian pembayaran & alokasi"
                         >
-                          <Eye className="w-3.5 h-3.5 text-brand-500" />
-                          Detail
+                          <Eye className="w-3.5 h-3.5 text-slate-500" />
+                          <span>Rincian</span>
                         </button>
                       </td>
                     </tr>
@@ -433,7 +449,7 @@ export const PaymentListPage: React.FC = () => {
 
         {/* Pagination Bar */}
         {totalPages > 1 && (
-          <div className="px-5 py-4 bg-white/40 dark:bg-slate-900/40 border-t-[1.5px] border-blue-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <div className="px-5 py-4 border-t border-neu-border/60 flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 bg-neu-surface">
             <span>
               Menampilkan {paymentList.length} dari {totalElements} data
             </span>
@@ -441,17 +457,17 @@ export const PaymentListPage: React.FC = () => {
               <button
                 disabled={currentPage === 0}
                 onClick={() => setCurrentPage((p) => p - 1)}
-                className="px-3 py-1.5 text-xs font-semibold bg-white/70 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl disabled:opacity-40 hover:bg-white dark:hover:bg-slate-800 transition"
+                className="neu-btn px-3 py-1.5 disabled:opacity-40"
               >
                 Sebelumnya
               </button>
-              <span className="text-xs font-medium px-2">
+              <span className="text-xs font-bold px-2">
                 Halaman {currentPage + 1} dari {totalPages}
               </span>
               <button
                 disabled={currentPage + 1 >= totalPages}
                 onClick={() => setCurrentPage((p) => p + 1)}
-                className="px-3 py-1.5 text-xs font-semibold bg-white/70 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl disabled:opacity-40 hover:bg-white dark:hover:bg-slate-800 transition"
+                className="neu-btn px-3 py-1.5 disabled:opacity-40"
               >
                 Selanjutnya
               </button>
@@ -462,3 +478,5 @@ export const PaymentListPage: React.FC = () => {
     </div>
   );
 };
+
+export default PaymentListPage;

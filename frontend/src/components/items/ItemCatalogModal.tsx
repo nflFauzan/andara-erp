@@ -24,6 +24,7 @@ interface ItemCatalogModalProps {
   item?: ItemCatalog | null;
   isLoading?: boolean;
   categories?: string[];
+  initialName?: string;
 }
 
 const COMMON_UNITS = ['m2', 'm1', 'unit', 'bh', 'titik', 'paket', 'ls', 'kg', 'batang', 'lembar', 'hari'];
@@ -45,6 +46,7 @@ export const ItemCatalogModal: React.FC<ItemCatalogModalProps> = ({
   item,
   isLoading = false,
   categories = [],
+  initialName = '',
 }) => {
   const isEdit = Boolean(item);
 
@@ -59,7 +61,7 @@ export const ItemCatalogModal: React.FC<ItemCatalogModalProps> = ({
     resolver: zodResolver(itemSchema),
     defaultValues: {
       code: '',
-      name: '',
+      name: initialName || '',
       category: '',
       defaultUnit: 'm2',
       defaultPrice: 0,
@@ -82,7 +84,7 @@ export const ItemCatalogModal: React.FC<ItemCatalogModalProps> = ({
     } else {
       reset({
         code: '',
-        name: '',
+        name: initialName || '',
         category: '',
         defaultUnit: 'm2',
         defaultPrice: 0,
@@ -90,7 +92,7 @@ export const ItemCatalogModal: React.FC<ItemCatalogModalProps> = ({
         active: true,
       });
     }
-  }, [item, reset, isOpen]);
+  }, [item, reset, isOpen, initialName]);
 
   if (!isOpen) return null;
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
-  Layers,
+  HardHat,
   Plus,
   Search,
   Filter,
@@ -149,7 +149,7 @@ export const KegiatanListPage: React.FC = () => {
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header */}
       <PageHeader
-        icon={Layers}
+        icon={HardHat}
         title="Kegiatan & Rincian Item Pekerjaan"
         subtitle="Pencatatan proyek operasional, rincian volume & harga satuan, serta dasar penawaran dan faktur penjualan."
         badge={
@@ -246,24 +246,32 @@ export const KegiatanListPage: React.FC = () => {
         {/* Status Filter */}
         <div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0">
-            <Filter className="w-3.5 h-3.5 text-brand-500" />
+            <Filter className="w-3.5 h-3.5 text-blue-500" />
             <span>Status:</span>
           </div>
-          <div className="inline-flex p-1 bg-white/80 dark:bg-slate-800/80 rounded-xl text-xs font-bold shrink-0 border-[1.5px] border-blue-200/90 dark:border-slate-700 shadow-2xs">
-            {(['ALL', 'ACTIVE', 'PLANNED', 'COMPLETED', 'CLOSED', 'CANCELLED'] as const).map((st) => (
+          <div className="inline-flex p-1 bg-white/80 dark:bg-slate-800/80 rounded-full text-xs font-bold shrink-0 border border-slate-200/80 dark:border-slate-700 shadow-xs">
+            {([
+              { key: 'ALL', label: 'Semua', dot: '' },
+              { key: 'ACTIVE', label: 'Berjalan', dot: 'bg-emerald-500' },
+              { key: 'PLANNED', label: 'Direncanakan', dot: 'bg-sky-500' },
+              { key: 'COMPLETED', label: 'Selesai', dot: 'bg-teal-500' },
+              { key: 'CLOSED', label: 'Ditutup', dot: 'bg-indigo-400' },
+              { key: 'CANCELLED', label: 'Dibatalkan', dot: 'bg-rose-500' },
+            ] as const).map((st) => (
               <button
-                key={st}
+                key={st.key}
                 onClick={() => {
-                  setStatusFilter(st);
+                  setStatusFilter(st.key as KegiatanStatus | 'ALL');
                   setPage(0);
                 }}
-                className={`px-2.5 py-1.5 rounded-lg transition ${
-                  statusFilter === st
-                    ? 'bg-brand-600 text-white shadow-xs'
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition cursor-pointer ${
+                  statusFilter === st.key
+                    ? 'bg-blue-600 text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                {st === 'ALL' ? 'Semua' : st}
+                {st.dot && <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />}
+                <span>{st.label}</span>
               </button>
             ))}
           </div>
@@ -305,7 +313,7 @@ export const KegiatanListPage: React.FC = () => {
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400">
                     <div className="flex flex-col items-center justify-center space-y-2">
-                      <Layers className="w-10 h-10 text-slate-300 dark:text-slate-600 stroke-[1.5]" />
+                      <HardHat className="w-10 h-10 text-slate-300 dark:text-slate-600 stroke-[1.5]" />
                       <p className="font-bold text-slate-700 dark:text-slate-300">Tidak ada kegiatan ditemukan</p>
                       <p className="text-xs text-slate-400">
                         {searchTerm ? 'Coba ubah kata kunci pencarian Anda.' : 'Klik "Tambah Kegiatan" untuk mencatat proyek baru.'}

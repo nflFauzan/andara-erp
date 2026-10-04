@@ -87,7 +87,7 @@ export const ReceiptDetailPage: React.FC = () => {
         </p>
         <button
           onClick={() => navigate('/kwitansi')}
-          className="px-4 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-sm font-semibold hover:bg-slate-800 dark:hover:bg-white transition"
+          className="neu-btn-primary"
         >
           Kembali ke Daftar Kwitansi
         </button>

@@ -9,8 +9,6 @@ import {
   Building2,
   Calculator,
   Layers,
-  Package,
-  PlusCircle,
   CheckCircle2,
   FolderPlus
 } from 'lucide-react';
@@ -20,6 +18,7 @@ import { itemCatalogApi } from '../api/itemCatalogApi';
 import { Customer } from '../types/customer';
 import { ItemCatalog, CreateItemCatalogInput, UpdateItemCatalogInput } from '../types/itemCatalog';
 import { ItemCatalogModal } from '../components/items/ItemCatalogModal';
+import { ItemSmartInput } from '../components/items/ItemSmartInput';
 import { formatRupiah } from '../lib/utils';
 import { BentoCard } from '@/components/common/BentoCard';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -82,6 +81,8 @@ export const PenawaranFormPage: React.FC = () => {
   // Modal for quick adding master item
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [targetKegiatanTempId, setTargetKegiatanTempId] = useState<string | null>(null);
+  const [targetItemTempId, setTargetItemTempId] = useState<string | null>(null);
+  const [prefillItemName, setPrefillItemName] = useState<string>('');
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEdit);
@@ -274,13 +275,8 @@ export const PenawaranFormPage: React.FC = () => {
     );
   };
 
-  // Select item from master catalog dropdown
-  const handleSelectMasterItem = (kegiatanTempId: string, itemTempId: string, itemCatalogIdStr: string) => {
-    if (!itemCatalogIdStr) return;
-    const catId = Number(itemCatalogIdStr);
-    const found = masterItems.find((m) => m.id === catId);
-    if (!found) return;
-
+  // Select item from master catalog
+  const handleSelectMasterItem = (kegiatanTempId: string, itemTempId: string, item: ItemCatalog) => {
     setKegiatanGroups((prev) =>
       prev.map((k) => {
         if (k.tempId !== kegiatanTempId) return k;
@@ -290,10 +286,10 @@ export const PenawaranFormPage: React.FC = () => {
             if (it.tempId !== itemTempId) return it;
             return {
               ...it,
-              itemCatalogId: found.id,
-              description: found.name,
-              unit: found.defaultUnit || it.unit,
-              unitPrice: found.defaultPrice !== undefined ? found.defaultPrice : it.unitPrice,
+              itemCatalogId: item.id,
+              description: item.name,
+              unit: item.defaultUnit || it.unit,
+              unitPrice: item.defaultPrice !== undefined ? item.defaultPrice : it.unitPrice,
             };
           }),
         };
@@ -308,14 +304,36 @@ export const PenawaranFormPage: React.FC = () => {
       await refetchMasterItems();
       queryClient.invalidateQueries({ queryKey: ['active-master-items'] });
 
-      // Automatically append to the target kegiatan
-      if (targetKegiatanTempId) {
+      // If targetItemTempId is set, update that specific row
+      if (targetKegiatanTempId && targetItemTempId) {
+        setKegiatanGroups((prev) =>
+          prev.map((k) => {
+            if (k.tempId !== targetKegiatanTempId) return k;
+            return {
+              ...k,
+              items: k.items.map((it) => {
+                if (it.tempId !== targetItemTempId) return it;
+                return {
+                  ...it,
+                  itemCatalogId: createdItem.id,
+                  description: createdItem.name,
+                  unit: createdItem.defaultUnit || it.unit,
+                  unitPrice: createdItem.defaultPrice !== undefined ? createdItem.defaultPrice : it.unitPrice,
+                };
+              }),
+            };
+          })
+        );
+      } else if (targetKegiatanTempId) {
+        // Automatically append to the target kegiatan
         handleAddItemToKegiatan(targetKegiatanTempId, createdItem);
       }
 
       setIsAddItemModalOpen(false);
       setTargetKegiatanTempId(null);
-      setFeedbackMsg(`Item '${createdItem.name}' berhasil disimpan ke Master Data dan ditambahkan ke kegiatan.`);
+      setTargetItemTempId(null);
+      setPrefillItemName('');
+      setFeedbackMsg(`Item '${createdItem.name}' berhasil disimpan ke Master Data dan dipilih.`);
       setTimeout(() => setFeedbackMsg(null), 4000);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Gagal menyimpan item ke Master Data.');
@@ -575,31 +593,31 @@ export const PenawaranFormPage: React.FC = () => {
               className="overflow-hidden p-0 border border-slate-200/90 dark:border-blue-900/30"
             >
               {/* Kegiatan Header Bar */}
-              <div className="bg-navy-900 dark:bg-slate-900 text-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-navy-800 dark:border-blue-900/40">
+              <div className="bg-neu-surface dark:bg-slate-900 text-slate-900 dark:text-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neu-border dark:border-blue-900/40 shadow-neu-convex-xs">
                 <div className="flex items-center gap-3 flex-1">
-                  <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-500 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-xs border border-brand-300/30">
+                  <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-blue-500 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-neu-accent border border-white/30">
                     {letterLabel}
                   </span>
                   <div className="flex-1 max-w-xl">
-                    <label className="text-[10px] text-slate-300 dark:text-slate-400 font-bold uppercase tracking-wider block mb-0.5">
-                      Nama Kegiatan {letterLabel} <span className="text-rose-400">*</span>
+                    <label className="text-[10px] text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider block mb-0.5">
+                      Nama Kegiatan {letterLabel} <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={kg.name}
                       onChange={(e) => handleKegiatanNameChange(kg.tempId, e.target.value)}
                       placeholder='Contoh: "Pembangunan Ruang Kelas Baru", "Perpustakaan", "Toilet"...'
-                      className="w-full px-3 py-1.5 text-sm bg-navy-950/80 dark:bg-slate-950/80 border border-navy-700 dark:border-slate-800 text-white rounded-xl focus:ring-2 focus:ring-brand-400 outline-none font-semibold"
+                      className="w-full px-3 py-1.5 text-sm bg-neu-canvas dark:bg-slate-950/80 border border-neu-border dark:border-slate-800 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-semibold shadow-neu-inset-xs"
                     />
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 justify-between sm:justify-end">
                   <div className="text-right">
-                    <span className="text-[10px] text-slate-300 dark:text-slate-400 uppercase font-semibold block">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold block">
                       Subtotal {letterLabel}
                     </span>
-                    <span className="font-mono font-black text-sm text-amber-400">
+                    <span className="font-mono font-black text-sm text-blue-600 dark:text-amber-400">
                       {formatRupiah(subtotalKg)}
                     </span>
                   </div>
@@ -609,7 +627,7 @@ export const PenawaranFormPage: React.FC = () => {
                       type="button"
                       onClick={() => handleRemoveKegiatan(kg.tempId)}
                       title="Hapus kegiatan ini"
-                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition"
+                      className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-lg transition"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -619,12 +637,12 @@ export const PenawaranFormPage: React.FC = () => {
 
               {/* Items Table for this Kegiatan */}
               <div className="p-4 sm:p-5 space-y-4">
-                <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800">
+                <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 overflow-visible">
                   <table className="w-full text-left text-sm border-collapse">
                     <thead>
                       <tr className="bg-slate-100/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                         <th className="py-2.5 px-3 w-10 text-center">No</th>
-                        <th className="py-2.5 px-3 min-w-[280px]">Nama Pekerjaan / Uraian Material</th>
+                        <th className="py-2.5 px-3 min-w-[320px]">Nama Pekerjaan / Uraian Material</th>
                         <th className="py-2.5 px-3 w-28 text-right">Perkiraan Vol</th>
                         <th className="py-2.5 px-3 w-20 text-center">Satuan</th>
                         <th className="py-2.5 px-3 w-36 text-right">Harga Satuan (Rp)</th>
@@ -642,36 +660,25 @@ export const PenawaranFormPage: React.FC = () => {
                               {itIdx + 1}
                             </td>
 
-                            {/* Description & Master Picker */}
-                            <td className="py-2.5 px-3 space-y-1">
-                              <input
-                                type="text"
+                            {/* Smart Input for Description & Master Search */}
+                            <td className="py-2.5 px-3">
+                              <ItemSmartInput
                                 value={it.description}
-                                onChange={(e) =>
-                                  handleItemFieldChange(kg.tempId, it.tempId, 'description', e.target.value)
+                                onChange={(val) =>
+                                  handleItemFieldChange(kg.tempId, it.tempId, 'description', val)
                                 }
-                                placeholder="Pilih dropdown di bawah atau ketik uraian pekerjaan manual..."
-                                className="w-full px-2.5 py-1.5 text-sm border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-brand-500/30 outline-none font-medium bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100"
+                                onSelectMasterItem={(mItem) =>
+                                  handleSelectMasterItem(kg.tempId, it.tempId, mItem)
+                                }
+                                onCreateNewMasterItem={(typedQuery) => {
+                                  setTargetKegiatanTempId(kg.tempId);
+                                  setTargetItemTempId(it.tempId);
+                                  setPrefillItemName(typedQuery);
+                                  setIsAddItemModalOpen(true);
+                                }}
+                                masterItems={masterItems}
+                                placeholder="Ketikan nama pekerjaan / material..."
                               />
-
-                              {/* Master Dropdown Picker */}
-                              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                                <Package className="w-3.5 h-3.5 text-brand-500 shrink-0" />
-                                <select
-                                  value={it.itemCatalogId || ''}
-                                  onChange={(e) =>
-                                    handleSelectMasterItem(kg.tempId, it.tempId, e.target.value)
-                                  }
-                                  className="text-xs border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-0.5 bg-white/50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-300 outline-none hover:bg-white dark:hover:bg-slate-800 max-w-md truncate"
-                                >
-                                  <option value="">-- Pilih dari Master Data Item --</option>
-                                  {masterItems.map((m) => (
-                                    <option key={m.id} value={m.id}>
-                                      {m.name} [{m.defaultUnit} - {formatRupiah(m.defaultPrice)}]
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
                             </td>
 
                             {/* Volume */}
@@ -746,22 +753,10 @@ export const PenawaranFormPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleAddItemToKegiatan(kg.tempId)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition shadow-xs"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-50/70 hover:bg-blue-100/70 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 text-xs font-bold rounded-xl transition shadow-xs"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>Tambah Baris Kosong</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTargetKegiatanTempId(kg.tempId);
-                        setIsAddItemModalOpen(true);
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-500/10 hover:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-brand-500/25 text-xs font-bold rounded-xl transition shadow-xs"
-                    >
-                      <PlusCircle className="w-3.5 h-3.5" />
-                      <span>+ Buat Item Baru ke Master</span>
+                      <span>+ Tambah item untuk kegiatan ini</span>
                     </button>
                   </div>
 
@@ -779,10 +774,10 @@ export const PenawaranFormPage: React.FC = () => {
       </div>
 
       {/* Grand Total Summary Card */}
-      <BentoCard className="bg-navy-900 dark:bg-slate-900 text-white p-6 border-navy-800 dark:border-blue-900/40 shadow-bento space-y-4">
-        <div className="flex items-center gap-2 border-b border-navy-800 dark:border-slate-800 pb-3">
-          <Calculator className="w-5 h-5 text-brand-400" />
-          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">
+      <BentoCard className="bg-neu-surface dark:bg-slate-900 text-slate-900 dark:text-white p-6 border border-neu-border dark:border-blue-900/40 shadow-neu-convex-md space-y-4">
+        <div className="flex items-center gap-2 border-b border-neu-border dark:border-slate-800 pb-3">
+          <Calculator className="w-5 h-5 text-blue-600 dark:text-brand-400" />
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
             Rekapitulasi Total Penawaran SPH
           </h3>
         </div>
@@ -793,7 +788,7 @@ export const PenawaranFormPage: React.FC = () => {
             const subtotalKg = calculateKegiatanSubtotal(kg);
 
             return (
-              <div key={kg.tempId} className="flex justify-between items-center text-slate-300">
+              <div key={kg.tempId} className="flex justify-between items-center text-slate-600 dark:text-slate-300">
                 <span>
                   TOTAL {letterLabel} ({kg.name || `Kegiatan ${letterLabel}`}) :
                 </span>
@@ -802,11 +797,11 @@ export const PenawaranFormPage: React.FC = () => {
             );
           })}
 
-          <div className="pt-3 border-t border-navy-800 dark:border-slate-800 flex justify-between items-center text-base font-bold text-white">
-            <span className="text-brand-300">
+          <div className="pt-3 border-t border-neu-border dark:border-slate-800 flex justify-between items-center text-base font-bold text-slate-900 dark:text-white">
+            <span className="text-blue-600 dark:text-brand-300">
               TOTAL KESELURUHAN (A s/d {String.fromCharCode(65 + kegiatanGroups.length - 1)}) :
             </span>
-            <span className="font-mono text-2xl font-black text-amber-400">{formatRupiah(grandTotalAmount)}</span>
+            <span className="font-mono text-2xl font-black text-blue-600 dark:text-amber-400">{formatRupiah(grandTotalAmount)}</span>
           </div>
         </div>
       </BentoCard>
@@ -858,9 +853,12 @@ export const PenawaranFormPage: React.FC = () => {
         onClose={() => {
           setIsAddItemModalOpen(false);
           setTargetKegiatanTempId(null);
+          setTargetItemTempId(null);
+          setPrefillItemName('');
         }}
         onSubmit={handleCreateMasterItemSubmit}
         categories={categories}
+        initialName={prefillItemName}
       />
     </form>
   );

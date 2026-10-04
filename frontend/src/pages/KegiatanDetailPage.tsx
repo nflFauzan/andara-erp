@@ -14,7 +14,8 @@ import {
   CheckCircle,
   FileText,
   Calculator,
-  ExternalLink
+  ExternalLink,
+  HardHat
 } from 'lucide-react';
 import { kegiatanApi } from '../api/kegiatanApi';
 import { attachmentApi } from '../api/attachmentApi';
@@ -260,6 +261,7 @@ export const KegiatanDetailPage: React.FC = () => {
     <div className="space-y-6">
       {/* Top Header & Navigation */}
       <PageHeader
+        icon={HardHat}
         title={kegiatan.name}
         subtitle={
           <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1">

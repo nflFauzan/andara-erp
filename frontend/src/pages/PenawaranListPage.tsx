@@ -10,6 +10,7 @@ import {
   AlertCircle,
   FileCheck2,
   Clock,
+  Info
 } from 'lucide-react';
 import { penawaranApi } from '../api/penawaranApi';
 import { customerApi } from '../api/customerApi';
@@ -94,80 +95,100 @@ export const PenawaranListPage: React.FC = () => {
       <PageHeader
         icon={FileText}
         title="Surat Penawaran Harga (SPH)"
-        subtitle="Kelola estimasi biaya proyek, rincian item pekerjaan per kegiatan, dan persetujuan penawaran resmi."
+        subtitle="Kelola estimasi biaya proyek, rincian item pekerjaan per kegiatan, dan persetujuan penawaran resmi ke klien."
         badge={
-          <span className="text-[11px] bg-blue-500/10 text-blue-700 dark:text-blue-400 font-bold px-3 py-1 rounded-full border-[1.5px] border-blue-300 dark:border-blue-500/30">
-            Penawaran Resmi
+          <span className="neu-badge">
+            <FileText className="w-3.5 h-3.5" />
+            Pra-Penjualan
           </span>
         }
         actions={
           <button
             onClick={() => navigate('/penawaran/create')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-blue-500/25 transition"
+            className="neu-btn-primary"
           >
             <Plus className="w-4 h-4" />
-            Buat Penawaran Baru
+            <span>Buat Penawaran Baru</span>
           </button>
         }
       />
 
-      {/* KPI Cards with 1.5px Outlines */}
+      {/* 💡 Panduan Cepat untuk Orang Awam */}
+      <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/25 flex items-start gap-3 shadow-neu-convex-xs">
+        <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+        <div className="text-xs space-y-1">
+          <p className="font-black text-blue-950 dark:text-blue-200">
+            Alur Penawaran Harga (SPH)
+          </p>
+          <p className="text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+            SPH diajukan ke calon pelanggan sebagai estimasi biaya sebelum proyek dimulai. 
+            Setelah penawaran disetujui pelanggan (status <span className="font-bold text-emerald-700 dark:text-emerald-400">Disetujui</span>), 
+            Anda dapat langsung menerbitkan <strong>Faktur Penjualan</strong> dengan memilih penawaran ini tanpa perlu input ulang rincian kegiatan.
+          </p>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <BentoCard className="p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border-[1.5px] border-blue-200 dark:border-blue-500/20 shadow-xs">
+          <div className="w-12 h-12 rounded-xl bg-neu-canvas shadow-neu-inset-xs text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-neu-border/60">
             <FileText className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Penawaran</p>
-            <p className="text-xl font-bold font-mono text-slate-900 dark:text-white mt-0.5">{totalElements}</p>
+            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Penawaran</p>
+            <p className="text-xl font-black text-slate-900 dark:text-white mt-0.5">{totalElements} SPH</p>
+            <p className="text-[10px] text-slate-400 font-medium">Dokumen dibuat</p>
           </div>
         </BentoCard>
 
         <BentoCard className="p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border-[1.5px] border-amber-200 dark:border-amber-500/20 shadow-xs">
+          <div className="w-12 h-12 rounded-xl bg-neu-canvas shadow-neu-inset-xs text-amber-500 flex items-center justify-center shrink-0 border border-neu-border/60">
             <FileCheck2 className="w-6 h-6" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Nilai (Halaman)</p>
-            <p className="text-lg font-bold font-mono text-amber-600 dark:text-amber-400 truncate mt-0.5">{formatRupiah(totalNominal)}</p>
+            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Estimasi Nilai (Halaman)</p>
+            <p className="text-base font-black text-amber-600 dark:text-amber-400 truncate mt-0.5">{formatRupiah(totalNominal)}</p>
+            <p className="text-[10px] text-slate-400 font-medium truncate">Total nilai penawaran</p>
           </div>
         </BentoCard>
 
         <BentoCard className="p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 border-[1.5px] border-sky-200 dark:border-sky-500/20 shadow-xs">
+          <div className="w-12 h-12 rounded-xl bg-neu-canvas shadow-neu-inset-xs text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 border border-neu-border/60">
             <Clock className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Diajukan (SENT)</p>
-            <p className="text-xl font-bold font-mono text-sky-600 dark:text-sky-400 mt-0.5">{countSent}</p>
+            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sedang Diajukan</p>
+            <p className="text-xl font-black text-sky-600 dark:text-sky-400 mt-0.5">{countSent} SPH</p>
+            <p className="text-[10px] text-slate-400 font-medium">Menunggu respon klien</p>
           </div>
         </BentoCard>
 
         <BentoCard className="p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border-[1.5px] border-emerald-200 dark:border-emerald-500/20 shadow-xs">
+          <div className="w-12 h-12 rounded-xl bg-neu-canvas shadow-neu-inset-xs text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-neu-border/60">
             <CheckCircle2 className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Disetujui (APPROVED)</p>
-            <p className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">{countApproved}</p>
+            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Disetujui Klien</p>
+            <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">{countApproved} SPH</p>
+            <p className="text-[10px] text-slate-400 font-medium">Siap dijadikan faktur</p>
           </div>
         </BentoCard>
       </div>
 
-      {/* Filter and Search Bar with Defined 1.5px Outlines */}
+      {/* Filter and Search Bar */}
       <BentoCard className="p-4 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:gap-3 flex-wrap">
-        <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-[200px]">
+        <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-[240px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Cari nomor penawaran atau catatan..."
+            placeholder="Cari nomor penawaran, proyek, atau catatan..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full text-xs font-medium pl-10 pr-4 py-2.5 rounded-xl border-[1.5px] border-blue-200/90 dark:border-slate-700 bg-white/95 dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs transition"
+            className="neu-input w-full pl-10 pr-4 py-2.5 text-xs font-semibold"
           />
         </form>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <Filter className="w-4 h-4 text-slate-400 shrink-0" />
           <select
             value={selectedStatus}
@@ -175,14 +196,14 @@ export const PenawaranListPage: React.FC = () => {
               setSelectedStatus(e.target.value);
               setPage(0);
             }}
-            className="text-xs font-semibold px-3 py-2.5 rounded-xl border-[1.5px] border-blue-200/90 dark:border-slate-700 bg-white/95 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs transition"
+            className="neu-input text-xs font-bold px-3 py-2.5 cursor-pointer"
           >
-            <option value="">Semua Status</option>
-            <option value="DRAFT">DRAFT</option>
-            <option value="SENT">SENT (Diajukan)</option>
-            <option value="APPROVED">APPROVED (Disetujui)</option>
-            <option value="REJECTED">REJECTED (Ditolak)</option>
-            <option value="CANCELLED">CANCELLED (Dibatalkan)</option>
+            <option value="">Semua Status Penawaran</option>
+            <option value="DRAFT">Konsep (Draft)</option>
+            <option value="SENT">Diajukan ke Klien (Sent)</option>
+            <option value="APPROVED">Disetujui (Approved)</option>
+            <option value="REJECTED">Ditolak (Rejected)</option>
+            <option value="CANCELLED">Dibatalkan (Cancelled)</option>
           </select>
 
           <select
@@ -191,9 +212,9 @@ export const PenawaranListPage: React.FC = () => {
               setSelectedCustomer(e.target.value);
               setPage(0);
             }}
-            className="text-xs font-semibold px-3 py-2.5 rounded-xl border-[1.5px] border-blue-200/90 dark:border-slate-700 bg-white/95 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs transition max-w-[200px] truncate"
+            className="neu-input text-xs font-bold px-3 py-2.5 max-w-[200px] truncate cursor-pointer"
           >
-            <option value="">Semua Customer</option>
+            <option value="">Semua Pelanggan</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.code} - {c.name}
@@ -205,8 +226,8 @@ export const PenawaranListPage: React.FC = () => {
 
       {/* Error Alert */}
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border-[1.5px] border-rose-200 dark:border-rose-800/60 text-rose-800 dark:text-rose-300 flex items-center gap-3 text-sm shadow-xs">
-          <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" />
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-300 flex items-center gap-3 text-sm font-semibold shadow-neu-convex-xs">
+          <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
@@ -215,39 +236,46 @@ export const PenawaranListPage: React.FC = () => {
       <BentoCard padding="none" className="overflow-hidden">
         {loading ? (
           <div className="p-16 flex items-center justify-center">
-            <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <span className="ml-3 text-sm font-semibold text-slate-600 dark:text-slate-400">Memuat data penawaran...</span>
+            <div className="w-8 h-8 border-3 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="ml-3 text-sm font-bold text-slate-600 dark:text-slate-400">Memuat data penawaran...</span>
           </div>
         ) : penawaranList.length === 0 ? (
           <div className="p-16 text-center space-y-3">
             <FileText className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
-            <p className="text-base font-bold text-slate-800 dark:text-slate-200">Belum ada penawaran</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-              Mulai buat surat penawaran harga untuk customer dengan tombol "Buat Penawaran Baru".
+            <p className="text-base font-black text-slate-800 dark:text-slate-200">Belum ada surat penawaran harga</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed font-medium">
+              Buat penawaran harga pertama Anda untuk mengajukan estimasi biaya proyek ke pelanggan.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="bg-slate-50/90 dark:bg-slate-900/90 border-b-[1.5px] border-blue-100 dark:border-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                  <th className="py-3.5 px-4">Nomor Dokumen</th>
-                  <th className="py-3.5 px-4">Tanggal</th>
-                  <th className="py-3.5 px-4">Customer</th>
-                  <th className="py-3.5 px-4 text-center">Jml Item</th>
-                  <th className="py-3.5 px-4 text-right">Total Nilai</th>
+                <tr className="bg-neu-canvas border-b border-neu-border/60 text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  <th className="py-3.5 px-4">Nomor SPH</th>
+                  <th className="py-3.5 px-4">Tanggal Penawaran</th>
+                  <th className="py-3.5 px-4">Pelanggan (Customer)</th>
+                  <th className="py-3.5 px-4">Jumlah Kegiatan</th>
+                  <th className="py-3.5 px-4 text-right">Total Estimasi Nilai</th>
                   <th className="py-3.5 px-4 text-center">Status</th>
-                  <th className="py-3.5 px-4 text-right">Aksi</th>
+                  <th className="py-3.5 px-4 text-center">Aksi Cepat</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
+              <tbody className="divide-y divide-neu-border/40 text-slate-800 dark:text-slate-200">
                 {penawaranList.map((p) => {
                   return (
-                    <tr key={p.id} className="hover:bg-blue-50/50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-bold text-blue-600 dark:text-blue-400">
-                        {p.number}
+                    <tr key={p.id} className="hover:bg-neu-canvas/50 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/penawaran/${p.id}`)}
+                          className="font-mono font-black text-xs text-brand-600 dark:text-brand-400 hover:underline cursor-pointer text-left transition"
+                          title="Klik untuk membuka rincian penawaran"
+                        >
+                          {p.number}
+                        </button>
                       </td>
-                      <td className="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-400 font-medium">
+                      <td className="py-3.5 px-4 text-xs font-semibold text-slate-600 dark:text-slate-400">
                         {new Date(p.date).toLocaleDateString('id-ID', {
                           day: 'numeric',
                           month: 'short',
@@ -255,27 +283,27 @@ export const PenawaranListPage: React.FC = () => {
                         })}
                       </td>
                       <td className="py-3.5 px-4">
-                        <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">{p.customerName}</div>
-                        <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">{p.customerCode}</div>
+                        <div className="font-black text-slate-900 dark:text-slate-100 text-xs">{p.customerName}</div>
+                        <div className="text-[10.5px] text-slate-400 font-mono font-bold mt-0.5">{p.customerCode}</div>
                       </td>
-                      <td className="py-3.5 px-4 text-center font-mono text-xs">
-                        <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-[1.5px] border-slate-200 dark:border-slate-700 font-semibold shadow-2xs">
-                          {p.itemCount} item
-                        </span>
+                      <td className="py-3.5 px-4 text-xs font-bold text-slate-700 dark:text-slate-300">
+                        {p.details?.length || 0} Item Kegiatan
                       </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">
+                      <td className="py-3.5 px-4 text-right font-mono font-black text-slate-900 dark:text-slate-100">
                         {formatRupiah(p.totalAmount)}
                       </td>
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         <StatusBadge status={p.status} size="sm" />
                       </td>
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         <button
+                          type="button"
                           onClick={() => navigate(`/penawaran/${p.id}`)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-blue-600 dark:text-slate-200 bg-white hover:bg-blue-50/80 dark:bg-slate-800 dark:hover:bg-slate-700 border-[1.5px] border-blue-200 dark:border-slate-700 shadow-xs transition"
+                          className="neu-btn text-xs py-1.5 px-3 cursor-pointer"
+                          title="Buka rincian & cetak dokumen SPH"
                         >
-                          <Eye className="w-3.5 h-3.5 text-blue-500 dark:text-slate-400" />
-                          Rincian
+                          <Eye className="w-3.5 h-3.5 text-slate-500" />
+                          <span>Rincian</span>
                         </button>
                       </td>
                     </tr>
@@ -288,22 +316,22 @@ export const PenawaranListPage: React.FC = () => {
 
         {/* Pagination */}
         {!loading && totalPages > 1 && (
-          <div className="p-4 border-t-[1.5px] border-blue-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <div className="p-4 border-t border-neu-border/60 flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 bg-neu-surface">
             <span>
-              Menampilkan halaman {page + 1} dari {totalPages} ({totalElements} total penawaran)
+              Menampilkan halaman {page + 1} dari {totalPages} ({totalElements} total dokumen)
             </span>
-            <div className="flex gap-1.5">
+            <div className="flex gap-2">
               <button
                 disabled={page === 0}
                 onClick={() => setPage((prev) => Math.max(0, prev - 1))}
-                className="px-3 py-1.5 rounded-xl border-[1.5px] border-blue-200 dark:border-slate-800 disabled:opacity-40 hover:bg-white dark:hover:bg-slate-800 font-semibold transition shadow-xs"
+                className="neu-btn px-3.5 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Sebelumnya
               </button>
               <button
                 disabled={page >= totalPages - 1}
                 onClick={() => setPage((prev) => prev + 1)}
-                className="px-3 py-1.5 rounded-xl border-[1.5px] border-blue-200 dark:border-slate-800 disabled:opacity-40 hover:bg-white dark:hover:bg-slate-800 font-semibold transition shadow-xs"
+                className="neu-btn px-3.5 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Berikutnya
               </button>

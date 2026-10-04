@@ -9,7 +9,8 @@ import {
   CheckCircle2,
   FileCheck2,
   AlertCircle,
-  CreditCard
+  CreditCard,
+  Info
 } from 'lucide-react';
 import { invoiceApi } from '../api/invoiceApi';
 import { customerApi } from '../api/customerApi';
@@ -60,7 +61,7 @@ export const InvoiceListPage: React.FC = () => {
       setTotalPages(response.totalPages || 1);
       setTotalElements(response.totalElements || 0);
     } catch (err: any) {
-      setErrorMsg(err.response?.data?.message || 'Gagal memuat daftar faktur.');
+      setErrorMsg(err.response?.data?.message || 'Gagal memuat data faktur.');
     } finally {
       setLoading(false);
     }
@@ -93,7 +94,7 @@ export const InvoiceListPage: React.FC = () => {
   const totalNominal = invoiceList.reduce((acc, inv) => acc + (inv.totalAmount || 0), 0);
   const totalOutstanding = invoiceList.reduce((acc, inv) => acc + (inv.outstanding || 0), 0);
   const countPaid = invoiceList.filter((inv) => inv.paymentStatus === 'PAID').length;
-  const countUnpaid = invoiceList.filter((inv) => inv.paymentStatus === 'UNPAID').length;
+  const countUnpaid = invoiceList.filter((inv) => inv.paymentStatus === 'UNPAID' || inv.paymentStatus === 'PARTIAL').length;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -101,120 +102,152 @@ export const InvoiceListPage: React.FC = () => {
       <PageHeader
         icon={Receipt}
         title="Faktur Penjualan (Invoices)"
-        subtitle="Kelola penagihan piutang, keterkaitan SPH proyek, termin pembayaran, dan pelunasan kas."
+        subtitle="Kelola surat tagihan pembayaran ke pelanggan, termin proyek, serta pemantauan sisa piutang."
+        badge={
+          <span className="neu-badge">
+            <Receipt className="w-3.5 h-3.5" />
+            Dokumen Penagihan
+          </span>
+        }
         actions={
           <button
             onClick={() => navigate('/faktur/create')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white text-xs font-bold shadow-md shadow-brand-500/25 transition active:scale-95"
+            className="neu-btn-primary"
           >
             <Plus className="w-4 h-4" />
-            Buat Faktur Baru
+            <span>Buat Faktur Baru</span>
           </button>
         }
       />
 
-      {/* KPI Bento Cards */}
+      {/* 💡 Panduan Cepat untuk Orang Awam / Gaptek */}
+      <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/25 flex items-start gap-3 shadow-neu-convex-xs">
+        <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+        <div className="text-xs space-y-1">
+          <p className="font-black text-blue-950 dark:text-blue-200">
+            Alur Kerja Faktur Penjualan (Invoice)
+          </p>
+          <p className="text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+            Faktur adalah surat tagihan resmi kepada pelanggan. Anda dapat menerbitkan faktur dari penawaran harga (SPH) atau langsung.
+            Saat pelanggan melakukan transfer pembayaran, klik tombol <span className="font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30">Bayar</span> untuk mencatat uang masuk dan melunasi sisa piutang.
+          </p>
+        </div>
+      </div>
+
+      {/* KPI Bento Cards with Crystal Clear Labels */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Faktur */}
         <BentoCard className="p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border-[1.5px] border-blue-200 dark:border-blue-500/20 shadow-xs">
+          <div className="w-12 h-12 rounded-xl bg-neu-canvas shadow-neu-inset-xs text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-neu-border/60">
             <Receipt className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Faktur</p>
-            <p className="text-xl font-black text-slate-900 dark:text-white mt-0.5">{totalElements}</p>
+            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Faktur</p>
+            <p className="text-xl font-black text-slate-900 dark:text-white mt-0.5">{totalElements} Faktur</p>
+            <p className="text-[10px] text-slate-400 font-medium">Lembar tagihan dibuat</p>
           </div>
         </BentoCard>
 
+        {/* Total Nilai Tagihan */}
         <BentoCard className="p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border-[1.5px] border-indigo-200 dark:border-indigo-500/20 shadow-xs">
+          <div className="w-12 h-12 rounded-xl bg-neu-canvas shadow-neu-inset-xs text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-neu-border/60">
             <FileCheck2 className="w-6 h-6" />
           </div>
-          <div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tagihan (Halaman)</p>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Tagihan (Halaman Ini)</p>
             <p className="text-base font-black text-slate-900 dark:text-white truncate mt-0.5">{formatCurrency(totalNominal)}</p>
+            <p className="text-[10px] text-slate-400 font-medium truncate">Total nilai omset tagihan</p>
           </div>
         </BentoCard>
 
+        {/* Sisa Piutang */}
         <BentoCard className="p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border-[1.5px] border-amber-200 dark:border-amber-500/20 shadow-xs">
+          <div className="w-12 h-12 rounded-xl bg-neu-canvas shadow-neu-inset-xs text-amber-500 flex items-center justify-center shrink-0 border border-neu-border/60">
             <AlertCircle className="w-6 h-6" />
           </div>
-          <div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sisa Piutang</p>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sisa Belum Bayar (Piutang)</p>
             <p className="text-base font-black text-amber-600 dark:text-amber-400 truncate mt-0.5">{formatCurrency(totalOutstanding)}</p>
+            <p className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold truncate">Wajib ditagih ke pelanggan</p>
           </div>
         </BentoCard>
 
+        {/* Status Pelunasan */}
         <BentoCard className="p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border-[1.5px] border-emerald-200 dark:border-emerald-500/20 shadow-xs">
+          <div className="w-12 h-12 rounded-xl bg-neu-canvas shadow-neu-inset-xs text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-neu-border/60">
             <CheckCircle2 className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status Bayar</p>
+            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status Pelunasan</p>
             <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                 {countPaid} Lunas
               </span>
-              <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
                 {countUnpaid} Belum
               </span>
             </div>
+            <p className="text-[10px] text-slate-400 font-medium mt-1">Performa penagihan kas</p>
           </div>
         </BentoCard>
       </div>
 
-      {/* Filter and Search Bar with Defined 1.5px Outlines */}
+      {/* Filter and Search Bar with Neumorphic Inset Wells */}
       <BentoCard className="p-4 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:gap-3 flex-wrap">
-        <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-[200px]">
+        <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-[240px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Cari nomor faktur atau catatan..."
+            placeholder="Cari nomor faktur, proyek, atau catatan..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full text-xs font-medium pl-10 pr-4 py-2.5 rounded-xl border-[1.5px] border-blue-200/90 dark:border-slate-700 bg-white/95 dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs transition"
+            className="neu-input w-full pl-10 pr-4 py-2.5 text-xs font-semibold"
           />
         </form>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+          
+          {/* Status Dokumen */}
           <select
             value={selectedStatus}
             onChange={(e) => {
               setSelectedStatus(e.target.value);
               setPage(0);
             }}
-            className="text-xs font-semibold px-3 py-2.5 rounded-xl border-[1.5px] border-blue-200/90 dark:border-slate-700 bg-white/95 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs transition"
+            className="neu-input text-xs font-bold px-3 py-2.5 cursor-pointer"
           >
-            <option value="">Semua Status Faktur</option>
-            <option value="DRAFT">DRAFT</option>
-            <option value="ISSUED">ISSUED (Diterbitkan)</option>
-            <option value="CANCELLED">CANCELLED (Dibatalkan)</option>
+            <option value="">Semua Status Dokumen</option>
+            <option value="DRAFT">Konsep (Draft)</option>
+            <option value="ISSUED">Resmi Diterbitkan (Issued)</option>
+            <option value="CANCELLED">Dibatalkan (Cancelled)</option>
           </select>
 
+          {/* Status Bayar */}
           <select
             value={selectedPaymentStatus}
             onChange={(e) => {
               setSelectedPaymentStatus(e.target.value);
               setPage(0);
             }}
-            className="text-xs font-semibold px-3 py-2.5 rounded-xl border-[1.5px] border-blue-200/90 dark:border-slate-700 bg-white/95 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs transition"
+            className="neu-input text-xs font-bold px-3 py-2.5 cursor-pointer"
           >
-            <option value="">Semua Status Bayar</option>
-            <option value="UNPAID">Belum Bayar (UNPAID)</option>
-            <option value="PARTIAL">Sebagian (PARTIAL)</option>
-            <option value="PAID">Lunas (PAID)</option>
+            <option value="">Semua Status Pembayaran</option>
+            <option value="UNPAID">Belum Dibayar (Unpaid)</option>
+            <option value="PARTIAL">Sebagian Dicicil (Partial)</option>
+            <option value="PAID">Lunas (Paid)</option>
           </select>
 
+          {/* Pelanggan */}
           <select
             value={selectedCustomer}
             onChange={(e) => {
               setSelectedCustomer(e.target.value);
               setPage(0);
             }}
-            className="text-xs font-semibold px-3 py-2.5 rounded-xl border-[1.5px] border-blue-200/90 dark:border-slate-700 bg-white/95 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs transition max-w-[200px] truncate"
+            className="neu-input text-xs font-bold px-3 py-2.5 max-w-[200px] truncate cursor-pointer"
           >
-            <option value="">Semua Customer</option>
+            <option value="">Semua Pelanggan</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.code} - {c.name}
@@ -226,8 +259,8 @@ export const InvoiceListPage: React.FC = () => {
 
       {/* Error Alert */}
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-800 dark:text-rose-300 flex items-center gap-3 text-sm shadow-xs">
-          <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" />
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-300 flex items-center gap-3 text-sm font-semibold shadow-neu-convex-xs">
+          <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
@@ -236,47 +269,51 @@ export const InvoiceListPage: React.FC = () => {
       <BentoCard padding="none" className="overflow-hidden">
         {loading ? (
           <div className="p-16 flex items-center justify-center">
-            <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <span className="ml-3 text-sm font-semibold text-slate-600 dark:text-slate-400">Memuat data faktur...</span>
+            <div className="w-8 h-8 border-3 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="ml-3 text-sm font-bold text-slate-600 dark:text-slate-400">Memuat data faktur...</span>
           </div>
         ) : invoiceList.length === 0 ? (
           <div className="p-16 text-center space-y-3">
             <Receipt className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
-            <p className="text-base font-bold text-slate-800 dark:text-slate-200">Belum ada faktur penjualan</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-              Buat faktur baru secara mandiri atau tarik rincian item kegiatan dari surat penawaran harga yang telah disetujui.
+            <p className="text-base font-black text-slate-800 dark:text-slate-200">Belum ada faktur penjualan</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed font-medium">
+              Buat faktur baru secara mandiri atau tarik rincian item kegiatan dari surat penawaran harga (SPH) yang telah disetujui.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="bg-slate-50/90 dark:bg-slate-900/90 border-b-[1.5px] border-blue-100 dark:border-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                <tr className="bg-neu-canvas border-b border-neu-border/60 text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   <th className="py-3.5 px-4">Nomor Faktur</th>
                   <th className="py-3.5 px-4">Tanggal / Jatuh Tempo</th>
-                  <th className="py-3.5 px-4">Customer</th>
-                  <th className="py-3.5 px-4">Sumber SPH</th>
-                  <th className="py-3.5 px-4 text-right">Total Tagihan</th>
-                  <th className="py-3.5 px-4 text-right">Sisa Piutang</th>
-                  <th className="py-3.5 px-4 text-center">Status</th>
-                  <th className="py-3.5 px-4 text-center">Pembayaran</th>
-                  <th className="py-3.5 px-4 text-right">Aksi</th>
+                  <th className="py-3.5 px-4">Pelanggan (Customer)</th>
+                  <th className="py-3.5 px-4">Asal Penawaran (SPH)</th>
+                  <th className="py-3.5 px-4 text-right">Nilai Tagihan</th>
+                  <th className="py-3.5 px-4 text-right">Sisa Belum Bayar</th>
+                  <th className="py-3.5 px-4 text-center">Status Dokumen</th>
+                  <th className="py-3.5 px-4 text-center">Status Bayar</th>
+                  <th className="py-3.5 px-4 text-center">Aksi Cepat</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
+              <tbody className="divide-y divide-neu-border/40 text-slate-800 dark:text-slate-200">
                 {invoiceList.map((inv) => {
                   return (
-                    <tr key={inv.id} className="hover:bg-blue-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                    <tr key={inv.id} className="hover:bg-neu-canvas/50 transition-colors">
+                      {/* Nomor Faktur */}
                       <td className="py-3.5 px-4">
                         <button
                           type="button"
                           onClick={() => navigate(`/faktur/${inv.id}`)}
-                          className="font-mono font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline cursor-pointer text-left transition"
+                          className="font-mono font-black text-xs text-brand-600 dark:text-brand-400 hover:underline cursor-pointer text-left transition"
+                          title="Klik untuk membuka rincian faktur"
                         >
                           {inv.number}
                         </button>
                       </td>
-                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400 text-xs font-medium">
+
+                      {/* Tanggal / Jatuh Tempo */}
+                      <td className="py-3.5 px-4 text-xs font-semibold text-slate-600 dark:text-slate-400">
                         <div>
                           {new Date(inv.date).toLocaleDateString('id-ID', {
                             day: 'numeric',
@@ -285,7 +322,7 @@ export const InvoiceListPage: React.FC = () => {
                           })}
                         </div>
                         {inv.dueDate && (
-                          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">
                             Tempo: {new Date(inv.dueDate).toLocaleDateString('id-ID', {
                               day: 'numeric',
                               month: 'short',
@@ -294,60 +331,87 @@ export const InvoiceListPage: React.FC = () => {
                           </div>
                         )}
                       </td>
+
+                      {/* Customer */}
                       <td className="py-3.5 px-4">
-                        <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">{inv.customerName}</div>
-                        <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">{inv.customerCode}</div>
+                        <div className="font-black text-slate-900 dark:text-slate-100 text-xs">{inv.customerName}</div>
+                        <div className="text-[10.5px] text-slate-400 font-mono font-bold mt-0.5">{inv.customerCode}</div>
                       </td>
+
+                      {/* Sumber SPH */}
                       <td className="py-3.5 px-4">
                         {inv.sourcePenawaranNumber ? (
                           <button
                             onClick={() => navigate(`/penawaran/${inv.sourcePenawaranId}`)}
-                            className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                            className="text-xs font-mono font-bold text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-1.5"
+                            title="Buka dokumen penawaran asal"
                           >
-                            <FileCheck2 className="w-3 h-3" />
+                            <FileCheck2 className="w-3.5 h-3.5" />
                             {inv.sourcePenawaranNumber}
                           </button>
                         ) : (
-                          <span className="text-[11px] text-slate-400 dark:text-slate-500 italic">Langsung (Non-SPH)</span>
+                          <span className="text-[11px] text-slate-400 italic font-medium">Langsung (Non-SPH)</span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
+
+                      {/* Nilai Tagihan */}
+                      <td className="py-3.5 px-4 text-right font-mono font-black text-slate-900 dark:text-slate-100">
                         {formatCurrency(inv.totalAmount)}
                       </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-bold">
-                        <span className={inv.outstanding > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}>
-                          {formatCurrency(inv.outstanding)}
-                        </span>
+
+                      {/* Sisa Piutang */}
+                      <td className="py-3.5 px-4 text-right font-mono">
+                        {inv.outstanding > 0 ? (
+                          <div>
+                            <span className="font-black text-xs text-amber-600 dark:text-amber-400">
+                              {formatCurrency(inv.outstanding)}
+                            </span>
+                            <div className="text-[10px] text-amber-700 dark:text-amber-500 font-bold uppercase tracking-wider">
+                              Perlu Ditagih
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                            Rp 0 (Lunas)
+                          </span>
+                        )}
                       </td>
-                      <td className="py-3.5 px-4 text-center">
+
+                      {/* Status Dokumen */}
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         <StatusBadge status={inv.status} size="sm" />
                       </td>
-                      <td className="py-3.5 px-4 text-center">
+
+                      {/* Status Pembayaran */}
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         <StatusBadge
-                          status={inv.paymentStatus === 'PAID' ? 'LUNAS' : inv.paymentStatus === 'PARTIAL' ? 'SEBAGIAN' : 'BELUM BAYAR'}
+                          status={inv.paymentStatus === 'PAID' ? 'LUNAS' : inv.paymentStatus === 'PARTIAL' ? 'SEBAGIAN DIBAYAR' : 'BELUM BAYAR'}
                           size="sm"
                         />
                       </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+
+                      {/* Aksi Cepat */}
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-2">
                           {isOperator && inv.status === 'ISSUED' && inv.outstanding > 0 && (
                             <button
                               type="button"
                               onClick={() => navigate(`/pembayaran/create?invoiceId=${inv.id}&customerId=${inv.customerId}`)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 border-[1.5px] border-emerald-300 dark:border-emerald-800 transition shadow-xs"
-                              title="Catat pembayaran langsung untuk faktur ini"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-black text-white bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/30 transition cursor-pointer"
+                              title="Catat uang masuk / pelunasan untuk faktur ini"
                             >
                               <CreditCard className="w-3.5 h-3.5" />
-                              Bayar
+                              <span>Bayar</span>
                             </button>
                           )}
                           <button
                             type="button"
                             onClick={() => navigate(`/faktur/${inv.id}`)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-blue-600 dark:text-slate-200 bg-white hover:bg-blue-50/80 dark:bg-slate-800 dark:hover:bg-slate-700 border-[1.5px] border-blue-200 dark:border-slate-700 shadow-xs transition"
+                            className="neu-btn text-xs py-1.5 px-2.5 cursor-pointer"
+                            title="Buka rincian dokumen & cetak faktur"
                           >
-                            <Eye className="w-3.5 h-3.5 text-blue-500 dark:text-slate-400" />
-                            Rincian
+                            <Eye className="w-3.5 h-3.5 text-slate-500" />
+                            <span>Rincian</span>
                           </button>
                         </div>
                       </td>
@@ -361,22 +425,22 @@ export const InvoiceListPage: React.FC = () => {
 
         {/* Pagination */}
         {!loading && totalPages > 1 && (
-          <div className="p-4 border-t-[1.5px] border-blue-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <div className="p-4 border-t border-neu-border/60 flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 bg-neu-surface">
             <span>
               Menampilkan halaman {page + 1} dari {totalPages} ({totalElements} total faktur)
             </span>
-            <div className="flex gap-1.5">
+            <div className="flex gap-2">
               <button
                 disabled={page === 0}
                 onClick={() => setPage((prev) => Math.max(0, prev - 1))}
-                className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 disabled:opacity-30 hover:bg-white dark:hover:bg-slate-700 transition"
+                className="neu-btn px-3.5 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Sebelumnya
               </button>
               <button
                 disabled={page >= totalPages - 1}
                 onClick={() => setPage((prev) => prev + 1)}
-                className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 disabled:opacity-30 hover:bg-white dark:hover:bg-slate-700 transition"
+                className="neu-btn px-3.5 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Berikutnya
               </button>

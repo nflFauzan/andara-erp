@@ -709,11 +709,11 @@ export const InvoiceFormPage: React.FC = () => {
             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
               Total <strong>{items.length}</strong> item penagihan
             </span>
-            <div className="flex items-center gap-4 bg-navy-900 dark:bg-slate-900 text-white px-6 py-3.5 rounded-2xl shadow-bento border border-navy-800 dark:border-blue-900/30">
-              <span className="text-xs uppercase tracking-wider font-bold text-slate-300">
+            <div className="flex items-center gap-4 bg-neu-surface dark:bg-slate-900 text-slate-900 dark:text-white px-6 py-3.5 rounded-2xl shadow-neu-convex-sm border border-neu-border dark:border-blue-900/30">
+              <span className="text-xs uppercase tracking-wider font-bold text-slate-600 dark:text-slate-300">
                 Total Nilai Faktur:
               </span>
-              <span className="font-mono text-2xl font-black text-amber-400">
+              <span className="font-mono text-2xl font-black text-blue-600 dark:text-amber-400">
                 {formatCurrency(totalAmount)}
               </span>
             </div>
