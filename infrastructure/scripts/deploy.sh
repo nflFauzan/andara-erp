@@ -67,13 +67,13 @@ if [ "${MODE}" = "--rebuild" ]; then
     BUILD_FLAG="--build"
 fi
 
-# Backup database sebelum deploy (safety net)
+# Backup database sebelum deploy (safety net - hanya jika container database sudah aktif)
 section "Backup database sebelum deploy"
-if [ -f "${APP_DIR}/infrastructure/scripts/backup.sh" ]; then
-    bash "${APP_DIR}/infrastructure/scripts/backup.sh"
+if [ -f "${APP_DIR}/infrastructure/scripts/backup.sh" ] && docker ps --format '{{.Names}}' | grep -q "^andara-postgres-prod$"; then
+    bash "${APP_DIR}/infrastructure/scripts/backup.sh" || warn "Backup pre-deploy gagal, melanjutkan deploy..."
     log "Backup pre-deploy selesai."
 else
-    warn "backup.sh tidak ditemukan, skip backup."
+    warn "Container database belum aktif (deployment pertama kali), skip backup."
 fi
 
 # Pull image terbaru (jika menggunakan registry) atau build lokal
