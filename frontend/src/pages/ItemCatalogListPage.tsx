@@ -179,7 +179,7 @@ export const ItemCatalogListPage: React.FC = () => {
         </div>
       )}
 
-      {/* Filter and Search Bar */}
+      {/* Filter and Search Bar with Defined 1.5px Outlines */}
       <BentoCard className="p-4 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
         {/* Search */}
         <div className="relative flex-1">
@@ -192,7 +192,7 @@ export const ItemCatalogListPage: React.FC = () => {
               setPage(0);
             }}
             placeholder="Cari uraian pekerjaan, kode, atau spesifikasi..."
-            className="w-full pl-10 pr-4 py-2 text-xs font-medium bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-brand-500/30 outline-none"
+            className="w-full pl-10 pr-4 py-2 text-xs font-medium bg-white/95 dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-xl border-[1.5px] border-blue-200/90 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 shadow-xs transition"
           />
         </div>
 
@@ -205,7 +205,7 @@ export const ItemCatalogListPage: React.FC = () => {
               setCategoryFilter(e.target.value);
               setPage(0);
             }}
-            className="text-xs font-semibold border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-brand-500/30 outline-none"
+            className="text-xs font-semibold rounded-xl px-3 py-2 bg-white/95 dark:bg-slate-900 text-slate-800 dark:text-slate-100 border-[1.5px] border-blue-200/90 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 shadow-xs transition"
           >
             <option value="">Semua Kategori</option>
             {categories.map((cat) => (
@@ -222,7 +222,7 @@ export const ItemCatalogListPage: React.FC = () => {
               setStatusFilter(e.target.value as any);
               setPage(0);
             }}
-            className="text-xs font-semibold border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-brand-500/30 outline-none"
+            className="text-xs font-semibold rounded-xl px-3 py-2 bg-white/95 dark:bg-slate-900 text-slate-800 dark:text-slate-100 border-[1.5px] border-blue-200/90 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 shadow-xs transition"
           >
             <option value="ALL">Semua Status</option>
             <option value="ACTIVE">Aktif Saja</option>
@@ -232,7 +232,7 @@ export const ItemCatalogListPage: React.FC = () => {
           <button
             onClick={() => refetch()}
             title="Muat ulang data"
-            className="p-2 border border-slate-200/80 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
+            className="p-2 border-[1.5px] border-blue-200/90 dark:border-slate-700 bg-white/95 dark:bg-slate-900 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-white shadow-xs transition"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -281,7 +281,7 @@ export const ItemCatalogListPage: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm text-slate-600 dark:text-slate-300">
               <thead>
-                <tr className="bg-slate-100/70 dark:bg-slate-900/70 border-b border-slate-200/80 dark:border-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                <tr className="bg-slate-50/90 dark:bg-slate-900/90 border-b-[1.5px] border-blue-100 dark:border-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                   <th className="py-3.5 px-4">Kode</th>
                   <th className="py-3.5 px-4">Nama Item / Uraian Pekerjaan</th>
                   <th className="py-3.5 px-4">Kategori</th>
@@ -293,7 +293,7 @@ export const ItemCatalogListPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                 {data.content.map((item) => (
-                  <tr key={item.id} className="hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors">
+                  <tr key={item.id} className="hover:bg-blue-50/50 dark:hover:bg-slate-800/40 transition-colors">
                     {/* Code */}
                     <td className="py-3.5 px-4 font-mono text-xs font-bold">
                       <span className="bg-brand-500/10 text-brand-600 dark:text-brand-400 px-2 py-0.5 rounded border border-brand-500/20">
@@ -378,7 +378,7 @@ export const ItemCatalogListPage: React.FC = () => {
 
         {/* Pagination Bar */}
         {data && data.totalPages > 1 && (
-          <div className="bg-white/40 dark:bg-slate-900/40 px-5 py-4 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <div className="bg-white/40 dark:bg-slate-900/40 px-5 py-4 border-t-[1.5px] border-blue-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <div>
               Menampilkan {data.number * data.size + 1} -{' '}
               {Math.min((data.number + 1) * data.size, data.totalElements)} dari {data.totalElements} item

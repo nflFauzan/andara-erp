@@ -1,0 +1,91 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+# Hanya satu deployment berjalan dalam satu waktu
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy ke VPS — cvandaraerp.web.id
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # -------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -------------------------------------------------------
+      - name: Setup SSH Agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # -------------------------------------------------------
+      - name: Tambahkan VPS ke known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H 202.155.14.98 >> ~/.ssh/known_hosts
+
+      # -------------------------------------------------------
+      - name: Deploy ke VPS
+        run: |
+          ssh root@202.155.14.98 << 'ENDSSH'
+            set -e
+
+            echo "=== [1/4] Update kode dari repository ==="
+            cd /opt/andara-erp
+            git pull origin main
+
+            echo "=== [2/4] Backup database sebelum deploy ==="
+            bash /opt/andara-erp/infrastructure/scripts/backup.sh
+
+            echo "=== [3/4] Build & restart container ==="
+            docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+
+            echo "=== [4/4] Verifikasi deployment ==="
+            sleep 8
+            docker compose -f docker-compose.prod.yml --env-file .env ps
+          ENDSSH
+
+      # -------------------------------------------------------
+      - name: Health Check — Pastikan aplikasi berjalan
+        run: |
+          echo "Menunggu aplikasi siap..."
+          sleep 15
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 30 \
+            https://cvandaraerp.web.id/actuator/health || echo "000")
+
+          echo "HTTP Status: ${HTTP_STATUS}"
+
+          if [ "${HTTP_STATUS}" = "200" ]; then
+            echo "✅ Deployment berhasil! Aplikasi berjalan normal."
+          else
+            echo "❌ Health check gagal (status: ${HTTP_STATUS})"
+            echo "Cek log: ssh root@202.155.14.98 'docker compose -f /opt/andara-erp/docker-compose.prod.yml logs --tail=50 backend'"
+            exit 1
+          fi
+
+      # -------------------------------------------------------
+      - name: Notifikasi sukses (ringkasan)
+        if: success()
+        run: |
+          echo "🚀 Deployment ke cvandaraerp.web.id BERHASIL"
+          echo "Commit : ${{ github.sha }}"
+          echo "Oleh   : ${{ github.actor }}"
+          echo "Waktu  : $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+
+      - name: Notifikasi gagal
+        if: failure()
+        run: |
+          echo "💥 Deployment ke cvandaraerp.web.id GAGAL"
+          echo "Commit : ${{ github.sha }}"
+          echo "Oleh   : ${{ github.actor }}"
+          echo "Cek Actions log di atas untuk detail error."
