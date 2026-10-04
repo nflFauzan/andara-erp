@@ -69,7 +69,10 @@ jobs:
 
             echo "=== [1/4] Update kode dari repository ==="
             cd /opt/andara-erp
-            git pull origin main
+            # Buang perubahan lokal pada VPS jika ada agar tidak konflik merge
+            git reset --hard HEAD
+            git fetch origin main
+            git reset --hard origin/main
 
             echo "=== [2/4] Backup database sebelum deploy ==="
             if docker ps --format '{{.Names}}' | grep -q "^andara-postgres-prod$"; then

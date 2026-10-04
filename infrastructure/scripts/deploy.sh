@@ -42,7 +42,9 @@ cd "${APP_DIR}"
 section "Mengambil update terbaru dari repository"
 # ============================================================
 if [ -d "${APP_DIR}/.git" ]; then
-    git pull origin main
+    git reset --hard HEAD
+    git fetch origin main
+    git reset --hard origin/main
     log "Repository terupdate."
 else
     warn "Bukan git repository, skip git pull."
