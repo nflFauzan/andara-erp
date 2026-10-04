@@ -90,33 +90,23 @@ jobs:
           ENDSSH
 
       # -------------------------------------------------------
-     - name: Health Check — Pastikan aplikasi berjalan
-  run: |
-    echo "Menunggu aplikasi siap..."
-    MAX_ATTEMPTS=10
-    ATTEMPT=0
-    
-    while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-      ATTEMPT=$((ATTEMPT + 1))
-      HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-        --max-time 30 \
-        https://cvandaraerp.web.id/actuator/health || echo "000")
-      
-      echo "Attempt $ATTEMPT: HTTP Status $HTTP_STATUS"
-      
-      if [ "${HTTP_STATUS}" = "200" ]; then
-        echo "✅ Deployment berhasil! Aplikasi berjalan normal."
-        exit 0
-      fi
-      
-      if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
-        sleep 5
-      fi
-    done
-    
-    echo "❌ Health check gagal setelah $MAX_ATTEMPTS attempts"
-    echo "Cek log: ssh root@202.155.14.98 'docker compose -f /opt/andara-erp/docker-compose.prod.yml logs --tail=50 backend'"
-    exit 1
+      - name: Health Check — Pastikan aplikasi berjalan
+        run: |
+          echo "Menunggu aplikasi siap..."
+          sleep 15
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 30 \
+            https://cvandaraerp.web.id/actuator/health || echo "000")
+
+          echo "HTTP Status: ${HTTP_STATUS}"
+
+          if [ "${HTTP_STATUS}" = "200" ]; then
+            echo "✅ Deployment berhasil! Aplikasi berjalan normal."
+          else
+            echo "❌ Health check gagal (status: ${HTTP_STATUS})"
+            echo "Cek log: ssh root@202.155.14.98 'docker compose -f /opt/andara-erp/docker-compose.prod.yml logs --tail=50 backend'"
+            exit 1
+          fi
 
       # -------------------------------------------------------
       - name: Notifikasi sukses (ringkasan)
