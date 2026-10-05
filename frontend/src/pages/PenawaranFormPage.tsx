@@ -17,12 +17,14 @@ import { penawaranApi } from '../api/penawaranApi';
 import { customerApi } from '../api/customerApi';
 import { itemCatalogApi } from '../api/itemCatalogApi';
 import { kegiatanApi } from '../api/kegiatanApi';
-import { Customer } from '../types/customer';
+import { Customer, CreateCustomerInput, UpdateCustomerInput } from '../types/customer';
 import { Kegiatan } from '../types/kegiatan';
 import { ItemCatalog, CreateItemCatalogInput, UpdateItemCatalogInput } from '../types/itemCatalog';
 import { ItemCatalogModal } from '../components/items/ItemCatalogModal';
+import { CustomerModal } from '../components/customer/CustomerModal';
 import { ImportKegiatanModal } from '../components/penawaran/ImportKegiatanModal';
 import { ItemSmartInput } from '../components/items/ItemSmartInput';
+import { CustomerSmartInput } from '../components/customer/CustomerSmartInput';
 import { formatRupiah } from '../lib/utils';
 import { BentoCard } from '@/components/common/BentoCard';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -58,7 +60,11 @@ export const PenawaranFormPage: React.FC = () => {
   const isEdit = Boolean(id);
   const queryClient = useQueryClient();
 
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  // Fetch active customers via TanStack Query for seamless real-time synchronization
+  const { data: customers = [], refetch: refetchCustomers } = useQuery<Customer[]>({
+    queryKey: ['active-customers'],
+    queryFn: () => customerApi.getActiveCustomers(),
+  });
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | ''>(
     customerIdFromQuery ? Number(customerIdFromQuery) : ''
   );
@@ -87,22 +93,19 @@ export const PenawaranFormPage: React.FC = () => {
     },
   ]);
 
-  // Modal for quick adding master item
+  // Modal for quick adding master item and customer
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isImportKegiatanModalOpen, setIsImportKegiatanModalOpen] = useState(false);
   const [targetKegiatanTempId, setTargetKegiatanTempId] = useState<string | null>(null);
   const [targetItemTempId, setTargetItemTempId] = useState<string | null>(null);
   const [prefillItemName, setPrefillItemName] = useState<string>('');
+  const [prefillCustomerName, setPrefillCustomerName] = useState<string>('');
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEdit);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
-
-  // Load Customers
-  useEffect(() => {
-    customerApi.getActiveCustomers().then(setCustomers).catch(console.error);
-  }, []);
 
   // Set customer from query if customers loaded
   useEffect(() => {
@@ -459,6 +462,25 @@ export const PenawaranFormPage: React.FC = () => {
     }
   };
 
+  // Quick create customer modal submit
+  const handleCreateCustomerSubmit = async (formData: CreateCustomerInput | UpdateCustomerInput) => {
+    try {
+      const createdCustomer = await customerApi.createCustomer(formData as CreateCustomerInput);
+      await refetchCustomers();
+      queryClient.invalidateQueries({ queryKey: ['active-customers'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+
+      // Automatically select the newly created customer
+      setSelectedCustomerId(createdCustomer.id);
+      setIsCustomerModalOpen(false);
+      setPrefillCustomerName('');
+      setFeedbackMsg(`Customer '${createdCustomer.name}' (${createdCustomer.code}) berhasil ditambahkan dan dipilih.`);
+      setTimeout(() => setFeedbackMsg(null), 4000);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Gagal menambahkan customer baru.');
+    }
+  };
+
   // Calculation helpers
   const calculateKegiatanSubtotal = (k: FormKegiatanGroup) => {
     return k.items.reduce((sum, it) => sum + (Number(it.volume) || 0) * (Number(it.unitPrice) || 0), 0);
@@ -631,18 +653,16 @@ export const PenawaranFormPage: React.FC = () => {
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
               Customer / Pelanggan <span className="text-rose-500">*</span>
             </label>
-            <select
-              value={selectedCustomerId}
-              onChange={(e) => setSelectedCustomerId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full px-3.5 py-2.5 text-sm border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-brand-500/30 outline-none bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 font-semibold"
-            >
-              <option value="">-- Pilih Customer --</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.code}) {c.companyName ? `• ${c.companyName}` : ''}
-                </option>
-              ))}
-            </select>
+            <CustomerSmartInput
+              selectedCustomerId={selectedCustomerId}
+              onSelectCustomer={(cust) => setSelectedCustomerId(cust ? cust.id : '')}
+              onCreateNewCustomer={(typedQuery) => {
+                setPrefillCustomerName(typedQuery);
+                setIsCustomerModalOpen(true);
+              }}
+              customers={customers}
+              placeholder="Ketik nama, kode, atau instansi customer..."
+            />
             {selectedCustomerObj && (
               <div className="mt-2.5 p-3 bg-white/50 dark:bg-slate-900/50 rounded-xl border border-slate-200/80 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 space-y-0.5">
                 <p className="font-bold text-slate-800 dark:text-slate-100">{selectedCustomerObj.name}</p>
@@ -1017,6 +1037,17 @@ export const PenawaranFormPage: React.FC = () => {
           onSelectKegiatan={handleSelectImportKegiatan}
         />
       )}
+
+      {/* Quick Add Customer Modal */}
+      <CustomerModal
+        isOpen={isCustomerModalOpen}
+        onClose={() => {
+          setIsCustomerModalOpen(false);
+          setPrefillCustomerName('');
+        }}
+        onSubmit={handleCreateCustomerSubmit}
+        initialName={prefillCustomerName}
+      />
     </form>
   );
 };

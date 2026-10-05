@@ -25,6 +25,7 @@ interface CustomerModalProps {
   onSubmit: (data: CreateCustomerInput | UpdateCustomerInput) => Promise<void>;
   customer?: Customer | null;
   isLoading?: boolean;
+  initialName?: string;
 }
 
 export const CustomerModal: React.FC<CustomerModalProps> = ({
@@ -33,6 +34,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
   onSubmit,
   customer,
   isLoading = false,
+  initialName = '',
 }) => {
   const isEdit = Boolean(customer);
 
@@ -45,7 +47,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
     resolver: zodResolver(customerSchema),
     defaultValues: {
       code: '',
-      name: '',
+      name: initialName || '',
       companyName: '',
       picName: '',
       phone: '',
@@ -72,7 +74,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
     } else {
       reset({
         code: '',
-        name: '',
+        name: initialName || '',
         companyName: '',
         picName: '',
         phone: '',
@@ -82,7 +84,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
         active: true,
       });
     }
-  }, [customer, reset, isOpen]);
+  }, [customer, reset, isOpen, initialName]);
 
   if (!isOpen) return null;
 

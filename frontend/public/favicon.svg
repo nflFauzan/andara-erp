@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background: Brand Royal Blue to Electric Cerulean Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a" />
+      <stop offset="50%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+
+    <!-- Translucent Inner Border Glow -->
+    <linearGradient id="borderGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.08" />
+    </linearGradient>
+
+    <!-- Left Pillar Facet (Direct Light: Crisp Pure White) -->
+    <linearGradient id="facetLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f1f5f9" />
+    </linearGradient>
+
+    <!-- Right Pillar Facet (Ambient Light: Soft Dimensional Shading) -->
+    <linearGradient id="facetRight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc" />
+      <stop offset="100%" stop-color="#cbd5e1" />
+    </linearGradient>
+
+    <!-- Structural Chevron Truss (Cyan / Sky Engineering Beam) -->
+    <linearGradient id="trussGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#67e8f9" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+
+    <!-- Premium Drop Shadow for Monogram -->
+    <filter id="monogramDepth" x="-15%" y="-15%" width="130%" height="135%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#0b1e3b" flood-opacity="0.45" />
+    </filter>
+
+    <filter id="trussGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0284c7" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- Squircle Canvas (Optimal for iOS, Android, and Desktop Tabs) -->
+  <rect width="512" height="512" rx="124" fill="url(#bgGrad)" />
+
+  <!-- Subtle Rim Light -->
+  <rect x="6" y="6" width="500" height="500" rx="118" fill="none" stroke="url(#borderGlow)" stroke-width="6" />
+
+  <!-- Monogram A Group -->
+  <g filter="url(#monogramDepth)">
+    <!-- Left Leg Pillar (Ascends to Apex) -->
+    <polygon 
+      points="256,76 256,156 180,420 96,420" 
+      fill="url(#facetLeft)" 
+    />
+
+    <!-- Right Leg Pillar (Descends from Apex) -->
+    <polygon 
+      points="256,76 416,420 332,420 256,156" 
+      fill="url(#facetRight)" 
+    />
+
+    <!-- Apex Precision Cap (Refined Architectural Joint) -->
+    <polygon 
+      points="256,76 288,126 256,156 224,126" 
+      fill="#ffffff" 
+      opacity="0.9"
+    />
+
+    <!-- Upward Structural Chevron Truss (Kuda-kuda Baja Ringan / Dynamic Growth) -->
+    <g filter="url(#trussGlow)">
+      <!-- Main Cyan Chevron Beam -->
+      <polygon 
+        points="164,342 256,292 348,342 340,378 256,330 172,378" 
+        fill="url(#trussGrad)" 
+      />
+
+      <!-- Top Crisp Highlight Line on Chevron -->
+      <polyline 
+        points="168,344 256,295 344,344" 
+        fill="none" 
+        stroke="#ffffff" 
+        stroke-width="5" 
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        opacity="0.9"
+      />
+    </g>
+  </g>
+</svg>
