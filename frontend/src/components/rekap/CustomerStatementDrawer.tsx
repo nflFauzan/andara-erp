@@ -5,6 +5,7 @@ import {
   X,
   ExternalLink,
   Printer,
+  FileSpreadsheet,
   Calendar,
   Search,
   CreditCard,
@@ -26,6 +27,8 @@ import {
 import { getCustomerStatement } from '@/api/rekapApi';
 import { CustomerStatement, CustomerStatementItem, StatementItemType } from '@/types/rekap';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { exportCustomerStatementToExcel } from '@/utils/excelExport';
+
 
 interface CustomerStatementDrawerProps {
   customerId: number | null;
@@ -205,6 +208,13 @@ export const CustomerStatementDrawer: React.FC<CustomerStatementDrawerProps> = (
               title="Buka profil master customer"
             >
               <ExternalLink className="w-3.5 h-3.5" /> Master Customer
+            </button>
+            <button
+              onClick={() => exportCustomerStatementToExcel(statement)}
+              className="px-3 py-1.5 rounded-xl border border-dark-border hover:border-emerald-500/50 bg-dark-bg-subtle text-dark-text hover:text-emerald-400 text-xs font-medium transition-all flex items-center gap-1.5 shadow-sm"
+              title="Unduh Buku Besar dalam format Excel Multi-Sheet"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" /> Ekspor Excel
             </button>
             <button
               onClick={handlePrint}

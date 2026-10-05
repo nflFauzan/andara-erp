@@ -26,6 +26,9 @@ import {
   getRekapKegiatan,
   getRekapPenawaran,
   getRekapPiutang,
+  getRekapUnbilledSph,
+  getRekapInvoiceSettlements,
+  getMonthlyTrend,
 } from '@/api/rekapApi';
 import { customerApi } from '@/api/customerApi';
 import { Customer } from '@/types/customer';
@@ -41,6 +44,9 @@ import { CustomerStatementDrawer } from '@/components/rekap/CustomerStatementDra
 import { RekapUnbilledSphView } from '@/components/rekap/RekapUnbilledSphView';
 import { RekapSettlementsView } from '@/components/rekap/RekapSettlementsView';
 import { RekapMonthlyTrendView } from '@/components/rekap/RekapMonthlyTrendView';
+import { exportRekapTabToExcel } from '@/utils/excelExport';
+import { FormalReportPrintModal } from '@/components/rekap/FormalReportPrintModal';
+
 
 
 const formatCurrency = (val: number | null | undefined): string => {
@@ -264,8 +270,107 @@ export const RekapPage: React.FC = () => {
     enabled: activeTab === 'PIUTANG',
   });
 
-  const handlePrint = () => {
-    window.print();
+  // Query 7: Rekap Unbilled SPH
+  const { data: unbilledRekap } = useQuery({
+    queryKey: [
+      'rekapUnbilledSph',
+      filters.search,
+      filters.customerId,
+      filters.startDate,
+      filters.endDate,
+      filters.status,
+      page,
+      pageSize,
+    ],
+    queryFn: () =>
+      getRekapUnbilledSph({
+        search: filters.search || undefined,
+        customerId: filters.customerId ? Number(filters.customerId) : undefined,
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
+        billingStatus: filters.status || undefined,
+        page,
+        size: pageSize,
+      }),
+    enabled: activeTab === 'UNBILLED',
+  });
+
+  // Query 8: Rekap Invoice Settlements
+  const { data: settlementsRekap } = useQuery({
+    queryKey: [
+      'rekapInvoiceSettlements',
+      filters.search,
+      filters.customerId,
+      filters.startDate,
+      filters.endDate,
+      filters.status,
+      page,
+      pageSize,
+    ],
+    queryFn: () =>
+      getRekapInvoiceSettlements({
+        search: filters.search || undefined,
+        customerId: filters.customerId ? Number(filters.customerId) : undefined,
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
+        paymentStatus: filters.status || undefined,
+        page,
+        size: pageSize,
+      }),
+    enabled: activeTab === 'SETTLEMENTS',
+  });
+
+  // Query 9: Rekap Monthly Trend
+  const currentYear = new Date().getFullYear();
+  const { data: trendRekap } = useQuery({
+    queryKey: ['rekapMonthlyTrend', currentYear, filters.customerId],
+    queryFn: () =>
+      getMonthlyTrend({
+        year: currentYear,
+        customerId: filters.customerId ? Number(filters.customerId) : undefined,
+      }),
+    enabled: activeTab === 'TREND',
+  });
+
+  // Fase 5 Modal & Export State
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+
+  const getActiveTabMetadata = () => {
+    switch (activeTab) {
+      case 'CUSTOMERS':
+        return { label: 'Rekapitulasi Keuangan Customer', data: customerRekap };
+      case 'KEGIATAN':
+        return { label: 'Rekapitulasi Kegiatan Proyek Operasional', data: kegiatanRekap };
+      case 'SPH':
+        return { label: 'Rekapitulasi Surat Penawaran Harga (SPH)', data: penawaranRekap };
+      case 'INVOICES':
+        return { label: 'Rekapitulasi Faktur Penjualan', data: invoiceRekap };
+      case 'PIUTANG':
+        return { label: 'Rekapitulasi Aging Schedule Piutang Usaha', data: piutangRekap };
+      case 'PAYMENTS':
+        return { label: 'Rekapitulasi Kas Masuk & Penerimaan', data: paymentRekap };
+      case 'UNBILLED':
+        return { label: 'Analisis Silang SPH vs Faktur (Unbilled)', data: unbilledRekap };
+      case 'SETTLEMENTS':
+        return { label: 'Subledger Pelunasan Faktur & Kas Masuk', data: settlementsRekap };
+      case 'TREND':
+        return { label: 'Analisis Tren Waktu Bulanan & MoM', data: trendRekap };
+      default:
+        return { label: 'Rekapitulasi Transaksi', data: null };
+    }
+  };
+
+  const selectedCustomer = customers.find((c) => String(c.id) === filters.customerId);
+
+  const handleExportExcel = () => {
+    const { label, data: activeData } = getActiveTabMetadata();
+    exportRekapTabToExcel({
+      tab: activeTab,
+      tabLabel: label,
+      data: activeData,
+      filters,
+      customerName: selectedCustomer ? `${selectedCustomer.code} - ${selectedCustomer.name}` : undefined,
+    });
   };
 
   const handleTabChange = (tab: RekapTab) => {
@@ -286,15 +391,29 @@ export const RekapPage: React.FC = () => {
           </span>
         }
         actions={
-          <button
-            onClick={handlePrint}
-            className="print:hidden neu-btn-primary text-xs"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Cetak / PDF</span>
-          </button>
+          <div className="flex items-center gap-2 print:hidden">
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-navy-700 bg-white dark:bg-navy-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-xs transition hover:border-emerald-400 group"
+              title="Unduh laporan dalam format Multi-Sheet Microsoft Excel (.xls)"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+              <span>Ekspor Excel (.xls)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsPrintModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition hover:shadow-indigo-500/25"
+              title="Buka pratinjau format cetak resmi berstandar surat CV. ANDARA"
+            >
+              <Printer className="w-4 h-4" />
+              <span>Cetak / PDF Formal</span>
+            </button>
+          </div>
         }
       />
+
 
       {/* Control Card: Tabs & Universal Filter Bar */}
       <BentoCard padding="default" className="print:hidden space-y-4">
@@ -1483,7 +1602,21 @@ export const RekapPage: React.FC = () => {
           onClose={() => setStatementCustomer(null)}
         />
       )}
+
+      {/* Formal Letterhead Report Print & PDF Modal */}
+      {isPrintModalOpen && (
+        <FormalReportPrintModal
+          isOpen={isPrintModalOpen}
+          onClose={() => setIsPrintModalOpen(false)}
+          activeTab={activeTab}
+          tabLabel={getActiveTabMetadata().label}
+          data={getActiveTabMetadata().data}
+          filters={filters}
+          customerName={selectedCustomer ? `${selectedCustomer.code} - ${selectedCustomer.name}` : undefined}
+        />
+      )}
     </div>
   );
 };
 export default RekapPage;
+

@@ -617,8 +617,8 @@
 
 /* Print Overrides */
 @page {
-  size: A4 portrait;
-  margin: 8mm 10mm;
+  size: auto;
+  margin: 10mm 12mm;
 }
 
 @media print {
@@ -633,9 +633,31 @@
     background: #ffffff !important;
     color: #000000 !important;
   }
-  .no-print {
+
+  .no-print,
+  nav,
+  aside,
+  header {
     display: none !important;
   }
+
+  table {
+    page-break-inside: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
   .print-area {
     margin: 0 !important;
     padding: 0 !important;
@@ -645,6 +667,7 @@
     max-width: 100% !important;
     background: #ffffff !important;
   }
+
   .neu-card,
   .bento-card,
   .glass-panel,
@@ -658,3 +681,4 @@
     -webkit-backdrop-filter: none !important;
   }
 }
+
