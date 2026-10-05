@@ -1,15 +1,19 @@
 package com.andara.erp.controller;
 
 import com.andara.erp.common.dto.ApiResponse;
+import com.andara.erp.dto.rekap.CustomerStatementDTO;
 import com.andara.erp.dto.rekap.RekapCustomerSummaryDTO;
 import com.andara.erp.dto.rekap.RekapInvoiceSummaryDTO;
 import com.andara.erp.dto.rekap.RekapKegiatanSummaryDTO;
 import com.andara.erp.dto.rekap.RekapPaymentSummaryDTO;
+import com.andara.erp.dto.rekap.RekapPenawaranSummaryDTO;
+import com.andara.erp.dto.rekap.RekapPiutangSummaryDTO;
 import com.andara.erp.entity.InvoicePaymentStatus;
 import com.andara.erp.entity.InvoiceStatus;
 import com.andara.erp.entity.KegiatanStatus;
 import com.andara.erp.entity.PaymentMethod;
 import com.andara.erp.entity.PaymentStatus;
+import com.andara.erp.entity.PenawaranStatus;
 import com.andara.erp.service.RekapService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +24,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -93,5 +98,43 @@ public class RekapController {
         log.info("REST request to get Rekap Kegiatan: startDate={}, endDate={}", startDate, endDate);
         RekapKegiatanSummaryDTO summary = rekapService.getRekapKegiatan(startDate, endDate, customerId, status, search, pageable);
         return ResponseEntity.ok(ApiResponse.success(summary));
+    }
+
+    @GetMapping("/penawaran")
+    public ResponseEntity<ApiResponse<RekapPenawaranSummaryDTO>> getRekapPenawaran(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) PenawaranStatus status,
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20, sort = "date", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        log.info("REST request to get Rekap Penawaran: startDate={}, endDate={}, customerId={}, status={}", startDate, endDate, customerId, status);
+        RekapPenawaranSummaryDTO summary = rekapService.getRekapPenawaran(startDate, endDate, customerId, status, search, pageable);
+        return ResponseEntity.ok(ApiResponse.success(summary));
+    }
+
+    @GetMapping("/piutang")
+    public ResponseEntity<ApiResponse<RekapPiutangSummaryDTO>> getRekapPiutang(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOfDate,
+            @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) String agingBucket,
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20, sort = "dueDate", direction = Sort.Direction.ASC) Pageable pageable
+    ) {
+        log.info("REST request to get Rekap Piutang: asOfDate={}, customerId={}, agingBucket={}", asOfDate, customerId, agingBucket);
+        RekapPiutangSummaryDTO summary = rekapService.getRekapPiutang(asOfDate, customerId, agingBucket, search, pageable);
+        return ResponseEntity.ok(ApiResponse.success(summary));
+    }
+
+    @GetMapping("/customers/{customerId}/statement")
+    public ResponseEntity<ApiResponse<CustomerStatementDTO>> getCustomerStatement(
+            @PathVariable Long customerId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    ) {
+        log.info("REST request to get Customer Statement: customerId={}, startDate={}, endDate={}", customerId, startDate, endDate);
+        CustomerStatementDTO statement = rekapService.getCustomerStatement(customerId, startDate, endDate);
+        return ResponseEntity.ok(ApiResponse.success(statement));
     }
 }

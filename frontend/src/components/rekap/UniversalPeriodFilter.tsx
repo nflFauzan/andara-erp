@@ -212,22 +212,22 @@ export const UniversalPeriodFilter: React.FC<UniversalPeriodFilterProps> = ({
         return (
           <>
             <option value="">Semua Status SPH</option>
-            <option value="ACCEPTED">Disetujui (Accepted)</option>
-            <option value="SENT">Terkirim (Sent)</option>
+            <option value="APPROVED">Disetujui / Diterima (Approved)</option>
+            <option value="SENT">Terkirim / Diajukan (Sent)</option>
             <option value="DRAFT">Draft</option>
             <option value="REJECTED">Ditolak (Rejected)</option>
+            <option value="CANCELLED">Dibatalkan (Cancelled)</option>
           </>
         );
       case 'PIUTANG':
         return (
           <>
             <option value="">Semua Umur Piutang</option>
-            <option value="CURRENT">Belum Jatuh Tempo</option>
-            <option value="OVERDUE">Semua Overdue</option>
-            <option value="BUCKET_1_30">1 - 30 Hari</option>
-            <option value="BUCKET_31_60">31 - 60 Hari</option>
-            <option value="BUCKET_61_90">61 - 90 Hari</option>
-            <option value="BUCKET_OVER_90">&gt; 90 Hari</option>
+            <option value="CURRENT">Lancar (Belum Jatuh Tempo)</option>
+            <option value="DAYS_1_30">1 - 30 Hari</option>
+            <option value="DAYS_31_60">31 - 60 Hari</option>
+            <option value="DAYS_61_90">61 - 90 Hari</option>
+            <option value="DAYS_OVER_90">&gt; 90 Hari</option>
           </>
         );
       case 'CUSTOMERS':

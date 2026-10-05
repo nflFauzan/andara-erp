@@ -81,6 +81,29 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
             Pageable pageable
     );
 
+    @Query("SELECT COUNT(inv) FROM Invoice inv WHERE inv.sourcePenawaran.id = :penawaranId AND inv.status != 'CANCELLED'")
+    long countActiveByPenawaranId(@Param("penawaranId") Long penawaranId);
+
+    @Query("SELECT COALESCE(SUM(inv.totalAmount), 0) FROM Invoice inv WHERE inv.sourcePenawaran.id = :penawaranId AND inv.status != 'CANCELLED'")
+    BigDecimal sumTotalAmountActiveByPenawaranId(@Param("penawaranId") Long penawaranId);
+
+    @Query("SELECT inv FROM Invoice inv " +
+            "JOIN FETCH inv.customer c " +
+            "WHERE inv.status != 'CANCELLED' " +
+            "AND inv.paymentStatus != 'PAID' " +
+            "AND (inv.totalAmount - inv.paidAmount) > 0 " +
+            "ORDER BY inv.dueDate ASC NULLS LAST, inv.date ASC")
+    List<Invoice> findAllOutstanding();
+
+    @Query("SELECT inv FROM Invoice inv " +
+            "JOIN FETCH inv.customer c " +
+            "WHERE inv.status != 'CANCELLED' " +
+            "AND inv.paymentStatus != 'PAID' " +
+            "AND (inv.totalAmount - inv.paidAmount) > 0 " +
+            "AND inv.customer.id = :customerId " +
+            "ORDER BY inv.dueDate ASC NULLS LAST, inv.date ASC")
+    List<Invoice> findAllOutstandingByCustomerId(@Param("customerId") Long customerId);
+
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT inv FROM Invoice inv WHERE inv.id = :id")
     Optional<Invoice> findByIdForUpdate(@Param("id") Long id);

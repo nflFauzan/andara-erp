@@ -45,12 +45,51 @@ public interface PenawaranRepository extends JpaRepository<Penawaran, Long> {
     @Query("SELECT COALESCE(SUM(p.totalAmount), 0) FROM Penawaran p WHERE p.customer.id = :customerId AND p.status != 'CANCELLED' AND p.date BETWEEN :startDate AND :endDate")
     BigDecimal sumTotalAmountActiveByCustomerIdAndDateRange(@Param("customerId") Long customerId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
+    @Query("SELECT COUNT(p) FROM Penawaran p " +
+            "WHERE p.status = :status " +
+            "AND p.date BETWEEN :startDate AND :endDate")
+    long countByStatusAndDateRange(
+            @Param("status") PenawaranStatus status,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
+    @Query("SELECT COUNT(p) FROM Penawaran p " +
+            "WHERE p.status = :status " +
+            "AND p.customer.id = :customerId " +
+            "AND p.date BETWEEN :startDate AND :endDate")
+    long countByStatusAndCustomerIdAndDateRange(
+            @Param("status") PenawaranStatus status,
+            @Param("customerId") Long customerId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
+    @Query("SELECT COALESCE(SUM(p.totalAmount), 0) FROM Penawaran p " +
+            "WHERE p.status = :status " +
+            "AND p.date BETWEEN :startDate AND :endDate")
+    BigDecimal sumTotalAmountByStatusAndDateRange(
+            @Param("status") PenawaranStatus status,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
+    @Query("SELECT COALESCE(SUM(p.totalAmount), 0) FROM Penawaran p " +
+            "WHERE p.status = :status " +
+            "AND p.customer.id = :customerId " +
+            "AND p.date BETWEEN :startDate AND :endDate")
+    BigDecimal sumTotalAmountByStatusAndCustomerIdAndDateRange(
+            @Param("status") PenawaranStatus status,
+            @Param("customerId") Long customerId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
     @Query("SELECT p FROM Penawaran p " +
             "JOIN p.customer c " +
             "WHERE (:customerId IS NULL OR p.customer.id = :customerId) " +
             "AND (:status IS NULL OR p.status = :status) " +
-            "AND (:startDate IS NULL OR p.date >= :startDate) " +
-            "AND (:endDate IS NULL OR p.date <= :endDate) " +
+            "AND p.date BETWEEN :startDate AND :endDate " +
             "AND (:searchPattern IS NULL OR (" +
             "   LOWER(p.number) LIKE :searchPattern OR " +
             "   LOWER(c.name) LIKE :searchPattern OR " +

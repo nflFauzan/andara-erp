@@ -24,4 +24,22 @@ public interface PaymentAllocationRepository extends JpaRepository<PaymentAlloca
     @Query("SELECT COALESCE(SUM(a.amount), 0) FROM PaymentAllocation a " +
             "WHERE a.payment.id = :paymentId")
     BigDecimal sumAllocatedAmountByPaymentId(@Param("paymentId") Long paymentId);
+
+    @Query("SELECT COALESCE(SUM(a.amount), 0) FROM PaymentAllocation a " +
+            "WHERE a.payment.status = 'CONFIRMED' " +
+            "AND a.payment.date BETWEEN :startDate AND :endDate")
+    BigDecimal sumAllocatedConfirmedByDateRange(
+            @Param("startDate") java.time.LocalDate startDate,
+            @Param("endDate") java.time.LocalDate endDate
+    );
+
+    @Query("SELECT COALESCE(SUM(a.amount), 0) FROM PaymentAllocation a " +
+            "WHERE a.payment.status = 'CONFIRMED' " +
+            "AND a.payment.customer.id = :customerId " +
+            "AND a.payment.date BETWEEN :startDate AND :endDate")
+    BigDecimal sumAllocatedConfirmedByCustomerIdAndDateRange(
+            @Param("customerId") Long customerId,
+            @Param("startDate") java.time.LocalDate startDate,
+            @Param("endDate") java.time.LocalDate endDate
+    );
 }

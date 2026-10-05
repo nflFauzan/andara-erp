@@ -1,5 +1,7 @@
 package com.andara.erp.controller;
 
+import com.andara.erp.entity.Customer;
+import com.andara.erp.repository.CustomerRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -22,6 +24,9 @@ public class RekapControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private CustomerRepository customerRepository;
 
     @Test
     @WithMockUser(username = "operator", roles = {"OPERATOR"})
@@ -92,6 +97,69 @@ public class RekapControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.page.content", notNullValue()));
+    }
+
+    @Test
+    @WithMockUser(username = "operator", roles = {"OPERATOR"})
+    void getRekapPenawaran_Success() throws Exception {
+        mockMvc.perform(get("/api/rekap/penawaran")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.page.content", notNullValue()))
+                .andExpect(jsonPath("$.data.totalPenawaran", notNullValue()))
+                .andExpect(jsonPath("$.data.grandTotalAmount", notNullValue()))
+                .andExpect(jsonPath("$.data.approvedCount", notNullValue()));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void getRekapPenawaran_WithDateRange_Success() throws Exception {
+        mockMvc.perform(get("/api/rekap/penawaran")
+                        .param("startDate", "2026-01-01")
+                        .param("endDate", "2026-12-31")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.page.content", notNullValue()));
+    }
+
+    @Test
+    @WithMockUser(username = "operator", roles = {"OPERATOR"})
+    void getRekapPiutang_Success() throws Exception {
+        mockMvc.perform(get("/api/rekap/piutang")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.page.content", notNullValue()))
+                .andExpect(jsonPath("$.data.totalInvoicesWithOutstanding", notNullValue()))
+                .andExpect(jsonPath("$.data.grandTotalOutstanding", notNullValue()))
+                .andExpect(jsonPath("$.data.bucket1To30Amount", notNullValue()))
+                .andExpect(jsonPath("$.data.bucketOver90Amount", notNullValue()));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void getRekapPiutang_WithAgingBucket_Success() throws Exception {
+        mockMvc.perform(get("/api/rekap/piutang")
+                        .param("agingBucket", "DAYS_1_30")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.page.content", notNullValue()));
+    }
+
+    @Test
+    @WithMockUser(username = "operator", roles = {"OPERATOR"})
+    void getCustomerStatement_Success() throws Exception {
+        Long customerId = customerRepository.findAll().stream().findFirst().map(Customer::getId).orElse(1L);
+        mockMvc.perform(get("/api/rekap/customers/" + customerId + "/statement")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.customerId").value(customerId))
+                .andExpect(jsonPath("$.data.customerName", notNullValue()))
+                .andExpect(jsonPath("$.data.items", notNullValue()));
     }
 
     @Test

@@ -101,3 +101,114 @@ export interface RekapKegiatanSummary {
   totalKegiatan: number;
   grandTotalValue: number;
 }
+
+export interface RekapPenawaran {
+  id: number;
+  number: string;
+  date: string;
+  customerId: number;
+  customerCode: string;
+  customerName: string;
+  companyName: string | null;
+  kegiatanSummary: string;
+  kegiatanCount: number;
+  totalAmount: number;
+  status: string;
+  invoiceCount: number;
+  invoicedAmount: number;
+  unbilledAmount: number;
+}
+
+export interface RekapPenawaranSummary {
+  page: PageResponse<RekapPenawaran>;
+  totalPenawaran: number;
+  grandTotalAmount: number;
+  approvedCount: number;
+  approvedTotalAmount: number;
+  acceptedCount?: number;
+  acceptedTotalAmount?: number;
+  sentCount: number;
+  sentTotalAmount: number;
+  draftCount: number;
+  draftTotalAmount: number;
+  rejectedCount: number;
+  rejectedTotalAmount: number;
+  grandTotalInvoicedAmount: number;
+  grandTotalUnbilledAmount: number;
+}
+
+export type AgingBucket = 'ALL' | 'CURRENT' | 'DAYS_1_30' | 'DAYS_31_60' | 'DAYS_61_90' | 'DAYS_OVER_90';
+
+export interface RekapPiutang {
+  invoiceId: number;
+  invoiceNumber: string;
+  invoiceDate: string;
+  dueDate: string | null;
+  customerId: number;
+  customerCode: string;
+  customerName: string;
+  companyName: string | null;
+  totalAmount: number;
+  paidAmount: number;
+  outstanding: number;
+  daysOverdue: number;
+  agingBucket: AgingBucket;
+  invoiceStatus: string;
+  paymentStatus: string;
+}
+
+export interface RekapPiutangSummary {
+  page: PageResponse<RekapPiutang>;
+  totalInvoicesWithOutstanding: number;
+  grandTotalOutstanding: number;
+  currentAmount: number;
+  currentCount: number;
+  overdueAmount: number;
+  overdueCount: number;
+  bucket1To30Amount: number;
+  bucket1To30Count: number;
+  bucket31To60Amount: number;
+  bucket31To60Count: number;
+  bucket61To90Amount: number;
+  bucket61To90Count: number;
+  bucketOver90Amount: number;
+  bucketOver90Count: number;
+}
+
+export type StatementItemType = 'KEGIATAN' | 'SPH' | 'INVOICE' | 'PAYMENT' | 'DEPOSIT';
+
+export interface CustomerStatementItem {
+  date: string;
+  type: StatementItemType;
+  referenceId: number;
+  referenceNo: string;
+  description: string;
+  status: string;
+  amount: number;
+  debit: number;
+  credit: number;
+  runningBalance: number;
+  notes: string | null;
+}
+
+export interface CustomerStatement {
+  customerId: number;
+  customerName: string;
+  customerCode: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  address: string | null;
+  depositBalance: number;
+  totalKegiatanCount: number;
+  totalKegiatanAmount: number;
+  totalPenawaranCount: number;
+  totalPenawaranAmount: number;
+  totalInvoiceCount: number;
+  totalInvoiceAmount: number;
+  totalPaidAmount: number;
+  totalOutstandingAmount: number;
+  items: CustomerStatementItem[];
+}
+
+
