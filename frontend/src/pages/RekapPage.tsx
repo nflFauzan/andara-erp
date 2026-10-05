@@ -6,10 +6,10 @@ import {
   Receipt,
   CreditCard,
   HardHat,
-  Search,
   Printer,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 import {
   getRekapCustomers,
@@ -22,6 +22,11 @@ import { Customer } from '@/types/customer';
 import { BentoCard } from '@/components/common/BentoCard';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatusBadge } from '@/components/common/StatusBadge';
+import {
+  UniversalPeriodFilter,
+  FilterState,
+  RekapTab,
+} from '@/components/rekap/UniversalPeriodFilter';
 
 const formatCurrency = (val: number | null | undefined): string => {
   return new Intl.NumberFormat('id-ID', {
@@ -45,16 +50,19 @@ const formatDate = (dateStr: string | null | undefined): string => {
   }
 };
 
-type RekapTab = 'CUSTOMERS' | 'INVOICES' | 'PAYMENTS' | 'KEGIATAN';
-
 export const RekapPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<RekapTab>('CUSTOMERS');
 
-  // Filter state
-  const [search, setSearch] = useState('');
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+  // Unified Universal Filter State
+  const [filters, setFilters] = useState<FilterState>({
+    preset: 'ALL_TIME',
+    startDate: '',
+    endDate: '',
+    customerId: '',
+    status: '',
+    search: '',
+  });
+
   const [page, setPage] = useState(0);
   const pageSize = 15;
 
@@ -66,20 +74,39 @@ export const RekapPage: React.FC = () => {
 
   // Query 1: Rekap Customers
   const { data: customerRekap, isLoading: loadingCustomers } = useQuery({
-    queryKey: ['rekapCustomers', search, page],
-    queryFn: () => getRekapCustomers({ search, page, size: pageSize }),
+    queryKey: ['rekapCustomers', filters.search, filters.startDate, filters.endDate, page],
+    queryFn: () =>
+      getRekapCustomers({
+        search: filters.search || undefined,
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
+        page,
+        size: pageSize,
+      }),
     enabled: activeTab === 'CUSTOMERS',
   });
 
   // Query 2: Rekap Invoices
   const { data: invoiceRekap, isLoading: loadingInvoices } = useQuery({
-    queryKey: ['rekapInvoices', search, selectedCustomerId, startDate, endDate, page],
+    queryKey: [
+      'rekapInvoices',
+      filters.search,
+      filters.customerId,
+      filters.startDate,
+      filters.endDate,
+      filters.status,
+      page,
+    ],
     queryFn: () =>
       getRekapInvoices({
-        search,
-        customerId: selectedCustomerId ? Number(selectedCustomerId) : undefined,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
+        search: filters.search || undefined,
+        customerId: filters.customerId ? Number(filters.customerId) : undefined,
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
+        status: ['DRAFT', 'ISSUED', 'CANCELLED'].includes(filters.status) ? filters.status : undefined,
+        paymentStatus: ['UNPAID', 'PARTIALLY_PAID', 'PAID'].includes(filters.status)
+          ? filters.status
+          : undefined,
         page,
         size: pageSize,
       }),
@@ -88,13 +115,23 @@ export const RekapPage: React.FC = () => {
 
   // Query 3: Rekap Payments
   const { data: paymentRekap, isLoading: loadingPayments } = useQuery({
-    queryKey: ['rekapPayments', search, selectedCustomerId, startDate, endDate, page],
+    queryKey: [
+      'rekapPayments',
+      filters.search,
+      filters.customerId,
+      filters.startDate,
+      filters.endDate,
+      filters.status,
+      page,
+    ],
     queryFn: () =>
       getRekapPayments({
-        search,
-        customerId: selectedCustomerId ? Number(selectedCustomerId) : undefined,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
+        search: filters.search || undefined,
+        customerId: filters.customerId ? Number(filters.customerId) : undefined,
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
+        status: ['CONFIRMED', 'CANCELLED'].includes(filters.status) ? filters.status : undefined,
+        method: ['TRANSFER', 'CASH', 'GIRO', 'CHEQUE'].includes(filters.status) ? filters.status : undefined,
         page,
         size: pageSize,
       }),
@@ -103,11 +140,22 @@ export const RekapPage: React.FC = () => {
 
   // Query 4: Rekap Kegiatan
   const { data: kegiatanRekap, isLoading: loadingKegiatan } = useQuery({
-    queryKey: ['rekapKegiatan', search, selectedCustomerId, page],
+    queryKey: [
+      'rekapKegiatan',
+      filters.search,
+      filters.customerId,
+      filters.startDate,
+      filters.endDate,
+      filters.status,
+      page,
+    ],
     queryFn: () =>
       getRekapKegiatan({
-        search,
-        customerId: selectedCustomerId ? Number(selectedCustomerId) : undefined,
+        search: filters.search || undefined,
+        customerId: filters.customerId ? Number(filters.customerId) : undefined,
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
+        status: filters.status || undefined,
         page,
         size: pageSize,
       }),
@@ -127,7 +175,7 @@ export const RekapPage: React.FC = () => {
     <div className="space-y-6">
       {/* Header Banner */}
       <PageHeader
-        title="Rekap Transaksi & Operasional"
+        title="Rekap Transaksi & Analitik Terpadu"
         subtitle="Monitoring data teragregasi per customer, faktur penjualan, realisasi kas, dan kegiatan proyek."
         badge={
           <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
@@ -146,122 +194,92 @@ export const RekapPage: React.FC = () => {
         }
       />
 
-      {/* Control Card: Tabs & Filters */}
+      {/* Control Card: Tabs & Universal Filter Bar */}
       <BentoCard padding="default" className="print:hidden space-y-4">
-        {/* Tab Selector */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => handleTabChange('CUSTOMERS')}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
-              activeTab === 'CUSTOMERS'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-700'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            Rekap Customer
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange('INVOICES')}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
-              activeTab === 'INVOICES'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-700'
-            }`}
-          >
-            <Receipt className="w-4 h-4" />
-            Rekap Faktur Penjualan
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange('PAYMENTS')}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
-              activeTab === 'PAYMENTS'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-700'
-            }`}
-          >
-            <CreditCard className="w-4 h-4" />
-            Rekap Pembayaran Kas
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange('KEGIATAN')}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
-              activeTab === 'KEGIATAN'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-700'
-            }`}
-          >
-            <HardHat className="w-4 h-4" />
-            Rekap Kegiatan Proyek
-          </button>
+        {/* Tab Selector Hub */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleTabChange('CUSTOMERS')}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                activeTab === 'CUSTOMERS'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-700'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Rekap Customer</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleTabChange('KEGIATAN')}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                activeTab === 'KEGIATAN'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-700'
+              }`}
+            >
+              <HardHat className="w-4 h-4" />
+              <span>Rekap Kegiatan Proyek</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleTabChange('INVOICES')}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                activeTab === 'INVOICES'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-700'
+              }`}
+            >
+              <Receipt className="w-4 h-4" />
+              <span>Rekap Faktur Penjualan</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleTabChange('PAYMENTS')}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                activeTab === 'PAYMENTS'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-700'
+              }`}
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>Rekap Pembayaran Kas</span>
+            </button>
+          </div>
+
+          {/* Roadmap Indicator for Upcoming Tier 1 & 2 Tabs */}
+          <div className="hidden xl:flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-navy-900/60 border border-slate-200/60 dark:border-navy-700/60">
+              <Sparkles className="w-3 h-3 text-amber-500" />
+              <span>Fase 2: SPH &amp; Aging Piutang</span>
+            </span>
+          </div>
         </div>
 
-        {/* Filters Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-slate-100 dark:border-navy-700/80">
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Cari kode / nama / no dok..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(0);
-              }}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-white dark:bg-navy-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-
-          <div>
-            <select
-              value={selectedCustomerId}
-              onChange={(e) => {
-                setSelectedCustomerId(e.target.value);
-                setPage(0);
-              }}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-white dark:bg-navy-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">Semua Customer</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.code} - {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {(activeTab === 'INVOICES' || activeTab === 'PAYMENTS') && (
-            <>
-              <div>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => {
-                    setStartDate(e.target.value);
-                    setPage(0);
-                  }}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-white dark:bg-navy-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Tanggal Mulai"
-                />
-              </div>
-              <div>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => {
-                    setEndDate(e.target.value);
-                    setPage(0);
-                  }}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-white dark:bg-navy-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Tanggal Akhir"
-                />
-              </div>
-            </>
-          )}
+        {/* Universal Filter Component */}
+        <div className="pt-2 border-t border-slate-100 dark:border-navy-700/80">
+          <UniversalPeriodFilter
+            filters={filters}
+            onChange={(newFilters) => {
+              setFilters(newFilters);
+              setPage(0);
+            }}
+            customers={customers}
+            activeTab={activeTab}
+            onReset={() => {
+              setFilters({
+                preset: 'ALL_TIME',
+                startDate: '',
+                endDate: '',
+                customerId: '',
+                status: '',
+                search: '',
+              });
+              setPage(0);
+            }}
+          />
         </div>
       </BentoCard>
 

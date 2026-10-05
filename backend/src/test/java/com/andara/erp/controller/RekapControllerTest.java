@@ -71,6 +71,30 @@ public class RekapControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "operator", roles = {"OPERATOR"})
+    void getRekapCustomers_WithDateRange_Success() throws Exception {
+        mockMvc.perform(get("/api/rekap/customers")
+                        .param("startDate", "2026-01-01")
+                        .param("endDate", "2026-12-31")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.page.content", notNullValue()));
+    }
+
+    @Test
+    @WithMockUser(username = "operator", roles = {"OPERATOR"})
+    void getRekapKegiatan_WithDateRange_Success() throws Exception {
+        mockMvc.perform(get("/api/rekap/kegiatan")
+                        .param("startDate", "2026-01-01")
+                        .param("endDate", "2026-12-31")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.page.content", notNullValue()));
+    }
+
+    @Test
     void getRekap_Unauthenticated_Unauthorized() throws Exception {
         mockMvc.perform(get("/api/rekap/customers")
                         .contentType(MediaType.APPLICATION_JSON))

@@ -7,6 +7,8 @@ import {
 } from '@/types/rekap';
 
 export const getRekapCustomers = async (params?: {
+  startDate?: string;
+  endDate?: string;
   search?: string;
   page?: number;
   size?: number;
@@ -53,6 +55,8 @@ export const getRekapPayments = async (params?: {
 };
 
 export const getRekapKegiatan = async (params?: {
+  startDate?: string;
+  endDate?: string;
   customerId?: number;
   status?: string;
   search?: string;

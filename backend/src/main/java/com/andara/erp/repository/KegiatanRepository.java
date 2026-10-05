@@ -27,10 +27,28 @@ public interface KegiatanRepository extends JpaRepository<Kegiatan, Long> {
 
     long countByCustomerId(Long customerId);
 
+    default Page<Kegiatan> findWithFilters(
+            String searchPattern,
+            Long customerId,
+            KegiatanStatus status,
+            Pageable pageable
+    ) {
+        return findWithFilters(
+                searchPattern,
+                customerId,
+                status,
+                java.time.LocalDate.of(2000, 1, 1).atStartOfDay().atOffset(java.time.ZoneOffset.UTC),
+                java.time.LocalDate.of(2099, 12, 31).atTime(java.time.LocalTime.MAX).atOffset(java.time.ZoneOffset.UTC),
+                pageable
+        );
+    }
+
     @Query("SELECT k FROM Kegiatan k " +
             "JOIN k.customer c " +
             "WHERE (:customerId IS NULL OR k.customer.id = :customerId) " +
             "AND (:status IS NULL OR k.status = :status) " +
+            "AND (k.createdAt >= :startDateTime) " +
+            "AND (k.createdAt <= :endDateTime) " +
             "AND (:searchPattern IS NULL OR (" +
             "   LOWER(k.code) LIKE :searchPattern OR " +
             "   LOWER(k.name) LIKE :searchPattern OR " +
@@ -42,6 +60,8 @@ public interface KegiatanRepository extends JpaRepository<Kegiatan, Long> {
             @Param("searchPattern") String searchPattern,
             @Param("customerId") Long customerId,
             @Param("status") KegiatanStatus status,
+            @Param("startDateTime") java.time.OffsetDateTime startDateTime,
+            @Param("endDateTime") java.time.OffsetDateTime endDateTime,
             Pageable pageable
     );
 }

@@ -33,6 +33,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @Service
@@ -49,6 +52,8 @@ public class RekapService {
 
     private static final LocalDate ALL_START = LocalDate.of(2000, 1, 1);
     private static final LocalDate ALL_END = LocalDate.of(2099, 12, 31);
+    private static final OffsetDateTime ALL_START_TIME = ALL_START.atStartOfDay().atOffset(ZoneOffset.UTC);
+    private static final OffsetDateTime ALL_END_TIME = ALL_END.atTime(LocalTime.MAX).atOffset(ZoneOffset.UTC);
 
     public RekapService(CustomerRepository customerRepository,
                         KegiatanRepository kegiatanRepository,
@@ -63,16 +68,25 @@ public class RekapService {
     }
 
     public RekapCustomerSummaryDTO getRekapCustomers(String search, Pageable pageable) {
-        log.debug("Generating Rekap Customers search={}", search);
+        return getRekapCustomers(null, null, search, pageable);
+    }
+
+    public RekapCustomerSummaryDTO getRekapCustomers(LocalDate startDate, LocalDate endDate, String search, Pageable pageable) {
+        log.debug("Generating Rekap Customers startDate={} endDate={} search={}", startDate, endDate, search);
+
+        LocalDate effectiveStart = (startDate != null) ? startDate : ALL_START;
+        LocalDate effectiveEnd = (endDate != null) ? endDate : ALL_END;
 
         Page<Customer> customerPage = customerRepository.searchCustomers(search, null, pageable);
 
         List<RekapCustomerDTO> dtoList = customerPage.getContent().stream().map(c -> {
             long kegiatanCount = kegiatanRepository.countByCustomerId(c.getId());
-            long invoiceCount = invoiceRepository.countByCustomerId(c.getId());
-            BigDecimal totalInvoice = invoiceRepository.sumTotalAmountActiveByCustomerIdAndDateRange(c.getId(), ALL_START, ALL_END);
-            BigDecimal totalPaid = paymentRepository.sumAmountConfirmedByCustomerIdAndDateRange(c.getId(), ALL_START, ALL_END);
-            BigDecimal outstanding = invoiceRepository.sumOutstandingActiveByCustomerIdAndDateRange(c.getId(), ALL_START, ALL_END);
+            long invoiceCount = (startDate != null || endDate != null)
+                    ? invoiceRepository.countActiveByCustomerIdAndDateRange(c.getId(), effectiveStart, effectiveEnd)
+                    : invoiceRepository.countByCustomerId(c.getId());
+            BigDecimal totalInvoice = invoiceRepository.sumTotalAmountActiveByCustomerIdAndDateRange(c.getId(), effectiveStart, effectiveEnd);
+            BigDecimal totalPaid = paymentRepository.sumAmountConfirmedByCustomerIdAndDateRange(c.getId(), effectiveStart, effectiveEnd);
+            BigDecimal outstanding = invoiceRepository.sumOutstandingActiveByCustomerIdAndDateRange(c.getId(), effectiveStart, effectiveEnd);
             BigDecimal deposit = depositTransactionRepository.calculateCurrentBalanceByCustomerId(c.getId());
 
             return new RekapCustomerDTO(
@@ -92,9 +106,9 @@ public class RekapService {
 
         Page<RekapCustomerDTO> pagedResult = new PageImpl<>(dtoList, pageable, customerPage.getTotalElements());
 
-        BigDecimal grandTotalInvoice = invoiceRepository.sumTotalAmountActiveByDateRange(ALL_START, ALL_END);
-        BigDecimal grandTotalPaid = paymentRepository.sumAmountConfirmedByDateRange(ALL_START, ALL_END);
-        BigDecimal grandTotalOutstanding = invoiceRepository.sumOutstandingActiveByDateRange(ALL_START, ALL_END);
+        BigDecimal grandTotalInvoice = invoiceRepository.sumTotalAmountActiveByDateRange(effectiveStart, effectiveEnd);
+        BigDecimal grandTotalPaid = paymentRepository.sumAmountConfirmedByDateRange(effectiveStart, effectiveEnd);
+        BigDecimal grandTotalOutstanding = invoiceRepository.sumOutstandingActiveByDateRange(effectiveStart, effectiveEnd);
         BigDecimal grandTotalDeposit = depositTransactionRepository.calculateGrandTotalDepositBalance();
 
         return new RekapCustomerSummaryDTO(
@@ -250,7 +264,21 @@ public class RekapService {
             String search,
             Pageable pageable
     ) {
-        log.debug("Generating Rekap Kegiatan");
+        return getRekapKegiatan(null, null, customerId, status, search, pageable);
+    }
+
+    public RekapKegiatanSummaryDTO getRekapKegiatan(
+            LocalDate startDate,
+            LocalDate endDate,
+            Long customerId,
+            KegiatanStatus status,
+            String search,
+            Pageable pageable
+    ) {
+        log.debug("Generating Rekap Kegiatan startDate={} endDate={}", startDate, endDate);
+
+        OffsetDateTime startDateTime = (startDate != null) ? startDate.atStartOfDay().atOffset(ZoneOffset.UTC) : ALL_START_TIME;
+        OffsetDateTime endDateTime = (endDate != null) ? endDate.atTime(LocalTime.MAX).atOffset(ZoneOffset.UTC) : ALL_END_TIME;
 
         String searchPattern = (search != null && !search.trim().isEmpty())
                 ? "%" + search.trim().toLowerCase() + "%"
@@ -260,6 +288,8 @@ public class RekapService {
                 searchPattern,
                 customerId,
                 status,
+                startDateTime,
+                endDateTime,
                 pageable
         );
 

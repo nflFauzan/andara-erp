@@ -41,11 +41,13 @@ public class RekapController {
 
     @GetMapping("/customers")
     public ResponseEntity<ApiResponse<RekapCustomerSummaryDTO>> getRekapCustomers(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) String search,
             @PageableDefault(size = 20, sort = "name", direction = Sort.Direction.ASC) Pageable pageable
     ) {
-        log.info("REST request to get Rekap Customers: search={}", search);
-        RekapCustomerSummaryDTO summary = rekapService.getRekapCustomers(search, pageable);
+        log.info("REST request to get Rekap Customers: startDate={}, endDate={}, search={}", startDate, endDate, search);
+        RekapCustomerSummaryDTO summary = rekapService.getRekapCustomers(startDate, endDate, search, pageable);
         return ResponseEntity.ok(ApiResponse.success(summary));
     }
 
@@ -81,13 +83,15 @@ public class RekapController {
 
     @GetMapping("/kegiatan")
     public ResponseEntity<ApiResponse<RekapKegiatanSummaryDTO>> getRekapKegiatan(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) Long customerId,
             @RequestParam(required = false) KegiatanStatus status,
             @RequestParam(required = false) String search,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        log.info("REST request to get Rekap Kegiatan");
-        RekapKegiatanSummaryDTO summary = rekapService.getRekapKegiatan(customerId, status, search, pageable);
+        log.info("REST request to get Rekap Kegiatan: startDate={}, endDate={}", startDate, endDate);
+        RekapKegiatanSummaryDTO summary = rekapService.getRekapKegiatan(startDate, endDate, customerId, status, search, pageable);
         return ResponseEntity.ok(ApiResponse.success(summary));
     }
 }
