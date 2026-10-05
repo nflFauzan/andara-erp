@@ -211,4 +211,110 @@ export interface CustomerStatement {
   items: CustomerStatementItem[];
 }
 
+// Fase 4: Analisis Silang Types
+export interface InvoiceBrief {
+  id: number;
+  number: string;
+  date: string;
+  amount: number;
+  status: string;
+}
+
+export type UnbilledStatusFilter = 'ALL' | 'UNBILLED' | 'PARTIALLY_BILLED' | 'FULLY_BILLED';
+
+export interface RekapUnbilledSph {
+  id: number;
+  number: string;
+  date: string;
+  customerId: number;
+  customerCode: string;
+  customerName: string;
+  companyName: string | null;
+  totalAmount: number;
+  invoicedAmount: number;
+  unbilledAmount: number;
+  status: string;
+  billingStatus: 'UNBILLED' | 'PARTIALLY_BILLED' | 'FULLY_BILLED';
+  invoices: InvoiceBrief[];
+}
+
+export interface RekapUnbilledSummary {
+  page: PageResponse<RekapUnbilledSph>;
+  totalSph: number;
+  totalSphAmount: number;
+  totalInvoicedAmount: number;
+  totalUnbilledAmount: number;
+  unbilledCount: number;
+  partiallyBilledCount: number;
+  fullyBilledCount: number;
+}
+
+export interface InvoiceSettlementAllocation {
+  allocationId: number;
+  paymentId: number;
+  paymentNumber: string;
+  paymentDate: string;
+  allocatedAmount: number;
+  paymentMethod: string;
+  destinationAccount: string | null;
+  paymentStatus: string;
+}
+
+export interface InvoiceSettlement {
+  invoiceId: number;
+  invoiceNumber: string;
+  invoiceDate: string;
+  dueDate: string | null;
+  customerId: number;
+  customerCode: string;
+  customerName: string;
+  companyName: string | null;
+  totalAmount: number;
+  paidAmount: number;
+  outstanding: number;
+  paymentStatus: string;
+  status: string;
+  allocations: InvoiceSettlementAllocation[];
+}
+
+export interface InvoiceSettlementSummary {
+  page: PageResponse<InvoiceSettlement>;
+  totalInvoices: number;
+  grandTotalAmount: number;
+  grandTotalPaidAmount: number;
+  grandTotalOutstanding: number;
+  unpaidCount: number;
+  partiallyPaidCount: number;
+  paidCount: number;
+}
+
+export interface MonthlyTrendItem {
+  month: number;
+  monthName: string;
+  sphCount: number;
+  sphAmount: number;
+  invoicedCount: number;
+  invoicedAmount: number;
+  paymentCount: number;
+  paymentAmount: number;
+  outstandingAmount: number;
+  collectionRate: number;
+  momRevenueGrowth: number | null;
+}
+
+export interface YearlyTrendSummary {
+  year: number;
+  totalSphAmount: number;
+  totalInvoicedAmount: number;
+  totalPaymentAmount: number;
+  totalOutstandingAmount: number;
+  averageCollectionRate: number;
+  peakInvoicedMonth: string | null;
+  peakInvoicedAmount: number;
+  peakPaymentMonth: string | null;
+  peakPaymentAmount: number;
+  months: MonthlyTrendItem[];
+}
+
+
 

@@ -2,12 +2,15 @@ package com.andara.erp.controller;
 
 import com.andara.erp.common.dto.ApiResponse;
 import com.andara.erp.dto.rekap.CustomerStatementDTO;
+import com.andara.erp.dto.rekap.InvoiceSettlementSummaryDTO;
 import com.andara.erp.dto.rekap.RekapCustomerSummaryDTO;
 import com.andara.erp.dto.rekap.RekapInvoiceSummaryDTO;
 import com.andara.erp.dto.rekap.RekapKegiatanSummaryDTO;
 import com.andara.erp.dto.rekap.RekapPaymentSummaryDTO;
 import com.andara.erp.dto.rekap.RekapPenawaranSummaryDTO;
 import com.andara.erp.dto.rekap.RekapPiutangSummaryDTO;
+import com.andara.erp.dto.rekap.RekapUnbilledSummaryDTO;
+import com.andara.erp.dto.rekap.YearlyTrendSummaryDTO;
 import com.andara.erp.entity.InvoicePaymentStatus;
 import com.andara.erp.entity.InvoiceStatus;
 import com.andara.erp.entity.KegiatanStatus;
@@ -136,5 +139,43 @@ public class RekapController {
         log.info("REST request to get Customer Statement: customerId={}, startDate={}, endDate={}", customerId, startDate, endDate);
         CustomerStatementDTO statement = rekapService.getCustomerStatement(customerId, startDate, endDate);
         return ResponseEntity.ok(ApiResponse.success(statement));
+    }
+
+    @GetMapping("/unbilled-sph")
+    public ResponseEntity<ApiResponse<RekapUnbilledSummaryDTO>> getRekapUnbilledSph(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) String billingStatus,
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20, sort = "totalAmount", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        log.info("REST request to get Rekap Unbilled SPH: startDate={}, endDate={}, billingStatus={}", startDate, endDate, billingStatus);
+        RekapUnbilledSummaryDTO summary = rekapService.getRekapUnbilledSph(startDate, endDate, customerId, billingStatus, search, pageable);
+        return ResponseEntity.ok(ApiResponse.success(summary));
+    }
+
+    @GetMapping("/invoice-settlements")
+    public ResponseEntity<ApiResponse<InvoiceSettlementSummaryDTO>> getRekapInvoiceSettlements(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) String paymentStatus,
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20, sort = "date", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        log.info("REST request to get Invoice Settlements: startDate={}, endDate={}, customerId={}", startDate, endDate, customerId);
+        InvoiceSettlementSummaryDTO summary = rekapService.getRekapInvoiceSettlements(startDate, endDate, customerId, paymentStatus, search, pageable);
+        return ResponseEntity.ok(ApiResponse.success(summary));
+    }
+
+    @GetMapping("/monthly-trend")
+    public ResponseEntity<ApiResponse<YearlyTrendSummaryDTO>> getMonthlyTrend(
+            @RequestParam(required = false, defaultValue = "2026") int year,
+            @RequestParam(required = false) Long customerId
+    ) {
+        log.info("REST request to get Monthly Trend: year={}, customerId={}", year, customerId);
+        YearlyTrendSummaryDTO summary = rekapService.getMonthlyTrend(year, customerId);
+        return ResponseEntity.ok(ApiResponse.success(summary));
     }
 }

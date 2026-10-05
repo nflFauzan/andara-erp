@@ -163,6 +163,41 @@ public class RekapControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "operator", roles = {"OPERATOR"})
+    void getRekapUnbilledSph_Success() throws Exception {
+        mockMvc.perform(get("/api/rekap/unbilled-sph")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.page.content", notNullValue()))
+                .andExpect(jsonPath("$.data.totalApprovedSph", notNullValue()))
+                .andExpect(jsonPath("$.data.grandTotalUnbilledAmount", notNullValue()));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void getRekapInvoiceSettlements_Success() throws Exception {
+        mockMvc.perform(get("/api/rekap/invoice-settlements")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.page.content", notNullValue()))
+                .andExpect(jsonPath("$.data.totalInvoices", notNullValue()));
+    }
+
+    @Test
+    @WithMockUser(username = "operator", roles = {"OPERATOR"})
+    void getMonthlyTrend_Success() throws Exception {
+        mockMvc.perform(get("/api/rekap/monthly-trend")
+                        .param("year", "2026")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.year").value(2026))
+                .andExpect(jsonPath("$.data.monthlyData", notNullValue()));
+    }
+
+    @Test
     void getRekap_Unauthenticated_Unauthorized() throws Exception {
         mockMvc.perform(get("/api/rekap/customers")
                         .contentType(MediaType.APPLICATION_JSON))

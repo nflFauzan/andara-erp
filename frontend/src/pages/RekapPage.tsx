@@ -15,7 +15,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   BookOpen,
-  ExternalLink
+  ExternalLink,
+  Layers,
+  TrendingUp
 } from 'lucide-react';
 import {
   getRekapCustomers,
@@ -36,6 +38,10 @@ import {
   RekapTab,
 } from '@/components/rekap/UniversalPeriodFilter';
 import { CustomerStatementDrawer } from '@/components/rekap/CustomerStatementDrawer';
+import { RekapUnbilledSphView } from '@/components/rekap/RekapUnbilledSphView';
+import { RekapSettlementsView } from '@/components/rekap/RekapSettlementsView';
+import { RekapMonthlyTrendView } from '@/components/rekap/RekapMonthlyTrendView';
+
 
 const formatCurrency = (val: number | null | undefined): string => {
   return new Intl.NumberFormat('id-ID', {
@@ -358,7 +364,7 @@ export const RekapPage: React.FC = () => {
             <button
               type="button"
               onClick={() => handleTabChange('PAYMENTS')}
-              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition ${
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition ${
                 activeTab === 'PAYMENTS'
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-700'
@@ -367,12 +373,53 @@ export const RekapPage: React.FC = () => {
               <CreditCard className="w-4 h-4" />
               <span>Rekap Kas Masuk</span>
             </button>
+
+            {/* Separator */}
+            <div className="h-6 w-px bg-slate-200 dark:bg-navy-700 mx-1 hidden sm:block" />
+
+            {/* Tier 2: Analisis Silang & Tren */}
+            <button
+              type="button"
+              onClick={() => handleTabChange('UNBILLED')}
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition ${
+                activeTab === 'UNBILLED'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200/60 dark:border-indigo-800/60'
+              }`}
+            >
+              <Layers className="w-4 h-4" />
+              <span>SPH &times; Faktur (Unbilled)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleTabChange('SETTLEMENTS')}
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition ${
+                activeTab === 'SETTLEMENTS'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200/60 dark:border-indigo-800/60'
+              }`}
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Subledger Pelunasan</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleTabChange('TREND')}
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition ${
+                activeTab === 'TREND'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200/60 dark:border-indigo-800/60'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span>Tren Bulanan &amp; MoM</span>
+            </button>
           </div>
 
-          <div className="hidden xl:flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500">
+          <div className="hidden 2xl:flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 font-medium">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Fase 2 Aktif: SPH &amp; Aging Piutang</span>
+              <span>Fase 4 Aktif: Analisis Silang &amp; Tren Bulanan</span>
             </span>
           </div>
         </div>
@@ -1391,6 +1438,39 @@ export const RekapPage: React.FC = () => {
             )}
           </BentoCard>
         </div>
+      )}
+
+      {/* Tab 7: Rekap SPH Unbilled */}
+      {activeTab === 'UNBILLED' && (
+        <RekapUnbilledSphView
+          filters={filters}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onCustomerClick={(id, name) => setStatementCustomer({ id, name })}
+          onNavigate={(path) => navigate(path)}
+        />
+      )}
+
+      {/* Tab 8: Subledger Pelunasan Faktur */}
+      {activeTab === 'SETTLEMENTS' && (
+        <RekapSettlementsView
+          filters={filters}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onCustomerClick={(id, name) => setStatementCustomer({ id, name })}
+          onNavigate={(path) => navigate(path)}
+        />
+      )}
+
+      {/* Tab 9: Tren Bulanan & MoM */}
+      {activeTab === 'TREND' && (
+        <RekapMonthlyTrendView
+          filters={filters}
+          onCustomerClick={(id, name) => setStatementCustomer({ id, name })}
+          onNavigate={(path) => navigate(path)}
+        />
       )}
 
       {/* Customer Financial Statement Drawer */}

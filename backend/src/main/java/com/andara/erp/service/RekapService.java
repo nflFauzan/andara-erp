@@ -4,6 +4,10 @@ import com.andara.erp.common.exception.AppException;
 import com.andara.erp.common.exception.ErrorCode;
 import com.andara.erp.dto.rekap.CustomerStatementDTO;
 import com.andara.erp.dto.rekap.CustomerStatementItemDTO;
+import com.andara.erp.dto.rekap.InvoiceSettlementAllocationDTO;
+import com.andara.erp.dto.rekap.InvoiceSettlementDTO;
+import com.andara.erp.dto.rekap.InvoiceSettlementSummaryDTO;
+import com.andara.erp.dto.rekap.MonthlyTrendItemDTO;
 import com.andara.erp.dto.rekap.RekapCustomerDTO;
 import com.andara.erp.dto.rekap.RekapCustomerSummaryDTO;
 import com.andara.erp.dto.rekap.RekapInvoiceDTO;
@@ -16,6 +20,9 @@ import com.andara.erp.dto.rekap.RekapPenawaranDTO;
 import com.andara.erp.dto.rekap.RekapPenawaranSummaryDTO;
 import com.andara.erp.dto.rekap.RekapPiutangDTO;
 import com.andara.erp.dto.rekap.RekapPiutangSummaryDTO;
+import com.andara.erp.dto.rekap.RekapUnbilledSphDTO;
+import com.andara.erp.dto.rekap.RekapUnbilledSummaryDTO;
+import com.andara.erp.dto.rekap.YearlyTrendSummaryDTO;
 import com.andara.erp.entity.Customer;
 import com.andara.erp.entity.DepositTransaction;
 import com.andara.erp.entity.Invoice;
@@ -842,5 +849,429 @@ public class RekapService {
             case "DEPOSIT": return 5;
             default: return 10;
         }
+    }
+
+    @Transactional(readOnly = true)
+    public RekapUnbilledSummaryDTO getRekapUnbilledSph(
+            LocalDate startDate,
+            LocalDate endDate,
+            Long customerId,
+            String billingStatus,
+            String search,
+            Pageable pageable
+    ) {
+        LocalDate effectiveStart = startDate != null ? startDate : LocalDate.of(2000, 1, 1);
+        LocalDate effectiveEnd = endDate != null ? endDate : LocalDate.of(2099, 12, 31);
+
+        List<Penawaran> penawaranList = penawaranRepository.findAll();
+        String searchPattern = (search != null && !search.trim().isEmpty())
+                ? search.trim().toLowerCase()
+                : null;
+
+        List<RekapUnbilledSphDTO> allList = new ArrayList<>();
+        int totalApprovedSph = 0;
+        int unbilledCount = 0;
+        int partiallyBilledCount = 0;
+        int fullyBilledCount = 0;
+        BigDecimal grandTotalSphAmount = BigDecimal.ZERO;
+        BigDecimal grandTotalInvoicedAmount = BigDecimal.ZERO;
+        BigDecimal grandTotalUnbilledAmount = BigDecimal.ZERO;
+
+        for (Penawaran p : penawaranList) {
+            if (p.getStatus() == PenawaranStatus.CANCELLED) {
+                continue;
+            }
+
+            LocalDate pDate = p.getDate();
+            if (pDate == null || pDate.isBefore(effectiveStart) || pDate.isAfter(effectiveEnd)) {
+                continue;
+            }
+
+            if (customerId != null && (p.getCustomer() == null || !customerId.equals(p.getCustomer().getId()))) {
+                continue;
+            }
+
+            List<Invoice> invoices = invoiceRepository.findBySourcePenawaranId(p.getId());
+            BigDecimal totalInvoiced = BigDecimal.ZERO;
+            List<RekapUnbilledSphDTO.InvoiceBriefDTO> invoiceBriefs = new ArrayList<>();
+
+            for (Invoice inv : invoices) {
+                if (inv.getStatus() != InvoiceStatus.CANCELLED) {
+                    BigDecimal invAmount = inv.getTotalAmount() != null ? inv.getTotalAmount() : BigDecimal.ZERO;
+                    totalInvoiced = totalInvoiced.add(invAmount);
+                    invoiceBriefs.add(new RekapUnbilledSphDTO.InvoiceBriefDTO(
+                            inv.getId(),
+                            inv.getNumber(),
+                            inv.getDate(),
+                            invAmount,
+                            inv.getPaymentStatus() != null ? inv.getPaymentStatus().name() : inv.getStatus().name()
+                    ));
+                }
+            }
+
+            BigDecimal sphTotal = p.getTotalAmount() != null ? p.getTotalAmount() : BigDecimal.ZERO;
+            BigDecimal unbilled = sphTotal.subtract(totalInvoiced).max(BigDecimal.ZERO);
+            double pct = sphTotal.compareTo(BigDecimal.ZERO) > 0
+                    ? totalInvoiced.multiply(BigDecimal.valueOf(100)).divide(sphTotal, 2, java.math.RoundingMode.HALF_UP).doubleValue()
+                    : (totalInvoiced.compareTo(BigDecimal.ZERO) > 0 ? 100.0 : 0.0);
+
+            String statusGroup;
+            if (totalInvoiced.compareTo(BigDecimal.ZERO) == 0) {
+                statusGroup = "UNBILLED";
+                unbilledCount++;
+            } else if (totalInvoiced.compareTo(sphTotal) >= 0) {
+                statusGroup = "FULLY_BILLED";
+                fullyBilledCount++;
+            } else {
+                statusGroup = "PARTIALLY_BILLED";
+                partiallyBilledCount++;
+            }
+
+            totalApprovedSph++;
+            grandTotalSphAmount = grandTotalSphAmount.add(sphTotal);
+            grandTotalInvoicedAmount = grandTotalInvoicedAmount.add(totalInvoiced);
+            grandTotalUnbilledAmount = grandTotalUnbilledAmount.add(unbilled);
+
+            if (billingStatus != null && !billingStatus.trim().isEmpty() && !"ALL".equalsIgnoreCase(billingStatus)) {
+                if (!statusGroup.equalsIgnoreCase(billingStatus.trim())) {
+                    continue;
+                }
+            }
+
+            if (searchPattern != null) {
+                boolean matchNo = p.getNumber() != null && p.getNumber().toLowerCase().contains(searchPattern);
+                boolean matchCust = p.getCustomer() != null && (
+                        (p.getCustomer().getName() != null && p.getCustomer().getName().toLowerCase().contains(searchPattern)) ||
+                        (p.getCustomer().getCode() != null && p.getCustomer().getCode().toLowerCase().contains(searchPattern))
+                );
+                if (!matchNo && !matchCust) {
+                    continue;
+                }
+            }
+
+            RekapUnbilledSphDTO dto = new RekapUnbilledSphDTO();
+            dto.setSphId(p.getId());
+            dto.setSphNumber(p.getNumber());
+            dto.setSphDate(p.getDate());
+            dto.setCustomerId(p.getCustomer() != null ? p.getCustomer().getId() : null);
+            dto.setCustomerCode(p.getCustomer() != null ? p.getCustomer().getCode() : "-");
+            dto.setCustomerName(p.getCustomer() != null ? p.getCustomer().getName() : "-");
+            dto.setCompanyName(p.getCustomer() != null ? p.getCustomer().getCompanyName() : null);
+            dto.setStatus(p.getStatus() != null ? p.getStatus().name() : "DRAFT");
+            dto.setTotalSphAmount(sphTotal);
+            dto.setTotalInvoicedAmount(totalInvoiced);
+            dto.setUnbilledAmount(unbilled);
+            dto.setBilledPercentage(pct);
+            dto.setBillingStatus(statusGroup);
+            dto.setInvoiceCount(invoiceBriefs.size());
+            dto.setInvoices(invoiceBriefs);
+
+            allList.add(dto);
+        }
+
+        allList.sort((a, b) -> b.getUnbilledAmount().compareTo(a.getUnbilledAmount()));
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), allList.size());
+        List<RekapUnbilledSphDTO> pageContent = (start <= end && start < allList.size())
+                ? allList.subList(start, end)
+                : Collections.emptyList();
+
+        Page<RekapUnbilledSphDTO> pagedResult = new PageImpl<>(pageContent, pageable, allList.size());
+
+        return new RekapUnbilledSummaryDTO(
+                pagedResult,
+                totalApprovedSph,
+                unbilledCount,
+                partiallyBilledCount,
+                fullyBilledCount,
+                grandTotalSphAmount,
+                grandTotalInvoicedAmount,
+                grandTotalUnbilledAmount
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public InvoiceSettlementSummaryDTO getRekapInvoiceSettlements(
+            LocalDate startDate,
+            LocalDate endDate,
+            Long customerId,
+            String paymentStatus,
+            String search,
+            Pageable pageable
+    ) {
+        LocalDate effectiveStart = startDate != null ? startDate : LocalDate.of(2000, 1, 1);
+        LocalDate effectiveEnd = endDate != null ? endDate : LocalDate.of(2099, 12, 31);
+
+        List<Invoice> invoiceList = invoiceRepository.findAll();
+        String searchPattern = (search != null && !search.trim().isEmpty())
+                ? search.trim().toLowerCase()
+                : null;
+
+        List<InvoiceSettlementDTO> allList = new ArrayList<>();
+        BigDecimal grandTotalAmount = BigDecimal.ZERO;
+        BigDecimal grandTotalPaidAmount = BigDecimal.ZERO;
+        BigDecimal grandTotalOutstanding = BigDecimal.ZERO;
+
+        for (Invoice inv : invoiceList) {
+            if (inv.getStatus() == InvoiceStatus.CANCELLED) {
+                continue;
+            }
+
+            LocalDate invDate = inv.getDate();
+            if (invDate == null || invDate.isBefore(effectiveStart) || invDate.isAfter(effectiveEnd)) {
+                continue;
+            }
+
+            if (customerId != null && (inv.getCustomer() == null || !customerId.equals(inv.getCustomer().getId()))) {
+                continue;
+            }
+
+            if (paymentStatus != null && !paymentStatus.trim().isEmpty() && !"ALL".equalsIgnoreCase(paymentStatus)) {
+                if (inv.getPaymentStatus() == null || !inv.getPaymentStatus().name().equalsIgnoreCase(paymentStatus.trim())) {
+                    continue;
+                }
+            }
+
+            if (searchPattern != null) {
+                boolean matchNo = inv.getNumber() != null && inv.getNumber().toLowerCase().contains(searchPattern);
+                boolean matchCust = inv.getCustomer() != null && (
+                        (inv.getCustomer().getName() != null && inv.getCustomer().getName().toLowerCase().contains(searchPattern)) ||
+                        (inv.getCustomer().getCode() != null && inv.getCustomer().getCode().toLowerCase().contains(searchPattern))
+                );
+                if (!matchNo && !matchCust) {
+                    continue;
+                }
+            }
+
+            BigDecimal totalAmount = inv.getTotalAmount() != null ? inv.getTotalAmount() : BigDecimal.ZERO;
+            BigDecimal paidAmount = inv.getPaidAmount() != null ? inv.getPaidAmount() : BigDecimal.ZERO;
+            BigDecimal outstanding = totalAmount.subtract(paidAmount).max(BigDecimal.ZERO);
+
+            grandTotalAmount = grandTotalAmount.add(totalAmount);
+            grandTotalPaidAmount = grandTotalPaidAmount.add(paidAmount);
+            grandTotalOutstanding = grandTotalOutstanding.add(outstanding);
+
+            List<PaymentAllocation> allocations = paymentAllocationRepository.findByInvoiceId(inv.getId());
+            List<InvoiceSettlementAllocationDTO> allocationDTOs = new ArrayList<>();
+
+            for (PaymentAllocation pa : allocations) {
+                Payment pay = pa.getPayment();
+                if (pay != null && pay.getStatus() != PaymentStatus.CANCELLED) {
+                    allocationDTOs.add(new InvoiceSettlementAllocationDTO(
+                            pay.getId(),
+                            pay.getNumber(),
+                            pay.getDate(),
+                            pay.getAmount(),
+                            pa.getAmount(),
+                            pay.getPaymentMethod() != null ? pay.getPaymentMethod().name() : "OTHER",
+                            pay.getDestinationAccount(),
+                            pa.getNotes()
+                    ));
+                }
+            }
+
+            InvoiceSettlementDTO dto = new InvoiceSettlementDTO();
+            dto.setInvoiceId(inv.getId());
+            dto.setInvoiceNumber(inv.getNumber());
+            dto.setInvoiceDate(inv.getDate());
+            dto.setDueDate(inv.getDueDate());
+            dto.setCustomerId(inv.getCustomer() != null ? inv.getCustomer().getId() : null);
+            dto.setCustomerCode(inv.getCustomer() != null ? inv.getCustomer().getCode() : "-");
+            dto.setCustomerName(inv.getCustomer() != null ? inv.getCustomer().getName() : "-");
+            dto.setCompanyName(inv.getCustomer() != null ? inv.getCustomer().getCompanyName() : null);
+            dto.setInvoiceStatus(inv.getStatus() != null ? inv.getStatus().name() : "DRAFT");
+            dto.setPaymentStatus(inv.getPaymentStatus() != null ? inv.getPaymentStatus().name() : "UNPAID");
+            dto.setTotalAmount(totalAmount);
+            dto.setPaidAmount(paidAmount);
+            dto.setOutstanding(outstanding);
+            dto.setAllocations(allocationDTOs);
+
+            allList.add(dto);
+        }
+
+        allList.sort((a, b) -> b.getInvoiceDate().compareTo(a.getInvoiceDate()));
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), allList.size());
+        List<InvoiceSettlementDTO> pageContent = (start <= end && start < allList.size())
+                ? allList.subList(start, end)
+                : Collections.emptyList();
+
+        Page<InvoiceSettlementDTO> pagedResult = new PageImpl<>(pageContent, pageable, allList.size());
+
+        return new InvoiceSettlementSummaryDTO(
+                pagedResult,
+                allList.size(),
+                grandTotalAmount,
+                grandTotalPaidAmount,
+                grandTotalOutstanding
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public YearlyTrendSummaryDTO getMonthlyTrend(int year, Long customerId) {
+        String[] monthNames = {
+                "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+        };
+
+        YearlyTrendSummaryDTO summary = new YearlyTrendSummaryDTO();
+        summary.setYear(year);
+        summary.setCustomerId(customerId);
+        if (customerId != null) {
+            customerRepository.findById(customerId).ifPresent(c -> summary.setCustomerName(c.getName()));
+        }
+
+        List<MonthlyTrendItemDTO> monthlyList = new ArrayList<>();
+        BigDecimal totalKegiatan = BigDecimal.ZERO;
+        BigDecimal totalSph = BigDecimal.ZERO;
+        BigDecimal totalInvoice = BigDecimal.ZERO;
+        BigDecimal totalPayment = BigDecimal.ZERO;
+        BigDecimal totalOutstanding = BigDecimal.ZERO;
+
+        BigDecimal prevInvoiceAmount = null;
+        BigDecimal prevPaymentAmount = null;
+
+        int peakInvMonth = 1;
+        BigDecimal peakInvAmount = BigDecimal.ZERO;
+        int peakPayMonth = 1;
+        BigDecimal peakPayAmount = BigDecimal.ZERO;
+
+        double sumCollectionRate = 0.0;
+        int validRateMonths = 0;
+
+        for (int m = 1; m <= 12; m++) {
+            LocalDate mStart = LocalDate.of(year, m, 1);
+            LocalDate mEnd = mStart.withDayOfMonth(mStart.lengthOfMonth());
+
+            OffsetDateTime mStartOdt = mStart.atStartOfDay().atOffset(ZoneOffset.UTC);
+            OffsetDateTime mEndOdt = mEnd.atTime(LocalTime.MAX).atOffset(ZoneOffset.UTC);
+
+            List<Kegiatan> kList = customerId != null
+                    ? kegiatanRepository.findByCustomerIdOrderByCreatedAtDesc(customerId)
+                    : kegiatanRepository.findAll();
+            int kCount = 0;
+            BigDecimal kAmount = BigDecimal.ZERO;
+            for (Kegiatan k : kList) {
+                if (k.getCreatedAt() != null && !k.getCreatedAt().isBefore(mStartOdt) && !k.getCreatedAt().isAfter(mEndOdt)) {
+                    kCount++;
+                    kAmount = kAmount.add(k.getTotalAmount() != null ? k.getTotalAmount() : BigDecimal.ZERO);
+                }
+            }
+
+            List<Penawaran> pList = customerId != null
+                    ? penawaranRepository.findByCustomerIdOrderByDateDesc(customerId)
+                    : penawaranRepository.findAll();
+            int sphCount = 0;
+            BigDecimal sphAmount = BigDecimal.ZERO;
+            for (Penawaran p : pList) {
+                if (p.getStatus() != PenawaranStatus.CANCELLED && p.getDate() != null && !p.getDate().isBefore(mStart) && !p.getDate().isAfter(mEnd)) {
+                    sphCount++;
+                    sphAmount = sphAmount.add(p.getTotalAmount() != null ? p.getTotalAmount() : BigDecimal.ZERO);
+                }
+            }
+
+            List<Invoice> invList = customerId != null
+                    ? invoiceRepository.findByCustomerIdOrderByDateDesc(customerId)
+                    : invoiceRepository.findAll();
+            int invCount = 0;
+            BigDecimal invAmount = BigDecimal.ZERO;
+            BigDecimal invOutstanding = BigDecimal.ZERO;
+            for (Invoice inv : invList) {
+                if (inv.getStatus() != InvoiceStatus.CANCELLED && inv.getDate() != null && !inv.getDate().isBefore(mStart) && !inv.getDate().isAfter(mEnd)) {
+                    invCount++;
+                    BigDecimal total = inv.getTotalAmount() != null ? inv.getTotalAmount() : BigDecimal.ZERO;
+                    BigDecimal paid = inv.getPaidAmount() != null ? inv.getPaidAmount() : BigDecimal.ZERO;
+                    invAmount = invAmount.add(total);
+                    invOutstanding = invOutstanding.add(total.subtract(paid).max(BigDecimal.ZERO));
+                }
+            }
+
+            List<Payment> payList = customerId != null
+                    ? paymentRepository.findByCustomerIdOrderByDateDesc(customerId)
+                    : paymentRepository.findAll();
+            int payCount = 0;
+            BigDecimal payAmount = BigDecimal.ZERO;
+            for (Payment pay : payList) {
+                if (pay.getStatus() == PaymentStatus.CONFIRMED && pay.getDate() != null && !pay.getDate().isBefore(mStart) && !pay.getDate().isAfter(mEnd)) {
+                    payCount++;
+                    payAmount = payAmount.add(pay.getAmount() != null ? pay.getAmount() : BigDecimal.ZERO);
+                }
+            }
+
+            Double momInv = null;
+            if (prevInvoiceAmount != null && prevInvoiceAmount.compareTo(BigDecimal.ZERO) > 0) {
+                momInv = invAmount.subtract(prevInvoiceAmount)
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(prevInvoiceAmount, 2, java.math.RoundingMode.HALF_UP)
+                        .doubleValue();
+            }
+            Double momPay = null;
+            if (prevPaymentAmount != null && prevPaymentAmount.compareTo(BigDecimal.ZERO) > 0) {
+                momPay = payAmount.subtract(prevPaymentAmount)
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(prevPaymentAmount, 2, java.math.RoundingMode.HALF_UP)
+                        .doubleValue();
+            }
+
+            Double collectionRate = null;
+            if (invAmount.compareTo(BigDecimal.ZERO) > 0) {
+                collectionRate = payAmount.multiply(BigDecimal.valueOf(100))
+                        .divide(invAmount, 2, java.math.RoundingMode.HALF_UP)
+                        .doubleValue();
+                sumCollectionRate += collectionRate;
+                validRateMonths++;
+            }
+
+            if (invAmount.compareTo(peakInvAmount) > 0) {
+                peakInvAmount = invAmount;
+                peakInvMonth = m;
+            }
+            if (payAmount.compareTo(peakPayAmount) > 0) {
+                peakPayAmount = payAmount;
+                peakPayMonth = m;
+            }
+
+            prevInvoiceAmount = invAmount;
+            prevPaymentAmount = payAmount;
+
+            totalKegiatan = totalKegiatan.add(kAmount);
+            totalSph = totalSph.add(sphAmount);
+            totalInvoice = totalInvoice.add(invAmount);
+            totalPayment = totalPayment.add(payAmount);
+            totalOutstanding = totalOutstanding.add(invOutstanding);
+
+            monthlyList.add(new MonthlyTrendItemDTO(
+                    m,
+                    monthNames[m - 1],
+                    kCount,
+                    kAmount,
+                    sphCount,
+                    sphAmount,
+                    invCount,
+                    invAmount,
+                    payCount,
+                    payAmount,
+                    invOutstanding,
+                    momInv,
+                    momPay,
+                    collectionRate
+            ));
+        }
+
+        summary.setTotalKegiatanAmount(totalKegiatan);
+        summary.setTotalSphAmount(totalSph);
+        summary.setTotalInvoiceAmount(totalInvoice);
+        summary.setTotalPaymentAmount(totalPayment);
+        summary.setTotalOutstandingAmount(totalOutstanding);
+        summary.setAverageCollectionRate(validRateMonths > 0 ? (sumCollectionRate / validRateMonths) : 0.0);
+        summary.setPeakInvoiceMonth(peakInvMonth);
+        summary.setPeakInvoiceMonthName(monthNames[peakInvMonth - 1]);
+        summary.setPeakPaymentMonth(peakPayMonth);
+        summary.setPeakPaymentMonthName(monthNames[peakPayMonth - 1]);
+        summary.setMonthlyData(monthlyList);
+
+        return summary;
     }
 }

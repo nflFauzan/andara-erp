@@ -7,6 +7,9 @@ import {
   RekapPenawaranSummary,
   RekapPiutangSummary,
   CustomerStatement,
+  RekapUnbilledSummary,
+  InvoiceSettlementSummary,
+  YearlyTrendSummary,
 } from '@/types/rekap';
 
 export const getRekapCustomers = async (params?: {
@@ -117,4 +120,49 @@ export const getCustomerStatement = async (
   );
   return response.data.data;
 };
+
+// Fase 4 Endpoints
+export const getRekapUnbilledSph = async (params?: {
+  startDate?: string;
+  endDate?: string;
+  customerId?: number;
+  billingStatus?: string;
+  search?: string;
+  page?: number;
+  size?: number;
+}): Promise<RekapUnbilledSummary> => {
+  const response = await api.get<{ success: boolean; data: RekapUnbilledSummary }>(
+    '/rekap/unbilled-sph',
+    { params }
+  );
+  return response.data.data;
+};
+
+export const getRekapInvoiceSettlements = async (params?: {
+  startDate?: string;
+  endDate?: string;
+  customerId?: number;
+  paymentStatus?: string;
+  search?: string;
+  page?: number;
+  size?: number;
+}): Promise<InvoiceSettlementSummary> => {
+  const response = await api.get<{ success: boolean; data: InvoiceSettlementSummary }>(
+    '/rekap/invoice-settlements',
+    { params }
+  );
+  return response.data.data;
+};
+
+export const getMonthlyTrend = async (params?: {
+  year?: number;
+  customerId?: number;
+}): Promise<YearlyTrendSummary> => {
+  const response = await api.get<{ success: boolean; data: YearlyTrendSummary }>(
+    '/rekap/monthly-trend',
+    { params }
+  );
+  return response.data.data;
+};
+
 

@@ -30,7 +30,16 @@ export interface FilterState {
   search: string;
 }
 
-export type RekapTab = 'CUSTOMERS' | 'KEGIATAN' | 'INVOICES' | 'PAYMENTS' | 'SPH' | 'PIUTANG';
+export type RekapTab =
+  | 'CUSTOMERS'
+  | 'KEGIATAN'
+  | 'INVOICES'
+  | 'PAYMENTS'
+  | 'SPH'
+  | 'PIUTANG'
+  | 'UNBILLED'
+  | 'SETTLEMENTS'
+  | 'TREND';
 
 interface UniversalPeriodFilterProps {
   filters: FilterState;
@@ -230,6 +239,30 @@ export const UniversalPeriodFilter: React.FC<UniversalPeriodFilterProps> = ({
             <option value="DAYS_OVER_90">&gt; 90 Hari</option>
           </>
         );
+      case 'UNBILLED':
+        return (
+          <>
+            <option value="">Semua Status Penagihan</option>
+            <option value="UNBILLED">Belum Ditagih (0% Billed)</option>
+            <option value="PARTIALLY_BILLED">Sebagian Ditagih (&gt;0% &lt;100%)</option>
+            <option value="FULLY_BILLED">Lengkap Ditagih (100% Billed)</option>
+          </>
+        );
+      case 'SETTLEMENTS':
+        return (
+          <>
+            <option value="">Semua Status Pelunasan</option>
+            <option value="UNPAID">Belum Dibayar (Unpaid)</option>
+            <option value="PARTIALLY_PAID">Sebagian Dibayar (Cicilan)</option>
+            <option value="PAID">Lunas (Paid)</option>
+          </>
+        );
+      case 'TREND':
+        return (
+          <>
+            <option value="">Semua Kuartal / Bulan</option>
+          </>
+        );
       case 'CUSTOMERS':
       default:
         return (
@@ -257,10 +290,17 @@ export const UniversalPeriodFilter: React.FC<UniversalPeriodFilterProps> = ({
         return 'Periode disaring berdasarkan tanggal surat penawaran harga (penawaran.date).';
       case 'PIUTANG':
         return 'Periode disaring berdasarkan tanggal jatuh tempo faktur (invoice.dueDate).';
+      case 'UNBILLED':
+        return 'Komparasi SPH disetujui terhadap nilai invoice terbit untuk deteksi dini penagihan tertunda (leakage).';
+      case 'SETTLEMENTS':
+        return 'Matriks silang faktur penjualan beserta seluruh jejak riwayat alokasi kas/bank pelunas.';
+      case 'TREND':
+        return 'Distribusi 12-bulan akumulasi SPH, penerbitan invoice, penerimaan kas nyata, dan tren MoM.';
       default:
         return 'Data dihitung secara otomatis berdasarkan kebenaran transaksi database.';
     }
   };
+
 
   // Quick preset pills to display
   const primaryPresets: PeriodPreset[] = ['ALL_TIME', 'THIS_MONTH', 'LAST_MONTH', 'THIS_YEAR', 'CUSTOM'];
