@@ -93,7 +93,6 @@ export const PenawaranFormPage: React.FC = () => {
     },
   ]);
 
-  // Modal for quick adding master item and customer
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isImportKegiatanModalOpen, setIsImportKegiatanModalOpen] = useState(false);
@@ -101,6 +100,9 @@ export const PenawaranFormPage: React.FC = () => {
   const [targetItemTempId, setTargetItemTempId] = useState<string | null>(null);
   const [prefillItemName, setPrefillItemName] = useState<string>('');
   const [prefillCustomerName, setPrefillCustomerName] = useState<string>('');
+
+  const [isSubmittingCustomer, setIsSubmittingCustomer] = useState(false);
+  const [isSubmittingItem, setIsSubmittingItem] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEdit);
@@ -422,6 +424,7 @@ export const PenawaranFormPage: React.FC = () => {
   // Quick create master item modal submit
   const handleCreateMasterItemSubmit = async (formData: CreateItemCatalogInput | UpdateItemCatalogInput) => {
     try {
+      setIsSubmittingItem(true);
       const createdItem = await itemCatalogApi.createItem(formData as CreateItemCatalogInput);
       await refetchMasterItems();
       queryClient.invalidateQueries({ queryKey: ['active-master-items'] });
@@ -459,12 +462,15 @@ export const PenawaranFormPage: React.FC = () => {
       setTimeout(() => setFeedbackMsg(null), 4000);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Gagal menyimpan item ke Master Data.');
+    } finally {
+      setIsSubmittingItem(false);
     }
   };
 
   // Quick create customer modal submit
   const handleCreateCustomerSubmit = async (formData: CreateCustomerInput | UpdateCustomerInput) => {
     try {
+      setIsSubmittingCustomer(true);
       const createdCustomer = await customerApi.createCustomer(formData as CreateCustomerInput);
       await refetchCustomers();
       queryClient.invalidateQueries({ queryKey: ['active-customers'] });
@@ -478,6 +484,8 @@ export const PenawaranFormPage: React.FC = () => {
       setTimeout(() => setFeedbackMsg(null), 4000);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Gagal menambahkan customer baru.');
+    } finally {
+      setIsSubmittingCustomer(false);
     }
   };
 
@@ -591,8 +599,9 @@ export const PenawaranFormPage: React.FC = () => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-6xl mx-auto pb-16">
-      {/* Top Header */}
+    <div className="space-y-6 max-w-6xl mx-auto pb-16">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Top Header */}
       <PageHeader
         icon={Calculator}
         backUrl="/penawaran"
@@ -1012,10 +1021,12 @@ export const PenawaranFormPage: React.FC = () => {
           </button>
         </div>
       </div>
+    </form>
 
       {/* Quick Add Master Item Modal */}
       <ItemCatalogModal
         isOpen={isAddItemModalOpen}
+        isLoading={isSubmittingItem}
         onClose={() => {
           setIsAddItemModalOpen(false);
           setTargetKegiatanTempId(null);
@@ -1041,6 +1052,7 @@ export const PenawaranFormPage: React.FC = () => {
       {/* Quick Add Customer Modal */}
       <CustomerModal
         isOpen={isCustomerModalOpen}
+        isLoading={isSubmittingCustomer}
         onClose={() => {
           setIsCustomerModalOpen(false);
           setPrefillCustomerName('');
@@ -1048,6 +1060,6 @@ export const PenawaranFormPage: React.FC = () => {
         onSubmit={handleCreateCustomerSubmit}
         initialName={prefillCustomerName}
       />
-    </form>
+    </div>
   );
 };

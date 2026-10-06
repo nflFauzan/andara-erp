@@ -125,6 +125,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             disabled={isLoading}
             className="w-8 h-8 rounded-xl bg-neu-surface border border-neu-border text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 shadow-neu-convex-xs hover:shadow-neu-convex-sm active:shadow-neu-inset-xs transition flex items-center justify-center"
@@ -134,7 +135,12 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
         </div>
 
         {/* Modal Form */}
-        <form onSubmit={handleSubmit(handleFormSubmit)}>
+        <form
+          onSubmit={(e) => {
+            e.stopPropagation();
+            handleSubmit(handleFormSubmit)(e);
+          }}
+        >
           <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
             {/* Grid 1: Kode & Nama */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

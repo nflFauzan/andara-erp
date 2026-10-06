@@ -137,6 +137,7 @@ export const ItemCatalogModal: React.FC<ItemCatalogModalProps> = ({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
           >
@@ -145,7 +146,13 @@ export const ItemCatalogModal: React.FC<ItemCatalogModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit(onFormSubmit)} className="p-6 space-y-4">
+        <form
+          onSubmit={(e) => {
+            e.stopPropagation();
+            handleSubmit(onFormSubmit)(e);
+          }}
+          className="p-6 space-y-4"
+        >
           {/* Row 1: Code & Category */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

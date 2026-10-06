@@ -159,14 +159,16 @@ export const CustomerSmartInput: React.FC<CustomerSmartInputProps> = ({
     }
 
     if (e.key === 'Enter') {
+      e.preventDefault();
       if (isOpen) {
-        e.preventDefault();
         if (highlightedIndex >= 0 && highlightedIndex < filteredCustomers.length) {
           handleSelect(filteredCustomers[highlightedIndex]);
         } else if (highlightedIndex === createActionIndex) {
           handleCreateNew();
         } else if (filteredCustomers.length === 1) {
           handleSelect(filteredCustomers[0]);
+        } else if (filteredCustomers.length === 0 && inputValue.trim()) {
+          handleCreateNew();
         }
       }
       return;

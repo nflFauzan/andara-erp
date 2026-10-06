@@ -89,7 +89,8 @@ public interface PenawaranRepository extends JpaRepository<Penawaran, Long> {
             "JOIN p.customer c " +
             "WHERE (:customerId IS NULL OR p.customer.id = :customerId) " +
             "AND (:status IS NULL OR p.status = :status) " +
-            "AND p.date BETWEEN :startDate AND :endDate " +
+            "AND (:startDate IS NULL OR p.date >= :startDate) " +
+            "AND (:endDate IS NULL OR p.date <= :endDate) " +
             "AND (:searchPattern IS NULL OR (" +
             "   LOWER(p.number) LIKE :searchPattern OR " +
             "   LOWER(c.name) LIKE :searchPattern OR " +
