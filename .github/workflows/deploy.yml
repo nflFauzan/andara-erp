@@ -5,7 +5,6 @@ on:
     branches:
       - main
 
-# Hanya satu deployment berjalan dalam satu waktu
 concurrency:
   group: production-deploy
   cancel-in-progress: false
@@ -17,11 +16,9 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      # -------------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # -------------------------------------------------------
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -36,13 +33,11 @@ jobs:
           if echo "$RAW_KEY" | grep -q "BEGIN.*PRIVATE KEY"; then
             echo "$RAW_KEY" | tr -d '\r' > ~/.ssh/id_deploy
           else
-            # Support base64 encoded private key jika user menyimpannya dalam format base64
             echo "$RAW_KEY" | base64 -d | tr -d '\r' > ~/.ssh/id_deploy 2>/dev/null || echo "$RAW_KEY" | tr -d '\r' > ~/.ssh/id_deploy
           fi
           echo "" >> ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
 
-          # Validasi format key sebelum digunakan
           if ! ssh-keygen -l -f ~/.ssh/id_deploy > /dev/null 2>&1; then
             echo "::error::Format SSH_PRIVATE_KEY tidak valid. Pastikan yang dimasukkan adalah PRIVATE KEY (bukan .pub atau token)."
             exit 1
@@ -61,7 +56,6 @@ jobs:
           EOF
           chmod 600 ~/.ssh/config
 
-      # -------------------------------------------------------
       - name: Deploy ke VPS
         run: |
           ssh root@202.155.14.98 << 'ENDSSH'
@@ -69,7 +63,6 @@ jobs:
 
             echo "=== [1/4] Update kode dari repository ==="
             cd /opt/andara-erp
-            # Buang perubahan lokal pada VPS jika ada agar tidak konflik merge
             git reset --hard HEAD
             git fetch origin main
             git reset --hard origin/main
@@ -89,26 +82,35 @@ jobs:
             docker compose -f docker-compose.prod.yml --env-file .env ps
           ENDSSH
 
-      # -------------------------------------------------------
       - name: Health Check — Pastikan aplikasi berjalan
         run: |
           echo "Menunggu aplikasi siap..."
-          sleep 15
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            --max-time 30 \
-            https://cvandaraerp.web.id/actuator/health || echo "000")
+          MAX_ATTEMPTS=15
+          ATTEMPT=0
 
-          echo "HTTP Status: ${HTTP_STATUS}"
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              --connect-timeout 5 \
+              --max-time 10 \
+              https://cvandaraerp.web.id/actuator/health || echo "000")
 
-          if [ "${HTTP_STATUS}" = "200" ]; then
-            echo "✅ Deployment berhasil! Aplikasi berjalan normal."
-          else
-            echo "❌ Health check gagal (status: ${HTTP_STATUS})"
-            echo "Cek log: ssh root@202.155.14.98 'docker compose -f /opt/andara-erp/docker-compose.prod.yml logs --tail=50 backend'"
-            exit 1
-          fi
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: HTTP Status $HTTP_STATUS"
 
-      # -------------------------------------------------------
+            if [ "${HTTP_STATUS}" = "200" ]; then
+              echo "✅ Deployment berhasil! Aplikasi berjalan normal."
+              exit 0
+            fi
+
+            if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+              sleep 4
+            fi
+          done
+
+          echo "❌ Health check tetap gagal setelah 15x attempt (60 detik)"
+          echo "Cek log: ssh root@202.155.14.98 'docker compose -f /opt/andara-erp/docker-compose.prod.yml logs --tail=100 backend'"
+          exit 1
+
       - name: Notifikasi sukses (ringkasan)
         if: success()
         run: |
