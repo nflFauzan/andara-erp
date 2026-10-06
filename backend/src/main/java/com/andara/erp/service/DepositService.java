@@ -44,8 +44,9 @@ public class DepositService {
 
     @Transactional(readOnly = true)
     public BigDecimal getDepositBalance(Long customerId) {
-        Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new AppException(ErrorCode.CUSTOMER_NOT_FOUND, "Customer dengan ID " + customerId + " tidak ditemukan"));
+        if (!customerRepository.existsById(customerId)) {
+            throw new AppException(ErrorCode.CUSTOMER_NOT_FOUND, "Customer dengan ID " + customerId + " tidak ditemukan");
+        }
         BigDecimal ledgerBalance = depositTransactionRepository.calculateCurrentBalanceByCustomerId(customerId);
         return ledgerBalance != null ? ledgerBalance : BigDecimal.ZERO;
     }
