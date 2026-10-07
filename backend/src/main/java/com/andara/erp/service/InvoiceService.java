@@ -213,6 +213,21 @@ public class InvoiceService {
         invoice.setSourcePenawaran(sourcePenawaran);
         invoice.setDate(date);
         invoice.setDueDate(request.getDueDate());
+        invoice.setClientPoNumber(request.getClientPoNumber() != null ? request.getClientPoNumber().trim() : null);
+        invoice.setClientSpkNumber(request.getClientSpkNumber() != null ? request.getClientSpkNumber().trim() : null);
+        invoice.setBastNumber(request.getBastNumber() != null ? request.getBastNumber().trim() : null);
+        if (request.getTaxPpnType() != null) {
+            invoice.setTaxPpnType(request.getTaxPpnType());
+        }
+        if (request.getTaxPpnRate() != null) {
+            invoice.setTaxPpnRate(request.getTaxPpnRate());
+        }
+        if (request.getTaxPphType() != null) {
+            invoice.setTaxPphType(request.getTaxPphType());
+        }
+        if (request.getTaxPphRate() != null) {
+            invoice.setTaxPphRate(request.getTaxPphRate());
+        }
         invoice.setStatus(InvoiceStatus.DRAFT);
         invoice.setPaymentStatus(InvoicePaymentStatus.UNPAID);
         invoice.setPaidAmount(BigDecimal.ZERO);
@@ -264,6 +279,21 @@ public class InvoiceService {
             invoice.setDate(request.getDate());
         }
         invoice.setDueDate(request.getDueDate());
+        invoice.setClientPoNumber(request.getClientPoNumber() != null ? request.getClientPoNumber().trim() : null);
+        invoice.setClientSpkNumber(request.getClientSpkNumber() != null ? request.getClientSpkNumber().trim() : null);
+        invoice.setBastNumber(request.getBastNumber() != null ? request.getBastNumber().trim() : null);
+        if (request.getTaxPpnType() != null) {
+            invoice.setTaxPpnType(request.getTaxPpnType());
+        }
+        if (request.getTaxPpnRate() != null) {
+            invoice.setTaxPpnRate(request.getTaxPpnRate());
+        }
+        if (request.getTaxPphType() != null) {
+            invoice.setTaxPphType(request.getTaxPphType());
+        }
+        if (request.getTaxPphRate() != null) {
+            invoice.setTaxPphRate(request.getTaxPphRate());
+        }
         invoice.setNotes(request.getNotes());
         invoice.setTerms(request.getTerms());
         invoice.setWorkLocation(request.getWorkLocation());

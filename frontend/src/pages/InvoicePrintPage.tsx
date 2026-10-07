@@ -155,8 +155,10 @@ export const InvoicePrintPage: React.FC = () => {
     );
   }
 
-  // Nominal terbilang dihitung dari sisa tagihan jika ada sisa, atau total tagihan
-  const billableAmount = invoice.outstanding > 0 ? invoice.outstanding : invoice.totalAmount;
+  // Nominal terbilang dihitung dari sisa tagihan jika ada sisa, atau net/total tagihan
+  const billableAmount = invoice.outstanding > 0
+    ? invoice.outstanding
+    : (invoice.netTotalAmount && invoice.netTotalAmount > 0 ? invoice.netTotalAmount : invoice.totalAmount);
   const nominalTerbilang = angkaTerbilang(billableAmount);
 
   // Keterangan pembayaran — prioritas: notes > deskripsi pekerjaan dari detail > fallback
@@ -239,6 +241,31 @@ export const InvoicePrintPage: React.FC = () => {
               <span className="w-[18px] shrink-0 font-bold text-center">:</span>
               <span className="flex-1 font-bold text-black">{invoice.number}</span>
             </div>
+
+            {/* Baris Referensi Dokumen Klien (Jika Ada) */}
+            {invoice.clientPoNumber && (
+              <div className="flex items-baseline px-3 py-0.5">
+                <span className="w-[150px] shrink-0 font-bold">No. PO Klien</span>
+                <span className="w-[18px] shrink-0 font-bold text-center">:</span>
+                <span className="flex-1 font-mono font-bold text-black">{invoice.clientPoNumber}</span>
+              </div>
+            )}
+
+            {invoice.clientSpkNumber && (
+              <div className="flex items-baseline px-3 py-0.5">
+                <span className="w-[150px] shrink-0 font-bold">No. SPK / Kontrak</span>
+                <span className="w-[18px] shrink-0 font-bold text-center">:</span>
+                <span className="flex-1 font-mono font-bold text-black">{invoice.clientSpkNumber}</span>
+              </div>
+            )}
+
+            {invoice.bastNumber && (
+              <div className="flex items-baseline px-3 py-0.5">
+                <span className="w-[150px] shrink-0 font-bold">No. BAST</span>
+                <span className="w-[18px] shrink-0 font-bold text-center">:</span>
+                <span className="flex-1 font-mono font-bold text-black">{invoice.bastNumber}</span>
+              </div>
+            )}
 
             {/* Baris 2: Diajukan Kepada Yth */}
             <div className="flex items-baseline px-3 py-0.5">
@@ -403,13 +430,51 @@ export const InvoicePrintPage: React.FC = () => {
                 ))
               )}
 
-              {/* Baris TOTAL Akumulasi (Sesuai Master Reference: Col 1-3 merged, Col 4 Rp, Col 5 total) */}
+              {/* Baris DPP / Subtotal jika ada PPN */}
+              {invoice.taxPpnType && invoice.taxPpnType !== 'NONE' && (
+                <>
+                  <tr className="border-b border-black font-bold bg-white">
+                    <td
+                      colSpan={3}
+                      className="border-r border-black py-0.5 px-3 text-right font-bold text-black bg-white"
+                    >
+                      {hasGrouping && groups.length > 1 ? `JUMLAH A s/d ${lastGroupLetter} (DPP)` : 'JUMLAH (DPP)'}
+                    </td>
+                    <td className="border-r border-black py-0.5 px-1 text-center font-bold text-black bg-white">
+                      Rp
+                    </td>
+                    <td className="py-0.5 px-2 text-right font-bold text-black bg-white">
+                      {formatNumber(invoice.subtotalDpp || invoice.totalAmount)}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-black font-bold bg-white">
+                    <td
+                      colSpan={3}
+                      className="border-r border-black py-0.5 px-3 text-right font-bold text-black bg-white"
+                    >
+                      PPN {invoice.taxPpnRate}%{invoice.taxPpnType === 'INCLUDE' ? ' (Termasuk)' : ''}
+                    </td>
+                    <td className="border-r border-black py-0.5 px-1 text-center font-bold text-black bg-white">
+                      Rp
+                    </td>
+                    <td className="py-0.5 px-2 text-right font-bold text-black bg-white">
+                      {formatNumber(invoice.taxPpnAmount)}
+                    </td>
+                  </tr>
+                </>
+              )}
+
+              {/* Baris TOTAL Nilai Faktur (Gross) */}
               <tr className="border-b border-black font-bold bg-white">
                 <td
                   colSpan={3}
                   className="border-r border-black py-0.5 px-3 text-right font-bold text-black bg-white"
                 >
-                  {hasGrouping && groups.length > 1 ? `TOTAL A s/d ${lastGroupLetter}` : 'TOTAL'}
+                  {invoice.taxPpnType && invoice.taxPpnType !== 'NONE'
+                    ? 'TOTAL NILAI FAKTUR'
+                    : hasGrouping && groups.length > 1
+                    ? `TOTAL A s/d ${lastGroupLetter}`
+                    : 'TOTAL'}
                 </td>
                 <td className="border-r border-black py-0.5 px-1 text-center font-bold text-black bg-white">
                   Rp
@@ -418,6 +483,40 @@ export const InvoicePrintPage: React.FC = () => {
                   {formatNumber(invoice.totalAmount)}
                 </td>
               </tr>
+
+              {/* Baris Potongan PPh jika ada */}
+              {invoice.taxPphType && invoice.taxPphType !== 'NONE' && (
+                <>
+                  <tr className="border-b border-black font-bold bg-white">
+                    <td
+                      colSpan={3}
+                      className="border-r border-black py-0.5 px-3 text-right font-bold text-black bg-white"
+                    >
+                      Potongan PPh ({invoice.taxPphRate}%)
+                    </td>
+                    <td className="border-r border-black py-0.5 px-1 text-center font-bold text-black bg-white">
+                      Rp
+                    </td>
+                    <td className="py-0.5 px-2 text-right font-bold text-black bg-white">
+                      ({formatNumber(invoice.taxPphAmount)})
+                    </td>
+                  </tr>
+                  <tr className="border-b border-black font-bold bg-white">
+                    <td
+                      colSpan={3}
+                      className="border-r border-black py-0.5 px-3 text-right font-black text-black bg-white"
+                    >
+                      NET DITRANSFER KLIEN
+                    </td>
+                    <td className="border-r border-black py-0.5 px-1 text-center font-black text-black bg-white">
+                      Rp
+                    </td>
+                    <td className="py-0.5 px-2 text-right font-black text-black bg-white">
+                      {formatNumber(invoice.netTotalAmount || invoice.totalAmount)}
+                    </td>
+                  </tr>
+                </>
+              )}
 
               {/* Rincian Riwayat Pembayaran (Pembayaran ke-1, ke-2, dll) */}
               {invoice.payments && invoice.payments.length > 0 ? (

@@ -301,6 +301,21 @@ export const InvoiceDetailPage: React.FC = () => {
                 </Link>
               </p>
             )}
+            {invoice.clientPoNumber && (
+              <p className="text-slate-600">
+                No. PO Klien: <strong className="font-mono text-slate-800">{invoice.clientPoNumber}</strong>
+              </p>
+            )}
+            {invoice.clientSpkNumber && (
+              <p className="text-slate-600">
+                No. SPK / Kontrak: <strong className="font-mono text-slate-800">{invoice.clientSpkNumber}</strong>
+              </p>
+            )}
+            {invoice.bastNumber && (
+              <p className="text-slate-600">
+                No. BAST: <strong className="font-mono text-slate-800">{invoice.bastNumber}</strong>
+              </p>
+            )}
             {invoice.workLocation && (
               <p className="text-slate-600 flex items-center gap-1 sm:justify-end">
                 <MapPin className="w-3.5 h-3.5 text-slate-400" />
@@ -379,11 +394,51 @@ export const InvoiceDetailPage: React.FC = () => {
 
         {/* Calculation & Financial Summary */}
         <div className="flex flex-col sm:flex-row justify-end border-t-2 border-slate-900 pt-4">
-          <div className="w-full sm:w-80 space-y-2 text-sm">
+          <div className="w-full sm:w-96 space-y-2 text-sm">
+            {invoice.taxPpnType && invoice.taxPpnType !== 'NONE' ? (
+              <>
+                <div className="flex justify-between py-1 text-slate-600">
+                  <span className="font-medium">Subtotal (DPP):</span>
+                  <span className="font-mono font-bold text-slate-800">
+                    {formatCurrency(invoice.subtotalDpp || invoice.totalAmount)}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1 text-blue-600">
+                  <span className="font-medium">
+                    PPN {invoice.taxPpnRate}%{invoice.taxPpnType === 'INCLUDE' ? ' (Termasuk)' : ''}:
+                  </span>
+                  <span className="font-mono font-bold">
+                    {invoice.taxPpnType === 'INCLUDE' ? '' : '+ '}
+                    {formatCurrency(invoice.taxPpnAmount || 0)}
+                  </span>
+                </div>
+              </>
+            ) : null}
+
             <div className="flex justify-between py-1 text-slate-600">
-              <span className="font-medium">Total Nilai Tagihan:</span>
+              <span className="font-medium">
+                {invoice.taxPpnType && invoice.taxPpnType !== 'NONE' ? 'Total Nilai Faktur (Gross):' : 'Total Nilai Tagihan:'}
+              </span>
               <span className="font-mono font-bold text-slate-900">{formatCurrency(invoice.totalAmount)}</span>
             </div>
+
+            {invoice.taxPphType && invoice.taxPphType !== 'NONE' && (
+              <>
+                <div className="flex justify-between py-1 text-rose-600">
+                  <span className="font-medium">Potongan PPh ({invoice.taxPphRate}%):</span>
+                  <span className="font-mono font-bold">
+                    - {formatCurrency(invoice.taxPphAmount || 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1.5 text-emerald-800 font-bold bg-emerald-50 px-2 rounded-lg border border-emerald-200">
+                  <span>Net Ditransfer Klien:</span>
+                  <span className="font-mono font-black">
+                    {formatCurrency(invoice.netTotalAmount || invoice.totalAmount)}
+                  </span>
+                </div>
+              </>
+            )}
+
             <div className="flex justify-between py-1 text-slate-600 border-b border-slate-200 pb-2">
               <span className="font-medium">Total Telah Dibayar:</span>
               <span className="font-mono font-bold text-emerald-700">

@@ -12,7 +12,11 @@ import {
   FileCheck2,
   AlertTriangle,
   Layers,
-  MapPin
+  MapPin,
+  FileSpreadsheet,
+  FileSignature,
+  Percent,
+  CheckCircle2
 } from 'lucide-react';
 import { invoiceApi } from '../api/invoiceApi';
 import { customerApi } from '../api/customerApi';
@@ -20,7 +24,7 @@ import { penawaranApi } from '../api/penawaranApi';
 import { useAuth } from '../context/AuthContext';
 import { Customer } from '../types/customer';
 import { Penawaran } from '../types/penawaran';
-import { CreateInvoiceDetailInput, PenawaranBillableItem } from '../types/invoice';
+import { CreateInvoiceDetailInput, PenawaranBillableItem, TaxPpnType, TaxPphType } from '../types/invoice';
 import { BentoCard } from '@/components/common/BentoCard';
 import { PageHeader } from '@/components/common/PageHeader';
 
@@ -46,6 +50,15 @@ export const InvoiceFormPage: React.FC = () => {
   const [sourcePenawaranId, setSourcePenawaranId] = useState<number | null>(null);
   const [sourcePenawaranNumber, setSourcePenawaranNumber] = useState<string | null>(null);
   const [workLocation, setWorkLocation] = useState('');
+
+  // Fase 1: Client Reference Numbers
+  const [clientPoNumber, setClientPoNumber] = useState('');
+  const [clientSpkNumber, setClientSpkNumber] = useState('');
+  const [bastNumber, setBastNumber] = useState('');
+
+  // Fase 1: Tax Types
+  const [taxPpnType, setTaxPpnType] = useState<TaxPpnType>('NONE');
+  const [taxPphType, setTaxPphType] = useState<TaxPphType>('NONE');
 
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const defaultDueDate = new Date();
@@ -96,6 +109,11 @@ export const InvoiceFormPage: React.FC = () => {
           setSourcePenawaranId(data.sourcePenawaranId || null);
           setSourcePenawaranNumber(data.sourcePenawaranNumber || null);
           setWorkLocation(data.workLocation || '');
+          setClientPoNumber(data.clientPoNumber || '');
+          setClientSpkNumber(data.clientSpkNumber || '');
+          setBastNumber(data.bastNumber || '');
+          setTaxPpnType(data.taxPpnType || 'NONE');
+          setTaxPphType(data.taxPphType || 'NONE');
           setDate(data.date);
           setDueDate(data.dueDate || '');
           setNotes(data.notes || '');
@@ -318,12 +336,65 @@ export const InvoiceFormPage: React.FC = () => {
     });
   };
 
-  // Subtotal Calculation
-  const totalAmount = items.reduce((sum, item) => {
-    const qty = Number(item.quantity) || 0;
-    const price = Number(item.unitPrice) || 0;
-    return sum + qty * price;
-  }, 0);
+  // Subtotal & Tax Calculations
+  const rawItemsTotal = useMemo(() => {
+    return items.reduce((sum, item) => {
+      const qty = Number(item.quantity) || 0;
+      const price = Number(item.unitPrice) || 0;
+      return sum + qty * price;
+    }, 0);
+  }, [items]);
+
+  const taxCalculation = useMemo(() => {
+    let subtotalDpp = rawItemsTotal;
+    let ppnRate = 0;
+    let ppnAmount = 0;
+    let totalAmount = rawItemsTotal;
+
+    if (taxPpnType === 'EXCLUDE_11') {
+      ppnRate = 11;
+      subtotalDpp = rawItemsTotal;
+      ppnAmount = Math.round(subtotalDpp * 0.11);
+      totalAmount = subtotalDpp + ppnAmount;
+    } else if (taxPpnType === 'EXCLUDE_12') {
+      ppnRate = 12;
+      subtotalDpp = rawItemsTotal;
+      ppnAmount = Math.round(subtotalDpp * 0.12);
+      totalAmount = subtotalDpp + ppnAmount;
+    } else if (taxPpnType === 'INCLUDE') {
+      ppnRate = 11;
+      subtotalDpp = Math.round(rawItemsTotal / 1.11);
+      ppnAmount = rawItemsTotal - subtotalDpp;
+      totalAmount = rawItemsTotal;
+    }
+
+    let pphRate = 0;
+    let pphAmount = 0;
+    if (taxPphType === 'PPH23_2') {
+      pphRate = 2;
+      pphAmount = Math.round(subtotalDpp * 0.02);
+    } else if (taxPphType === 'PPH_FINAL_KONSTRUKSI_1_75') {
+      pphRate = 1.75;
+      pphAmount = Math.round(subtotalDpp * 0.0175);
+    } else if (taxPphType === 'PPH_FINAL_KONSTRUKSI_2_65') {
+      pphRate = 2.65;
+      pphAmount = Math.round(subtotalDpp * 0.0265);
+    }
+
+    const netTotalAmount = Math.max(0, totalAmount - pphAmount);
+
+    return {
+      subtotalDpp,
+      ppnRate,
+      ppnAmount,
+      totalAmount,
+      pphRate,
+      pphAmount,
+      netTotalAmount,
+    };
+  }, [rawItemsTotal, taxPpnType, taxPphType]);
+
+  const totalAmount = taxCalculation.totalAmount;
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -391,6 +462,11 @@ export const InvoiceFormPage: React.FC = () => {
         await invoiceApi.updateInvoice(Number(id), {
           customerId: Number(selectedCustomerId),
           workLocation: workLocation.trim() || undefined,
+          clientPoNumber: clientPoNumber.trim() || undefined,
+          clientSpkNumber: clientSpkNumber.trim() || undefined,
+          bastNumber: bastNumber.trim() || undefined,
+          taxPpnType,
+          taxPphType,
           date,
           dueDate: dueDate || undefined,
           notes,
@@ -403,6 +479,11 @@ export const InvoiceFormPage: React.FC = () => {
           customerId: Number(selectedCustomerId),
           sourcePenawaranId: sourcePenawaranId || undefined,
           workLocation: workLocation.trim() || undefined,
+          clientPoNumber: clientPoNumber.trim() || undefined,
+          clientSpkNumber: clientSpkNumber.trim() || undefined,
+          bastNumber: bastNumber.trim() || undefined,
+          taxPpnType,
+          taxPphType,
           date,
           dueDate: dueDate || undefined,
           notes,
@@ -430,7 +511,7 @@ export const InvoiceFormPage: React.FC = () => {
       {/* Top Header */}
       <PageHeader
         icon={Receipt}
-        backUrl="/faktur"
+        backUrl={isEdit && id ? `/faktur/${id}` : '/faktur'}
         title={isEdit ? 'Edit Faktur Penjualan' : 'Buat Faktur Penjualan Baru'}
         subtitle="Form penerbitan faktur tagihan terintegrasi penawaran harga resmi CV. ANDARA."
       />
@@ -536,6 +617,54 @@ export const InvoiceFormPage: React.FC = () => {
                 placeholder="Contoh: Gedung SMPN 1 Bojonegoro, Aula Utama, Ruang Kelas Baru, dll."
                 className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:bg-white dark:focus:bg-slate-950 transition"
               />
+            </div>
+
+            {/* Referensi Dokumen Klien (PO / SPK / BAST) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-200/60 dark:border-slate-800/60 md:col-span-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-blue-500" />
+                  <span>No. PO Klien (Opsional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={clientPoNumber}
+                  onChange={(e) => setClientPoNumber(e.target.value)}
+                  placeholder="Contoh: PO/2026/04/001"
+                  className="w-full text-sm font-mono px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
+                />
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">Nomor Purchase Order resmi dari klien.</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <FileSignature className="w-3.5 h-3.5 text-purple-500" />
+                  <span>No. SPK / Kontrak (Opsional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={clientSpkNumber}
+                  onChange={(e) => setClientSpkNumber(e.target.value)}
+                  placeholder="Contoh: 027/SPK/DISPORA/2026"
+                  className="w-full text-sm font-mono px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
+                />
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">Surat Perintah Kerja / Surat Perjanjian.</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>No. BAST (Opsional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={bastNumber}
+                  onChange={(e) => setBastNumber(e.target.value)}
+                  placeholder="Contoh: BAST-005/ANDARA/2026"
+                  className="w-full text-sm font-mono px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
+                />
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">Berita Acara Serah Terima pekerjaan.</p>
+              </div>
             </div>
           </div>
 
@@ -709,13 +838,127 @@ export const InvoiceFormPage: React.FC = () => {
             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
               Total <strong>{items.length}</strong> item penagihan
             </span>
-            <div className="flex items-center gap-4 bg-neu-surface dark:bg-slate-900 text-slate-900 dark:text-white px-6 py-3.5 rounded-2xl shadow-neu-convex-sm border border-neu-border dark:border-blue-900/30">
-              <span className="text-xs uppercase tracking-wider font-bold text-slate-600 dark:text-slate-300">
-                Total Nilai Faktur:
-              </span>
-              <span className="font-mono text-2xl font-black text-blue-600 dark:text-amber-400">
-                {formatCurrency(totalAmount)}
-              </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs">
+                <span className="text-slate-500 dark:text-slate-400">DPP / Subtotal:</span>
+                <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{formatCurrency(taxCalculation.subtotalDpp)}</span>
+              </div>
+              <div className="flex items-center gap-4 bg-neu-surface dark:bg-slate-900 text-slate-900 dark:text-white px-6 py-3 rounded-2xl shadow-neu-convex-sm border border-neu-border dark:border-blue-900/30">
+                <span className="text-xs uppercase tracking-wider font-bold text-slate-600 dark:text-slate-300">
+                  Total Faktur:
+                </span>
+                <span className="font-mono text-2xl font-black text-blue-600 dark:text-amber-400">
+                  {formatCurrency(totalAmount)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </BentoCard>
+
+        {/* Pajak & Ringkasan Finansial Faktur (Fase 1: PPN & PPh) */}
+        <BentoCard className="p-6 space-y-5">
+          <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-3">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <Percent className="w-4 h-4 text-brand-500" />
+              Ketentuan Pajak & Perhitungan Tagihan (PPN / PPh)
+            </h2>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              Dihitung otomatis sesuai tarif perpajakan resmi
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left: Tax Options */}
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  Perlakuan PPN (Pajak Pertambahan Nilai)
+                </label>
+                <select
+                  value={taxPpnType}
+                  onChange={(e) => setTaxPpnType(e.target.value as TaxPpnType)}
+                  className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
+                >
+                  <option value="NONE">Non-PPN (0%)</option>
+                  <option value="EXCLUDE_11">PPN 11% (Exclude - Ditambahkan ke Subtotal)</option>
+                  <option value="EXCLUDE_12">PPN 12% (Exclude - Ditambahkan ke Subtotal)</option>
+                  <option value="INCLUDE">PPN 11% (Include - Termasuk dalam Harga)</option>
+                </select>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                  {taxPpnType === 'NONE' && 'Faktur tidak membebankan PPN (nilai murni pekerjaan).'}
+                  {taxPpnType === 'EXCLUDE_11' && 'PPN 11% ditambahkan di atas subtotal DPP barang/jasa.'}
+                  {taxPpnType === 'EXCLUDE_12' && 'PPN 12% ditambahkan di atas subtotal DPP barang/jasa.'}
+                  {taxPpnType === 'INCLUDE' && 'Nilai item sudah mencakup PPN 11% (DPP dihitung mundur).'}
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  Potongan PPh (Pajak Penghasilan Dipotong Klien)
+                </label>
+                <select
+                  value={taxPphType}
+                  onChange={(e) => setTaxPphType(e.target.value as TaxPphType)}
+                  className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
+                >
+                  <option value="NONE">Non-PPh (0%)</option>
+                  <option value="PPH23_2">PPh 23 Jasa (2%) - Dipotong oleh Klien</option>
+                  <option value="PPH_FINAL_KONSTRUKSI_1_75">PPh Final Jasa Konstruksi (1.75%) - Dipotong oleh Klien</option>
+                  <option value="PPH_FINAL_KONSTRUKSI_2_65">PPh Final Pelaksanaan Konstruksi (2.65%) - Dipotong oleh Klien</option>
+                </select>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                  {taxPphType === 'NONE' && 'Tidak ada pemotongan PPh oleh customer/instansi.'}
+                  {taxPphType !== 'NONE' && 'Dipotong dari DPP oleh instansi/klien saat pembayaran (bukti potong dilampirkan).'}
+                </p>
+              </div>
+            </div>
+
+            {/* Right: Detailed Summary Calculation Card */}
+            <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-2.5 text-xs">
+              <div className="flex justify-between items-center text-slate-600 dark:text-slate-400 pb-1.5 border-b border-slate-200 dark:border-slate-800">
+                <span>Subtotal Item (DPP):</span>
+                <span className="font-mono font-bold text-slate-800 dark:text-slate-200 text-sm">
+                  {formatCurrency(taxCalculation.subtotalDpp)}
+                </span>
+              </div>
+
+              {taxCalculation.ppnRate > 0 && (
+                <div className="flex justify-between items-center text-blue-600 dark:text-blue-400">
+                  <span>
+                    PPN {taxCalculation.ppnRate}%
+                    {taxPpnType === 'INCLUDE' ? ' (Sudah Termasuk)' : ' (Ditambahkan)'}:
+                  </span>
+                  <span className="font-mono font-bold text-sm">
+                    {taxPpnType === 'INCLUDE' ? '' : '+ '}
+                    {formatCurrency(taxCalculation.ppnAmount)}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center text-slate-900 dark:text-white font-bold py-1 border-t border-slate-200 dark:border-slate-800">
+                <span className="uppercase tracking-wider">Total Nilai Faktur (Gross):</span>
+                <span className="font-mono text-base font-black text-brand-600 dark:text-brand-400">
+                  {formatCurrency(taxCalculation.totalAmount)}
+                </span>
+              </div>
+
+              {taxCalculation.pphRate > 0 && (
+                <div className="flex justify-between items-center text-rose-600 dark:text-rose-400 pt-1 border-t border-dashed border-slate-200 dark:border-slate-800">
+                  <span>Potongan PPh ({taxCalculation.pphRate}%) dari DPP:</span>
+                  <span className="font-mono font-bold text-sm">
+                    - {formatCurrency(taxCalculation.pphAmount)}
+                  </span>
+                </div>
+              )}
+
+              {taxCalculation.pphRate > 0 && (
+                <div className="flex justify-between items-center p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold mt-2">
+                  <span className="uppercase tracking-wider">Net Tagihan (Ditransfer Klien):</span>
+                  <span className="font-mono text-base font-black">
+                    {formatCurrency(taxCalculation.netTotalAmount)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </BentoCard>

@@ -2,6 +2,7 @@ package com.andara.erp.entity;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -26,6 +27,15 @@ public class Invoice {
     @JoinColumn(name = "source_penawaran_id")
     private Penawaran sourcePenawaran;
 
+    @Column(name = "client_po_number", length = 100)
+    private String clientPoNumber;
+
+    @Column(name = "client_spk_number", length = 100)
+    private String clientSpkNumber;
+
+    @Column(name = "bast_number", length = 100)
+    private String bastNumber;
+
     @Column(nullable = false)
     private LocalDate date;
 
@@ -40,8 +50,34 @@ public class Invoice {
     @Column(name = "payment_status", nullable = false, length = 50)
     private InvoicePaymentStatus paymentStatus = InvoicePaymentStatus.UNPAID;
 
+    @Column(name = "subtotal_dpp", nullable = false, precision = 15, scale = 2)
+    private BigDecimal subtotalDpp = BigDecimal.ZERO;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tax_ppn_type", nullable = false, length = 20)
+    private TaxPpnType taxPpnType = TaxPpnType.NONE;
+
+    @Column(name = "tax_ppn_rate", nullable = false, precision = 5, scale = 2)
+    private BigDecimal taxPpnRate = BigDecimal.ZERO;
+
+    @Column(name = "tax_ppn_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal taxPpnAmount = BigDecimal.ZERO;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tax_pph_type", nullable = false, length = 30)
+    private TaxPphType taxPphType = TaxPphType.NONE;
+
+    @Column(name = "tax_pph_rate", nullable = false, precision = 5, scale = 2)
+    private BigDecimal taxPphRate = BigDecimal.ZERO;
+
+    @Column(name = "tax_pph_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal taxPphAmount = BigDecimal.ZERO;
+
     @Column(name = "total_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
+
+    @Column(name = "net_total_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal netTotalAmount = BigDecimal.ZERO;
 
     @Column(name = "paid_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal paidAmount = BigDecimal.ZERO;
@@ -108,15 +144,67 @@ public class Invoice {
 
     public void recalculateTotalAmount() {
         if (details == null || details.isEmpty()) {
+            this.subtotalDpp = BigDecimal.ZERO;
+            this.taxPpnAmount = BigDecimal.ZERO;
+            this.taxPphAmount = BigDecimal.ZERO;
             this.totalAmount = BigDecimal.ZERO;
+            this.netTotalAmount = BigDecimal.ZERO;
             return;
         }
-        this.totalAmount = details.stream()
+
+        BigDecimal itemsSum = details.stream()
                 .map(detail -> {
                     detail.calculateAmount();
-                    return detail.getAmount();
+                    return detail.getAmount() != null ? detail.getAmount() : BigDecimal.ZERO;
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (this.taxPpnType == null) {
+            this.taxPpnType = TaxPpnType.NONE;
+        }
+        if (this.taxPphType == null) {
+            this.taxPphType = TaxPphType.NONE;
+        }
+
+        switch (this.taxPpnType) {
+            case INCLUDE -> {
+                BigDecimal rate = this.taxPpnRate != null && this.taxPpnRate.compareTo(BigDecimal.ZERO) > 0
+                        ? this.taxPpnRate : this.taxPpnType.getDefaultRate();
+                this.taxPpnRate = rate;
+                BigDecimal divisor = BigDecimal.ONE.add(rate.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP));
+                this.subtotalDpp = itemsSum.divide(divisor, 2, RoundingMode.HALF_UP);
+                this.taxPpnAmount = itemsSum.subtract(this.subtotalDpp).max(BigDecimal.ZERO);
+                this.totalAmount = itemsSum;
+            }
+            case EXCLUDE_11, EXCLUDE_12 -> {
+                BigDecimal rate = this.taxPpnRate != null && this.taxPpnRate.compareTo(BigDecimal.ZERO) > 0
+                        ? this.taxPpnRate : this.taxPpnType.getDefaultRate();
+                this.taxPpnRate = rate;
+                this.subtotalDpp = itemsSum;
+                this.taxPpnAmount = this.subtotalDpp.multiply(rate)
+                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                this.totalAmount = this.subtotalDpp.add(this.taxPpnAmount);
+            }
+            default -> { // NONE
+                this.taxPpnRate = BigDecimal.ZERO;
+                this.taxPpnAmount = BigDecimal.ZERO;
+                this.subtotalDpp = itemsSum;
+                this.totalAmount = itemsSum;
+            }
+        }
+
+        if (this.taxPphType != null && this.taxPphType != TaxPphType.NONE) {
+            BigDecimal pphRate = this.taxPphRate != null && this.taxPphRate.compareTo(BigDecimal.ZERO) > 0
+                    ? this.taxPphRate : this.taxPphType.getDefaultRate();
+            this.taxPphRate = pphRate;
+            this.taxPphAmount = this.subtotalDpp.multiply(pphRate)
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        } else {
+            this.taxPphRate = BigDecimal.ZERO;
+            this.taxPphAmount = BigDecimal.ZERO;
+        }
+
+        this.netTotalAmount = this.totalAmount.subtract(this.taxPphAmount).max(BigDecimal.ZERO);
     }
 
     public void updatePaymentStatus() {
@@ -298,5 +386,101 @@ public class Invoice {
 
     public void setUpdatedBy(String updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public String getClientPoNumber() {
+        return clientPoNumber;
+    }
+
+    public void setClientPoNumber(String clientPoNumber) {
+        this.clientPoNumber = clientPoNumber;
+    }
+
+    public String getClientSpkNumber() {
+        return clientSpkNumber;
+    }
+
+    public void setClientSpkNumber(String clientSpkNumber) {
+        this.clientSpkNumber = clientSpkNumber;
+    }
+
+    public String getBastNumber() {
+        return bastNumber;
+    }
+
+    public void setBastNumber(String bastNumber) {
+        this.bastNumber = bastNumber;
+    }
+
+    public BigDecimal getSubtotalDpp() {
+        return subtotalDpp;
+    }
+
+    public void setSubtotalDpp(BigDecimal subtotalDpp) {
+        this.subtotalDpp = subtotalDpp;
+    }
+
+    public TaxPpnType getTaxPpnType() {
+        return taxPpnType;
+    }
+
+    public void setTaxPpnType(TaxPpnType taxPpnType) {
+        this.taxPpnType = taxPpnType != null ? taxPpnType : TaxPpnType.NONE;
+        recalculateTotalAmount();
+        updatePaymentStatus();
+    }
+
+    public BigDecimal getTaxPpnRate() {
+        return taxPpnRate;
+    }
+
+    public void setTaxPpnRate(BigDecimal taxPpnRate) {
+        this.taxPpnRate = taxPpnRate;
+        recalculateTotalAmount();
+        updatePaymentStatus();
+    }
+
+    public BigDecimal getTaxPpnAmount() {
+        return taxPpnAmount;
+    }
+
+    public void setTaxPpnAmount(BigDecimal taxPpnAmount) {
+        this.taxPpnAmount = taxPpnAmount;
+    }
+
+    public TaxPphType getTaxPphType() {
+        return taxPphType;
+    }
+
+    public void setTaxPphType(TaxPphType taxPphType) {
+        this.taxPphType = taxPphType != null ? taxPphType : TaxPphType.NONE;
+        recalculateTotalAmount();
+        updatePaymentStatus();
+    }
+
+    public BigDecimal getTaxPphRate() {
+        return taxPphRate;
+    }
+
+    public void setTaxPphRate(BigDecimal taxPphRate) {
+        this.taxPphRate = taxPphRate;
+        recalculateTotalAmount();
+        updatePaymentStatus();
+    }
+
+    public BigDecimal getTaxPphAmount() {
+        return taxPphAmount;
+    }
+
+    public void setTaxPphAmount(BigDecimal taxPphAmount) {
+        this.taxPphAmount = taxPphAmount;
+    }
+
+    public BigDecimal getNetTotalAmount() {
+        return netTotalAmount;
+    }
+
+    public void setNetTotalAmount(BigDecimal netTotalAmount) {
+        this.netTotalAmount = netTotalAmount;
     }
 }

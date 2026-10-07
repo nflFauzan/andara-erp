@@ -17,6 +17,20 @@ public class UpdateInvoiceRequest {
 
     private LocalDate dueDate;
 
+    private String clientPoNumber;
+
+    private String clientSpkNumber;
+
+    private String bastNumber;
+
+    private com.andara.erp.entity.TaxPpnType taxPpnType;
+
+    private java.math.BigDecimal taxPpnRate;
+
+    private com.andara.erp.entity.TaxPphType taxPphType;
+
+    private java.math.BigDecimal taxPphRate;
+
     private String notes;
 
     private String terms;
@@ -84,5 +98,61 @@ public class UpdateInvoiceRequest {
 
     public void setDetails(List<CreateInvoiceDetailRequest> details) {
         this.details = details;
+    }
+
+    public String getClientPoNumber() {
+        return clientPoNumber;
+    }
+
+    public void setClientPoNumber(String clientPoNumber) {
+        this.clientPoNumber = clientPoNumber;
+    }
+
+    public String getClientSpkNumber() {
+        return clientSpkNumber;
+    }
+
+    public void setClientSpkNumber(String clientSpkNumber) {
+        this.clientSpkNumber = clientSpkNumber;
+    }
+
+    public String getBastNumber() {
+        return bastNumber;
+    }
+
+    public void setBastNumber(String bastNumber) {
+        this.bastNumber = bastNumber;
+    }
+
+    public com.andara.erp.entity.TaxPpnType getTaxPpnType() {
+        return taxPpnType;
+    }
+
+    public void setTaxPpnType(com.andara.erp.entity.TaxPpnType taxPpnType) {
+        this.taxPpnType = taxPpnType;
+    }
+
+    public java.math.BigDecimal getTaxPpnRate() {
+        return taxPpnRate;
+    }
+
+    public void setTaxPpnRate(java.math.BigDecimal taxPpnRate) {
+        this.taxPpnRate = taxPpnRate;
+    }
+
+    public com.andara.erp.entity.TaxPphType getTaxPphType() {
+        return taxPphType;
+    }
+
+    public void setTaxPphType(com.andara.erp.entity.TaxPphType taxPphType) {
+        this.taxPphType = taxPphType;
+    }
+
+    public java.math.BigDecimal getTaxPphRate() {
+        return taxPphRate;
+    }
+
+    public void setTaxPphRate(java.math.BigDecimal taxPphRate) {
+        this.taxPphRate = taxPphRate;
     }
 }

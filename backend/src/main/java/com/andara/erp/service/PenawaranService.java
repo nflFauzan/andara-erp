@@ -62,12 +62,15 @@ public class PenawaranService {
                 ? "%" + search.trim().toLowerCase() + "%"
                 : null;
 
+        LocalDate effectiveStart = (startDate != null) ? startDate : LocalDate.of(2000, 1, 1);
+        LocalDate effectiveEnd = (endDate != null) ? endDate : LocalDate.of(2099, 12, 31);
+
         Page<Penawaran> page = penawaranRepository.findWithFilters(
                 searchPattern,
                 customerId,
                 status,
-                startDate,
-                endDate,
+                effectiveStart,
+                effectiveEnd,
                 pageable
         );
 

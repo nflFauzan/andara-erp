@@ -23,11 +23,24 @@ public class InvoiceDTO {
     private String sourcePenawaranNumber;
     private LocalDate date;
     private LocalDate dueDate;
+    private String clientPoNumber;
+    private String clientSpkNumber;
+    private String bastNumber;
     private InvoiceStatus status;
     private String statusLabel;
     private InvoicePaymentStatus paymentStatus;
     private String paymentStatusLabel;
+    private BigDecimal subtotalDpp;
+    private com.andara.erp.entity.TaxPpnType taxPpnType;
+    private String taxPpnTypeLabel;
+    private BigDecimal taxPpnRate;
+    private BigDecimal taxPpnAmount;
+    private com.andara.erp.entity.TaxPphType taxPphType;
+    private String taxPphTypeLabel;
+    private BigDecimal taxPphRate;
+    private BigDecimal taxPphAmount;
     private BigDecimal totalAmount;
+    private BigDecimal netTotalAmount;
     private BigDecimal paidAmount;
     private BigDecimal outstanding;
     private String notes;
@@ -63,13 +76,29 @@ public class InvoiceDTO {
             dto.setSourcePenawaranId(entity.getSourcePenawaran().getId());
             dto.setSourcePenawaranNumber(entity.getSourcePenawaran().getNumber());
         }
+        dto.setClientPoNumber(entity.getClientPoNumber());
+        dto.setClientSpkNumber(entity.getClientSpkNumber());
+        dto.setBastNumber(entity.getBastNumber());
         dto.setDate(entity.getDate());
         dto.setDueDate(entity.getDueDate());
         dto.setStatus(entity.getStatus());
         dto.setStatusLabel(entity.getStatus() != null ? entity.getStatus().getLabel() : "");
         dto.setPaymentStatus(entity.getPaymentStatus());
         dto.setPaymentStatusLabel(entity.getPaymentStatus() != null ? entity.getPaymentStatus().getLabel() : "");
+
+        dto.setSubtotalDpp(entity.getSubtotalDpp());
+        dto.setTaxPpnType(entity.getTaxPpnType());
+        dto.setTaxPpnTypeLabel(entity.getTaxPpnType() != null ? entity.getTaxPpnType().getLabel() : "");
+        dto.setTaxPpnRate(entity.getTaxPpnRate());
+        dto.setTaxPpnAmount(entity.getTaxPpnAmount());
+
+        dto.setTaxPphType(entity.getTaxPphType());
+        dto.setTaxPphTypeLabel(entity.getTaxPphType() != null ? entity.getTaxPphType().getLabel() : "");
+        dto.setTaxPphRate(entity.getTaxPphRate());
+        dto.setTaxPphAmount(entity.getTaxPphAmount());
+
         dto.setTotalAmount(entity.getTotalAmount());
+        dto.setNetTotalAmount(entity.getNetTotalAmount());
         dto.setPaidAmount(entity.getPaidAmount());
         dto.setOutstanding(entity.getOutstanding());
         dto.setNotes(entity.getNotes());
@@ -318,5 +347,109 @@ public class InvoiceDTO {
 
     public void setPayments(List<InvoicePaymentItemDTO> payments) {
         this.payments = payments;
+    }
+
+    public String getClientPoNumber() {
+        return clientPoNumber;
+    }
+
+    public void setClientPoNumber(String clientPoNumber) {
+        this.clientPoNumber = clientPoNumber;
+    }
+
+    public String getClientSpkNumber() {
+        return clientSpkNumber;
+    }
+
+    public void setClientSpkNumber(String clientSpkNumber) {
+        this.clientSpkNumber = clientSpkNumber;
+    }
+
+    public String getBastNumber() {
+        return bastNumber;
+    }
+
+    public void setBastNumber(String bastNumber) {
+        this.bastNumber = bastNumber;
+    }
+
+    public BigDecimal getSubtotalDpp() {
+        return subtotalDpp;
+    }
+
+    public void setSubtotalDpp(BigDecimal subtotalDpp) {
+        this.subtotalDpp = subtotalDpp;
+    }
+
+    public com.andara.erp.entity.TaxPpnType getTaxPpnType() {
+        return taxPpnType;
+    }
+
+    public void setTaxPpnType(com.andara.erp.entity.TaxPpnType taxPpnType) {
+        this.taxPpnType = taxPpnType;
+    }
+
+    public String getTaxPpnTypeLabel() {
+        return taxPpnTypeLabel;
+    }
+
+    public void setTaxPpnTypeLabel(String taxPpnTypeLabel) {
+        this.taxPpnTypeLabel = taxPpnTypeLabel;
+    }
+
+    public BigDecimal getTaxPpnRate() {
+        return taxPpnRate;
+    }
+
+    public void setTaxPpnRate(BigDecimal taxPpnRate) {
+        this.taxPpnRate = taxPpnRate;
+    }
+
+    public BigDecimal getTaxPpnAmount() {
+        return taxPpnAmount;
+    }
+
+    public void setTaxPpnAmount(BigDecimal taxPpnAmount) {
+        this.taxPpnAmount = taxPpnAmount;
+    }
+
+    public com.andara.erp.entity.TaxPphType getTaxPphType() {
+        return taxPphType;
+    }
+
+    public void setTaxPphType(com.andara.erp.entity.TaxPphType taxPphType) {
+        this.taxPphType = taxPphType;
+    }
+
+    public String getTaxPphTypeLabel() {
+        return taxPphTypeLabel;
+    }
+
+    public void setTaxPphTypeLabel(String taxPphTypeLabel) {
+        this.taxPphTypeLabel = taxPphTypeLabel;
+    }
+
+    public BigDecimal getTaxPphRate() {
+        return taxPphRate;
+    }
+
+    public void setTaxPphRate(BigDecimal taxPphRate) {
+        this.taxPphRate = taxPphRate;
+    }
+
+    public BigDecimal getTaxPphAmount() {
+        return taxPphAmount;
+    }
+
+    public void setTaxPphAmount(BigDecimal taxPphAmount) {
+        this.taxPphAmount = taxPphAmount;
+    }
+
+    public BigDecimal getNetTotalAmount() {
+        return netTotalAmount;
+    }
+
+    public void setNetTotalAmount(BigDecimal netTotalAmount) {
+        this.netTotalAmount = netTotalAmount;
     }
 }

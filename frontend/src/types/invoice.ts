@@ -1,5 +1,7 @@
 export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'CANCELLED';
 export type InvoicePaymentStatus = 'UNPAID' | 'PARTIAL' | 'PAID';
+export type TaxPpnType = 'NONE' | 'INCLUDE' | 'EXCLUDE_11' | 'EXCLUDE_12';
+export type TaxPphType = 'NONE' | 'PPH23_2' | 'PPH_FINAL_KONSTRUKSI_1_75' | 'PPH_FINAL_KONSTRUKSI_2_65';
 
 export interface InvoiceDetail {
   id: number;
@@ -32,13 +34,26 @@ export interface Invoice {
   sourcePenawaranId?: number;
   sourcePenawaranNumber?: string;
   workLocation?: string;
+  clientPoNumber?: string;
+  clientSpkNumber?: string;
+  bastNumber?: string;
   date: string;
   dueDate?: string;
   status: InvoiceStatus;
   statusLabel: string;
   paymentStatus: InvoicePaymentStatus;
   paymentStatusLabel: string;
+  subtotalDpp: number;
+  taxPpnType: TaxPpnType;
+  taxPpnTypeLabel?: string;
+  taxPpnRate: number;
+  taxPpnAmount: number;
+  taxPphType: TaxPphType;
+  taxPphTypeLabel?: string;
+  taxPphRate: number;
+  taxPphAmount: number;
   totalAmount: number;
+  netTotalAmount: number;
   paidAmount: number;
   outstanding: number;
   notes?: string;
@@ -80,6 +95,13 @@ export interface CreateInvoiceInput {
   customerId: number;
   sourcePenawaranId?: number;
   workLocation?: string;
+  clientPoNumber?: string;
+  clientSpkNumber?: string;
+  bastNumber?: string;
+  taxPpnType?: TaxPpnType;
+  taxPpnRate?: number;
+  taxPphType?: TaxPphType;
+  taxPphRate?: number;
   date: string;
   dueDate?: string;
   notes?: string;
@@ -90,6 +112,13 @@ export interface CreateInvoiceInput {
 export interface UpdateInvoiceInput {
   customerId: number;
   workLocation?: string;
+  clientPoNumber?: string;
+  clientSpkNumber?: string;
+  bastNumber?: string;
+  taxPpnType?: TaxPpnType;
+  taxPpnRate?: number;
+  taxPphType?: TaxPphType;
+  taxPphRate?: number;
   date: string;
   dueDate?: string;
   notes?: string;

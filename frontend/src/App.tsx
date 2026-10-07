@@ -77,6 +77,7 @@ export const App: React.FC = () => {
               <Route path="faktur" element={<InvoiceListPage />} />
               <Route path="faktur/create" element={<InvoiceFormPage />} />
               <Route path="faktur/:id" element={<InvoiceDetailPage />} />
+              <Route path="faktur/:id/edit" element={<InvoiceFormPage />} />
               <Route path="pembayaran" element={<PaymentListPage />} />
               <Route path="pembayaran/create" element={<PaymentFormPage />} />
               <Route path="pembayaran/:id" element={<PaymentDetailPage />} />
