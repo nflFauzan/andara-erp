@@ -41,12 +41,22 @@ class PenawaranControllerTest {
     @Autowired
     private com.andara.erp.repository.PenawaranRepository penawaranRepository;
 
+    @Autowired
+    private com.andara.erp.repository.KegiatanRepository kegiatanRepository;
+
+    @Autowired
+    private com.andara.erp.repository.KegiatanItemRepository kegiatanItemRepository;
+
     private java.util.Set<Long> initialPenawaranIds;
+    private java.util.Set<Long> initialKegiatanIds;
 
     @org.junit.jupiter.api.BeforeEach
     void setUp() {
         initialPenawaranIds = penawaranRepository.findAll().stream()
                 .map(com.andara.erp.entity.Penawaran::getId)
+                .collect(java.util.stream.Collectors.toSet());
+        initialKegiatanIds = kegiatanRepository.findAll().stream()
+                .map(com.andara.erp.entity.Kegiatan::getId)
                 .collect(java.util.stream.Collectors.toSet());
     }
 
@@ -57,6 +67,12 @@ class PenawaranControllerTest {
                     .filter(p -> !initialPenawaranIds.contains(p.getId()))
                     .toList();
             penawaranRepository.deleteAll(testPenawaran);
+        }
+        if (initialKegiatanIds != null) {
+            List<com.andara.erp.entity.Kegiatan> testKegiatan = kegiatanRepository.findAll().stream()
+                    .filter(k -> !initialKegiatanIds.contains(k.getId()))
+                    .toList();
+            kegiatanRepository.deleteAll(testKegiatan);
         }
     }
 
@@ -219,10 +235,58 @@ class PenawaranControllerTest {
                 .andExpect(jsonPath("$.data.kegiatanList.length()").value(2))
                 .andExpect(jsonPath("$.data.kegiatanList[0].name").value("Pembangunan Ruang Kelas Baru"))
                 .andExpect(jsonPath("$.data.kegiatanList[0].subtotal").value(2000000.0))
+                .andExpect(jsonPath("$.data.kegiatanList[0].kegiatanId", notNullValue()))
+                .andExpect(jsonPath("$.data.kegiatanList[0].kegiatanCode", startsWith("ACT-")))
                 .andExpect(jsonPath("$.data.kegiatanList[0].items.length()").value(2))
                 .andExpect(jsonPath("$.data.kegiatanList[1].name").value("Pembangunan Perpustakaan"))
                 .andExpect(jsonPath("$.data.kegiatanList[1].subtotal").value(1000000.0))
+                .andExpect(jsonPath("$.data.kegiatanList[1].kegiatanId", notNullValue()))
+                .andExpect(jsonPath("$.data.kegiatanList[1].kegiatanCode", startsWith("ACT-")))
                 .andExpect(jsonPath("$.data.totalAmount").value(3000000.0));
+    }
+
+    @Test
+    @WithMockUser(username = "operator", roles = {"OPERATOR"})
+    void createPenawaran_WithoutExistingKegiatan_ShouldAutoCreateMasterKegiatanAndItems() throws Exception {
+        CreatePenawaranRequest request = new CreatePenawaranRequest();
+        request.setCustomerId(1L);
+        request.setDate(LocalDate.now());
+        request.setNotes("Uji Coba Auto Create Kegiatan Master (Opsi A)");
+
+        com.andara.erp.dto.penawaran.CreateSphKegiatanRequest group = new com.andara.erp.dto.penawaran.CreateSphKegiatanRequest();
+        group.setName("Renovasi Gedung Laboratorium Komputer");
+        group.setSortOrder(1);
+        group.setItems(List.of(
+                new CreatePenawaranDetailRequest("Pemasangan Jaringan LAN", new BigDecimal("5.00"), "titik", new BigDecimal("150000.00")),
+                new CreatePenawaranDetailRequest("Pengadaan Meja Komputer", new BigDecimal("10.00"), "unit", new BigDecimal("750000.00"))
+        ));
+        request.setKegiatan(List.of(group));
+
+        String res = mockMvc.perform(post("/api/penawaran")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.kegiatanList[0].kegiatanId", notNullValue()))
+                .andExpect(jsonPath("$.data.kegiatanList[0].kegiatanCode", startsWith("ACT-")))
+                .andReturn().getResponse().getContentAsString();
+
+        Long autoCreatedKegiatanId = objectMapper.readTree(res)
+                .path("data").path("kegiatanList").get(0).path("kegiatanId").asLong();
+
+        // Verifikasi entitas master Kegiatan terbentuk di DB
+        com.andara.erp.entity.Kegiatan masterKegiatan = kegiatanRepository.findById(autoCreatedKegiatanId).orElse(null);
+        org.junit.jupiter.api.Assertions.assertNotNull(masterKegiatan);
+        org.junit.jupiter.api.Assertions.assertEquals("Renovasi Gedung Laboratorium Komputer", masterKegiatan.getName());
+        org.junit.jupiter.api.Assertions.assertEquals(com.andara.erp.entity.KegiatanStatus.ACTIVE, masterKegiatan.getStatus());
+        org.junit.jupiter.api.Assertions.assertEquals(1L, masterKegiatan.getCustomer().getId());
+        List<com.andara.erp.entity.KegiatanItem> items = kegiatanItemRepository.findByKegiatanIdOrderBySortOrderAscIdAsc(autoCreatedKegiatanId);
+        org.junit.jupiter.api.Assertions.assertEquals(2, items.size());
+        org.junit.jupiter.api.Assertions.assertEquals("Pemasangan Jaringan LAN", items.get(0).getDescription());
+        org.junit.jupiter.api.Assertions.assertEquals("Pengadaan Meja Komputer", items.get(1).getDescription());
+        // Subtotal = (5 * 150.000 = 750.000) + (10 * 750.000 = 7.500.000) = 8.250.000
+        org.junit.jupiter.api.Assertions.assertEquals(new BigDecimal("8250000.00"), masterKegiatan.getTotalAmount());
     }
 
     @Test

@@ -394,6 +394,92 @@ public class PenawaranService {
         return detail;
     }
 
+    private synchronized String generateNextKegiatanCode(int year) {
+        String prefix = "ACT-" + year + "-";
+        List<String> codes = kegiatanRepository.findCodesMatching(prefix + "%");
+        int maxSeq = 0;
+        if (codes != null) {
+            for (String c : codes) {
+                if (c != null && c.startsWith(prefix)) {
+                    String suffix = c.substring(prefix.length());
+                    try {
+                        int seq = Integer.parseInt(suffix);
+                        if (seq > maxSeq) {
+                            maxSeq = seq;
+                        }
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+        }
+        int nextSeq = maxSeq + 1;
+        String candidate = String.format("%s%03d", prefix, nextSeq);
+        while (kegiatanRepository.existsByCode(candidate)) {
+            nextSeq++;
+            candidate = String.format("%s%03d", prefix, nextSeq);
+        }
+        return candidate;
+    }
+
+    private Kegiatan autoCreateKegiatanForSph(Penawaran penawaran, CreateSphKegiatanRequest kReq) {
+        Customer customer = penawaran.getCustomer();
+        int year = penawaran.getDate() != null ? penawaran.getDate().getYear() : LocalDate.now().getYear();
+        String code = generateNextKegiatanCode(year);
+
+        Kegiatan k = new Kegiatan();
+        k.setCustomer(customer);
+        k.setCode(code);
+        String name = (kReq.getName() != null && !kReq.getName().trim().isEmpty())
+                ? kReq.getName().trim()
+                : "Pekerjaan SPH";
+        k.setName(name);
+        if (customer != null && customer.getAddress() != null) {
+            k.setLocation(customer.getAddress());
+        }
+        k.setDescription("Didaftarkan otomatis melalui SPH " + (penawaran.getNumber() != null ? penawaran.getNumber() : ""));
+        k.setStatus(KegiatanStatus.ACTIVE);
+        k.setCreatedBy(getCurrentUsername());
+        k.setUpdatedBy(getCurrentUsername());
+
+        BigDecimal total = BigDecimal.ZERO;
+        if (kReq.getItems() != null && !kReq.getItems().isEmpty()) {
+            int itemOrder = 1;
+            for (CreatePenawaranDetailRequest it : kReq.getItems()) {
+                KegiatanItem ki = new KegiatanItem();
+                ki.setDescription(it.getDescription() != null ? it.getDescription().trim() : "-");
+                BigDecimal vol = it.getVolume() != null ? it.getVolume() : BigDecimal.ONE;
+                BigDecimal price = it.getUnitPrice() != null ? it.getUnitPrice() : BigDecimal.ZERO;
+                ki.setVolume(vol);
+                ki.setUnit(it.getUnit() != null ? it.getUnit().trim() : "unit");
+                ki.setUnitPrice(price);
+                BigDecimal subtotal = vol.multiply(price).setScale(2, RoundingMode.HALF_UP);
+                ki.setSubtotal(subtotal);
+                ki.setSortOrder(itemOrder++);
+                ki.setNotes(it.getNotes());
+                ki.setCreatedBy(getCurrentUsername());
+                if (it.getItemCatalogId() != null) {
+                    itemCatalogRepository.findById(it.getItemCatalogId()).ifPresent(ki::setItemCatalog);
+                }
+                k.addItem(ki);
+                total = total.add(subtotal);
+            }
+        }
+        k.setTotalAmount(total);
+        Kegiatan saved = kegiatanRepository.save(k);
+
+        // Map back IDs to request items so subsequent detail creation links correctly
+        if (saved.getItems() != null && kReq.getItems() != null) {
+            for (int i = 0; i < Math.min(saved.getItems().size(), kReq.getItems().size()); i++) {
+                KegiatanItem savedItem = saved.getItems().get(i);
+                CreatePenawaranDetailRequest itemReq = kReq.getItems().get(i);
+                itemReq.setKegiatanId(saved.getId());
+                itemReq.setKegiatanItemId(savedItem.getId());
+            }
+        }
+
+        return saved;
+    }
+
     private void buildKegiatanAndDetails(Penawaran penawaran, List<CreateSphKegiatanRequest> kegiatanRequests, List<CreatePenawaranDetailRequest> itemRequests) {
         boolean hasKegiatan = kegiatanRequests != null && !kegiatanRequests.isEmpty();
         boolean hasItems = itemRequests != null && !itemRequests.isEmpty();
@@ -406,15 +492,54 @@ public class PenawaranService {
             int kOrder = 1;
             for (CreateSphKegiatanRequest kReq : kegiatanRequests) {
                 SphKegiatan k = new SphKegiatan(kReq.getName().trim(), kReq.getSortOrder() != null && kReq.getSortOrder() > 0 ? kReq.getSortOrder() : kOrder++);
+                Kegiatan linkedKegiatan = null;
                 if (kReq.getKegiatanId() != null) {
-                    kegiatanRepository.findById(kReq.getKegiatanId()).ifPresent(k::setKegiatan);
+                    linkedKegiatan = kegiatanRepository.findById(kReq.getKegiatanId()).orElse(null);
                 }
+                // Opsi A: Auto-create Kegiatan in Master Data if not linked yet
+                if (linkedKegiatan == null && penawaran.getCustomer() != null) {
+                    linkedKegiatan = autoCreateKegiatanForSph(penawaran, kReq);
+                }
+
+                if (linkedKegiatan != null) {
+                    k.setKegiatan(linkedKegiatan);
+                    kReq.setKegiatanId(linkedKegiatan.getId());
+                }
+
                 int itemOrder = 1;
                 if (kReq.getItems() != null && !kReq.getItems().isEmpty()) {
                     for (CreatePenawaranDetailRequest itemReq : kReq.getItems()) {
-                        if (itemReq.getKegiatanId() == null && kReq.getKegiatanId() != null) {
-                            itemReq.setKegiatanId(kReq.getKegiatanId());
+                        if (itemReq.getKegiatanId() == null && k.getKegiatan() != null) {
+                            itemReq.setKegiatanId(k.getKegiatan().getId());
                         }
+
+                        // If linked to existing Kegiatan but item is newly added in SPH, add to master items
+                        if (linkedKegiatan != null && itemReq.getKegiatanItemId() == null && itemReq.getDescription() != null && !itemReq.getDescription().trim().isEmpty()) {
+                            KegiatanItem newKi = new KegiatanItem();
+                            newKi.setDescription(itemReq.getDescription().trim());
+                            BigDecimal vol = itemReq.getVolume() != null ? itemReq.getVolume() : BigDecimal.ONE;
+                            BigDecimal price = itemReq.getUnitPrice() != null ? itemReq.getUnitPrice() : BigDecimal.ZERO;
+                            newKi.setVolume(vol);
+                            newKi.setUnit(itemReq.getUnit() != null ? itemReq.getUnit().trim() : "unit");
+                            newKi.setUnitPrice(price);
+                            BigDecimal subtotal = vol.multiply(price).setScale(2, RoundingMode.HALF_UP);
+                            newKi.setSubtotal(subtotal);
+                            newKi.setSortOrder(linkedKegiatan.getItems() != null ? linkedKegiatan.getItems().size() + 1 : 1);
+                            newKi.setNotes(itemReq.getNotes());
+                            newKi.setCreatedBy(getCurrentUsername());
+                            if (itemReq.getItemCatalogId() != null) {
+                                itemCatalogRepository.findById(itemReq.getItemCatalogId()).ifPresent(newKi::setItemCatalog);
+                            }
+                            linkedKegiatan.addItem(newKi);
+                            BigDecimal sum = linkedKegiatan.getItems().stream()
+                                    .map(KegiatanItem::getSubtotal)
+                                    .filter(java.util.Objects::nonNull)
+                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                            linkedKegiatan.setTotalAmount(sum);
+                            linkedKegiatan = kegiatanRepository.save(linkedKegiatan);
+                            itemReq.setKegiatanItemId(newKi.getId());
+                        }
+
                         PenawaranDetail detail = createDetailEntity(itemReq, itemOrder++);
                         k.addItem(detail);
                         penawaran.addDetail(detail);
@@ -425,14 +550,27 @@ public class PenawaranService {
         } else {
             // Backward-compatible fallback for flat items: wrap in single default group
             SphKegiatan defaultK = new SphKegiatan("Pekerjaan Utama", 1);
-            if (!itemRequests.isEmpty() && itemRequests.get(0).getKegiatanId() != null) {
-                kegiatanRepository.findById(itemRequests.get(0).getKegiatanId()).ifPresent(defaultK::setKegiatan);
+            Kegiatan linkedKegiatan = null;
+            if (itemRequests != null && !itemRequests.isEmpty() && itemRequests.get(0).getKegiatanId() != null) {
+                linkedKegiatan = kegiatanRepository.findById(itemRequests.get(0).getKegiatanId()).orElse(null);
+            }
+            if (linkedKegiatan == null && penawaran.getCustomer() != null && itemRequests != null) {
+                CreateSphKegiatanRequest fallbackReq = new CreateSphKegiatanRequest("Pekerjaan Utama", 1, itemRequests);
+                linkedKegiatan = autoCreateKegiatanForSph(penawaran, fallbackReq);
+            }
+            if (linkedKegiatan != null) {
+                defaultK.setKegiatan(linkedKegiatan);
             }
             int itemOrder = 1;
-            for (CreatePenawaranDetailRequest itemReq : itemRequests) {
-                PenawaranDetail detail = createDetailEntity(itemReq, itemOrder++);
-                defaultK.addItem(detail);
-                penawaran.addDetail(detail);
+            if (itemRequests != null) {
+                for (CreatePenawaranDetailRequest itemReq : itemRequests) {
+                    if (itemReq.getKegiatanId() == null && defaultK.getKegiatan() != null) {
+                        itemReq.setKegiatanId(defaultK.getKegiatan().getId());
+                    }
+                    PenawaranDetail detail = createDetailEntity(itemReq, itemOrder++);
+                    defaultK.addItem(detail);
+                    penawaran.addDetail(detail);
+                }
             }
             penawaran.addKegiatan(defaultK);
         }

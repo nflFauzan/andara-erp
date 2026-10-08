@@ -83,7 +83,7 @@ export const PenawaranFormPage: React.FC = () => {
   const [kegiatanGroups, setKegiatanGroups] = useState<FormKegiatanGroup[]>([
     {
       tempId: 'kg-1',
-      name: 'Pembangunan Ruang Kelas Baru',
+      name: '',
       sortOrder: 1,
       items: [
         {
@@ -254,6 +254,8 @@ export const PenawaranFormPage: React.FC = () => {
                 items: (k.items || []).map((it, itIdx) => ({
                   tempId: `item-${it.id || itIdx + 1}`,
                   itemCatalogId: it.itemCatalogId,
+                  kegiatanId: it.kegiatanId,
+                  kegiatanItemId: it.kegiatanItemId,
                   description: it.description,
                   volume: it.volume,
                   unit: it.unit,
@@ -326,11 +328,13 @@ export const PenawaranFormPage: React.FC = () => {
 
   const handleSelectImportKegiatan = (k: Kegiatan) => {
     const newGroup: FormKegiatanGroup = {
-      tempId: `kg-kegiatan-${k.id}-${Date.now()}`,
+      tempId: targetKegiatanTempId || `kg-kegiatan-${k.id}-${Date.now()}`,
       kegiatanId: k.id,
       kegiatanCode: k.code,
       name: k.name,
-      sortOrder: kegiatanGroups.length + 1,
+      sortOrder: targetKegiatanTempId
+        ? (kegiatanGroups.find((g) => g.tempId === targetKegiatanTempId)?.sortOrder || 1)
+        : kegiatanGroups.length + 1,
       items:
         k.items && k.items.length > 0
           ? k.items.map((it, idx) => ({
@@ -357,21 +361,48 @@ export const PenawaranFormPage: React.FC = () => {
             ],
     };
 
-    const isSingleDefaultBlank =
-      kegiatanGroups.length === 1 &&
-      kegiatanGroups[0].items.length === 1 &&
-      !kegiatanGroups[0].items[0].description.trim() &&
-      !kegiatanGroups[0].kegiatanId;
-
-    if (isSingleDefaultBlank) {
-      setKegiatanGroups([newGroup]);
+    if (targetKegiatanTempId) {
+      setKegiatanGroups((prev) =>
+        prev.map((g) => (g.tempId === targetKegiatanTempId ? newGroup : g))
+      );
+      setTargetKegiatanTempId(null);
     } else {
-      setKegiatanGroups((prev) => [...prev, newGroup]);
+      const isSingleDefaultBlank =
+        kegiatanGroups.length === 1 &&
+        kegiatanGroups[0].items.length === 1 &&
+        !kegiatanGroups[0].items[0].description.trim() &&
+        !kegiatanGroups[0].kegiatanId &&
+        !kegiatanGroups[0].name.trim();
+
+      if (isSingleDefaultBlank) {
+        setKegiatanGroups([newGroup]);
+      } else {
+        setKegiatanGroups((prev) => [...prev, newGroup]);
+      }
     }
 
     setIsImportKegiatanModalOpen(false);
-    setFeedbackMsg(`Berhasil menarik kegiatan '${k.name}' (${k.items?.length || 0} item).`);
+    setFeedbackMsg(`Berhasil menautkan kegiatan '${k.name}' (${k.items?.length || 0} item).`);
     setTimeout(() => setFeedbackMsg(null), 4000);
+  };
+
+  const handleUnlinkKegiatan = (kegiatanTempId: string) => {
+    setKegiatanGroups((prev) =>
+      prev.map((k) =>
+        k.tempId === kegiatanTempId
+          ? {
+              ...k,
+              kegiatanId: undefined,
+              kegiatanCode: undefined,
+              items: k.items.map((it) => ({
+                ...it,
+                kegiatanId: undefined,
+                kegiatanItemId: undefined,
+              })),
+            }
+          : k
+      )
+    );
   };
 
   const handleKegiatanNameChange = (kegiatanTempId: string, name: string) => {
@@ -901,11 +932,44 @@ export const PenawaranFormPage: React.FC = () => {
                       <label className="text-[10px] text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider block">
                         Nama Kegiatan {letterLabel} <span className="text-rose-500">*</span>
                       </label>
-                      {kg.kegiatanCode && (
-                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-900 truncate">
-                          Terkait Proyek: {kg.kegiatanCode}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {kg.kegiatanCode ? (
+                          <>
+                            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-900 truncate">
+                              Terkait Proyek: {kg.kegiatanCode}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleUnlinkKegiatan(kg.tempId)}
+                              className="text-[10px] text-slate-400 hover:text-rose-500 underline ml-0.5 cursor-pointer"
+                              title="Lepas kaitan proyek agar menjadi kegiatan mandiri"
+                            >
+                              Lepas
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                              ✨ Otomatis terdaftar di Master Proyek
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!selectedCustomerId) {
+                                  setErrorMsg('Pilih customer terlebih dahulu untuk menautkan proyek.');
+                                  return;
+                                }
+                                setTargetKegiatanTempId(kg.tempId);
+                                setIsImportKegiatanModalOpen(true);
+                              }}
+                              className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline ml-1 cursor-pointer"
+                              title="Tautkan kelompok ini ke proyek pelanggan yang sudah ada di Master Data"
+                            >
+                              Tautkan Proyek
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                     <input
                       type="text"

@@ -19,6 +19,9 @@ public interface KegiatanRepository extends JpaRepository<Kegiatan, Long> {
 
     boolean existsByCode(String code);
 
+    @Query("SELECT k.code FROM Kegiatan k WHERE k.code LIKE :pattern")
+    List<String> findCodesMatching(@Param("pattern") String pattern);
+
     List<Kegiatan> findByCustomerIdOrderByCreatedAtDesc(Long customerId);
 
     List<Kegiatan> findByCustomerIdAndStatus(Long customerId, KegiatanStatus status);
