@@ -67,4 +67,9 @@ export const penawaranApi = {
   async deletePenawaran(id: number): Promise<void> {
     await api.delete(`/penawaran/${id}`);
   },
+
+  async duplicatePenawaran(id: number): Promise<Penawaran> {
+    const response = await api.post<ApiResponse<Penawaran>>(`/penawaran/${id}/duplicate`);
+    return response.data.data!;
+  },
 };

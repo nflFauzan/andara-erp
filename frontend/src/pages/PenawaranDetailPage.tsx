@@ -14,7 +14,8 @@ import {
   Lock,
   History,
   Receipt,
-  GitBranch
+  GitBranch,
+  Copy
 } from 'lucide-react';
 import { penawaranApi } from '../api/penawaranApi';
 import { customerApi } from '../api/customerApi';
@@ -96,6 +97,21 @@ export const PenawaranDetailPage: React.FC = () => {
     }
   };
 
+  const handleDuplicate = async () => {
+    if (!penawaran) return;
+    if (!window.confirm(`Duplikat SPH ${penawaran.number} sebagai draft baru? Seluruh kegiatan dan rincian item pekerjaan akan disalin.`)) return;
+
+    try {
+      setActionLoading(true);
+      setErrorMsg(null);
+      const duplicated = await penawaranApi.duplicatePenawaran(penawaran.id);
+      navigate(`/penawaran/${duplicated.id}/edit`);
+    } catch (err: any) {
+      setErrorMsg(err.response?.data?.message || 'Gagal menduplikasi penawaran.');
+      setActionLoading(false);
+    }
+  };
+
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -160,6 +176,17 @@ export const PenawaranDetailPage: React.FC = () => {
             >
               <Printer className="w-4 h-4 text-brand-500" />
               Cetak Format Resmi
+            </button>
+
+            {/* Duplikat SPH Button */}
+            <button
+              disabled={actionLoading}
+              onClick={handleDuplicate}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-xs transition"
+              title="Salin/duplikat SPH ini menjadi draft baru untuk diedit"
+            >
+              <Copy className="w-4 h-4 text-brand-500" />
+              Duplikat SPH
             </button>
 
             {/* Audit Trail Button */}

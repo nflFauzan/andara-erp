@@ -311,6 +311,88 @@ public class PenawaranService {
         penawaranRepository.delete(penawaran);
     }
 
+    @Transactional
+    public PenawaranDTO duplicatePenawaran(Long id) {
+        Penawaran source = penawaranRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.PENAWARAN_NOT_FOUND, "SPH sumber tidak ditemukan"));
+
+        Customer customer = source.getCustomer();
+        if (!customer.isActive()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST,
+                    "Customer dari SPH sumber saat ini nonaktif. Aktifkan customer terlebih dahulu untuk menduplikasi SPH.");
+        }
+
+        LocalDate today = LocalDate.now();
+        String newNumber = numberingService.generateNextNumber(DocumentType.PENAWARAN, today);
+
+        Penawaran duplicate = new Penawaran();
+        duplicate.setCustomer(customer);
+        duplicate.setNumber(newNumber);
+        duplicate.setDate(today);
+        duplicate.setStatus(PenawaranStatus.DRAFT);
+        duplicate.setNotes(source.getNotes());
+        duplicate.setTerms(source.getTerms());
+        duplicate.setCreatedBy(getCurrentUsername());
+        duplicate.setIsAddendum(false);
+        duplicate.setAddendumNumberIndex(0);
+
+        // Duplikasi rincian kegiatan dan detail item
+        if (source.getKegiatanList() != null && !source.getKegiatanList().isEmpty()) {
+            int kOrder = 1;
+            for (SphKegiatan srcK : source.getKegiatanList()) {
+                SphKegiatan newK = new SphKegiatan(srcK.getName(), srcK.getSortOrder() != null ? srcK.getSortOrder() : kOrder++);
+                int itemOrder = 1;
+                if (srcK.getItems() != null && !srcK.getItems().isEmpty()) {
+                    for (PenawaranDetail srcItem : srcK.getItems()) {
+                        PenawaranDetail newItem = cloneDetailEntity(srcItem, itemOrder++);
+                        newK.addItem(newItem);
+                        duplicate.addDetail(newItem);
+                    }
+                }
+                duplicate.addKegiatan(newK);
+            }
+        } else if (source.getDetails() != null && !source.getDetails().isEmpty()) {
+            SphKegiatan defaultK = new SphKegiatan("Pekerjaan Utama", 1);
+            int itemOrder = 1;
+            for (PenawaranDetail srcItem : source.getDetails()) {
+                PenawaranDetail newItem = cloneDetailEntity(srcItem, itemOrder++);
+                defaultK.addItem(newItem);
+                duplicate.addDetail(newItem);
+            }
+            duplicate.addKegiatan(defaultK);
+        } else {
+            throw new AppException(ErrorCode.INVALID_REQUEST, "SPH sumber tidak memiliki item pekerjaan untuk diduplikasi");
+        }
+
+        Penawaran saved = penawaranRepository.save(duplicate);
+
+        auditLogService.log(
+                "DUPLICATE_PENAWARAN",
+                "PENAWARAN",
+                saved.getId(),
+                null,
+                "SPH " + saved.getNumber() + " berhasil diduplikasi dari SPH " + source.getNumber()
+        );
+
+        return PenawaranDTO.fromEntity(saved, true);
+    }
+
+    private PenawaranDetail cloneDetailEntity(PenawaranDetail src, int defaultSortOrder) {
+        PenawaranDetail detail = new PenawaranDetail();
+        detail.setDescription(src.getDescription() != null ? src.getDescription().trim() : "");
+        detail.setVolume(src.getVolume() != null ? src.getVolume() : BigDecimal.ONE);
+        detail.setUnit(src.getUnit() != null ? src.getUnit().trim() : "unit");
+        detail.setUnitPrice(src.getUnitPrice() != null ? src.getUnitPrice() : BigDecimal.ZERO);
+        detail.setSortOrder(src.getSortOrder() != null && src.getSortOrder() > 0 ? src.getSortOrder() : defaultSortOrder);
+        detail.setNotes(src.getNotes());
+        detail.setItemCatalog(src.getItemCatalog());
+        detail.setKegiatan(src.getKegiatan());
+        detail.setKegiatanItem(src.getKegiatanItem());
+        BigDecimal amount = detail.getVolume().multiply(detail.getUnitPrice()).setScale(2, RoundingMode.HALF_UP);
+        detail.setAmount(amount);
+        return detail;
+    }
+
     private void buildKegiatanAndDetails(Penawaran penawaran, List<CreateSphKegiatanRequest> kegiatanRequests, List<CreatePenawaranDetailRequest> itemRequests) {
         boolean hasKegiatan = kegiatanRequests != null && !kegiatanRequests.isEmpty();
         boolean hasItems = itemRequests != null && !itemRequests.isEmpty();

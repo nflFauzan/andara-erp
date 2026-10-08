@@ -11,7 +11,8 @@ import {
   FileCheck2,
   Clock,
   Info,
-  GitBranch
+  GitBranch,
+  Copy
 } from 'lucide-react';
 import { penawaranApi } from '../api/penawaranApi';
 import { customerApi } from '../api/customerApi';
@@ -85,6 +86,19 @@ export const PenawaranListPage: React.FC = () => {
     e.preventDefault();
     setPage(0);
     loadPenawaran();
+  };
+
+  const handleDuplicate = async (p: Penawaran) => {
+    if (!window.confirm(`Duplikat SPH ${p.number} sebagai draft baru? Seluruh kegiatan dan item pekerjaan akan disalin.`)) return;
+    try {
+      setLoading(true);
+      setErrorMsg(null);
+      const duplicated = await penawaranApi.duplicatePenawaran(p.id);
+      navigate(`/penawaran/${duplicated.id}/edit`);
+    } catch (err: any) {
+      setErrorMsg(err.response?.data?.message || 'Gagal menduplikasi penawaran.');
+      setLoading(false);
+    }
   };
 
   // Quick stats calculations
@@ -335,15 +349,26 @@ export const PenawaranListPage: React.FC = () => {
                         <StatusBadge status={p.status} size="sm" />
                       </td>
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/penawaran/${p.id}`)}
-                          className="neu-btn text-xs py-1.5 px-3 cursor-pointer"
-                          title="Buka rincian & cetak dokumen SPH"
-                        >
-                          <Eye className="w-3.5 h-3.5 text-slate-500" />
-                          <span>Rincian</span>
-                        </button>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/penawaran/${p.id}`)}
+                            className="neu-btn text-xs py-1.5 px-2.5 cursor-pointer"
+                            title="Buka rincian & cetak dokumen SPH"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-slate-500" />
+                            <span>Rincian</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicate(p)}
+                            className="neu-btn text-xs py-1.5 px-2.5 cursor-pointer text-brand-600 dark:text-brand-400 hover:text-brand-700"
+                            title="Duplikat SPH ini sebagai draft baru untuk diedit"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Duplikat</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

@@ -105,6 +105,14 @@ public class PenawaranController {
         return ApiResponse.success(updated, "Status penawaran berhasil diubah menjadi " + updated.getStatus());
     }
 
+    @PostMapping("/{id}/duplicate")
+    public ResponseEntity<ApiResponse<PenawaranDTO>> duplicatePenawaran(@PathVariable Long id) {
+        PenawaranDTO duplicated = penawaranService.duplicatePenawaran(id);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success(duplicated, "Penawaran berhasil diduplikasi sebagai draft baru"));
+    }
+
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deletePenawaran(@PathVariable Long id) {
         penawaranService.deletePenawaran(id);
