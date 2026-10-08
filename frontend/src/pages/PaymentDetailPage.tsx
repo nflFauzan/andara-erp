@@ -210,7 +210,18 @@ export const PaymentDetailPage: React.FC = () => {
             <div className="mt-2 text-2xl font-black font-mono text-slate-900 dark:text-white">
               {formatCurrency(payment.amount)}
             </div>
-            <div className="text-[11px] text-slate-400 mt-1 font-medium">Metode: {payment.paymentMethod}</div>
+            <div className="text-[11px] text-slate-400 mt-1 font-medium">
+              Metode:{' '}
+              {payment.paymentMethod === 'DEPOSIT'
+                ? 'Saldo Deposit'
+                : payment.paymentMethod === 'BANK_TRANSFER'
+                ? 'Transfer Bank'
+                : payment.paymentMethod === 'CASH'
+                ? 'Tunai'
+                : payment.paymentMethod === 'GIRO'
+                ? 'Giro'
+                : payment.paymentMethod}
+            </div>
           </div>
           <div className="w-12 h-12 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 border border-brand-500/20">
             <CreditCard className="w-6 h-6" />
@@ -235,12 +246,26 @@ export const PaymentDetailPage: React.FC = () => {
         <BentoCard className="p-5 flex items-center justify-between">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
-              Masuk Deposit Customer
+              {payment.cashAmount && payment.depositAmount && payment.cashAmount > 0 && payment.depositAmount > 0
+                ? 'Potongan Saldo Deposit'
+                : payment.paymentMethod === 'DEPOSIT'
+                ? 'Sumber Pembayaran'
+                : 'Masuk Deposit Customer'}
             </span>
             <div className="mt-2 text-2xl font-black font-mono text-amber-500">
-              {formatCurrency(payment.excessAmount)}
+              {payment.cashAmount && payment.depositAmount && payment.cashAmount > 0 && payment.depositAmount > 0
+                ? formatCurrency(payment.depositAmount)
+                : payment.paymentMethod === 'DEPOSIT'
+                ? 'Saldo Deposit'
+                : formatCurrency(payment.excessAmount)}
             </div>
-            <div className="text-[11px] text-slate-400 mt-1 font-medium">Saldo lebih di buku kas</div>
+            <div className="text-[11px] text-slate-400 mt-1 font-medium">
+              {payment.cashAmount && payment.depositAmount && payment.cashAmount > 0 && payment.depositAmount > 0
+                ? `Kas/Bank: ${formatCurrency(payment.cashAmount)}`
+                : payment.paymentMethod === 'DEPOSIT'
+                ? 'Dipungut dari buku besar deposit customer'
+                : 'Saldo lebih di buku kas'}
+            </div>
           </div>
           <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
             <Wallet className="w-6 h-6" />
@@ -255,7 +280,7 @@ export const PaymentDetailPage: React.FC = () => {
           Rincian Transaksi
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 text-sm">
           <div>
             <span className="text-xs font-semibold text-slate-400 block mb-1">Customer</span>
             <div className="font-bold text-slate-900 dark:text-slate-100">{payment.customerName}</div>
@@ -271,14 +296,45 @@ export const PaymentDetailPage: React.FC = () => {
           </div>
 
           <div>
-            <span className="text-xs font-semibold text-slate-400 block mb-1">Rekening / Kas Tujuan</span>
-            <div className="font-medium text-slate-800 dark:text-slate-200">
-              {payment.destinationAccount || '-'}
+            <span className="text-xs font-semibold text-slate-400 block mb-1">Metode & Sumber Dana</span>
+            <div>
+              {payment.cashAmount && payment.depositAmount && payment.cashAmount > 0 && payment.depositAmount > 0 ? (
+                <div className="space-y-1">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black bg-brand-500/10 text-brand-700 dark:text-brand-300 border border-brand-500/25">
+                    ⚡ Kas + Deposit
+                  </span>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                    Kas: {formatCurrency(payment.cashAmount)} ({payment.paymentMethod}) <br />
+                    Deposit: {formatCurrency(payment.depositAmount)}
+                  </div>
+                </div>
+              ) : payment.paymentMethod === 'DEPOSIT' ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/25">
+                  🪙 Saldo Deposit
+                </span>
+              ) : (
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  {payment.paymentMethod === 'BANK_TRANSFER'
+                    ? 'Transfer Bank'
+                    : payment.paymentMethod === 'CASH'
+                    ? 'Tunai'
+                    : payment.paymentMethod === 'GIRO'
+                    ? 'Giro'
+                    : payment.paymentMethod}
+                </span>
+              )}
             </div>
           </div>
 
           <div>
-            <span className="text-xs font-semibold text-slate-400 block mb-1">Nomor Referensi Transfer</span>
+            <span className="text-xs font-semibold text-slate-400 block mb-1">Rekening / Kas Tujuan</span>
+            <div className="font-medium text-slate-800 dark:text-slate-200">
+              {payment.destinationAccount || (payment.paymentMethod === 'DEPOSIT' ? 'Buku Kas Saldo Deposit' : '-')}
+            </div>
+          </div>
+
+          <div>
+            <span className="text-xs font-semibold text-slate-400 block mb-1">Nomor Referensi</span>
             <div className="font-mono text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-500/10 px-2.5 py-1 rounded-lg border border-brand-500/20 inline-block">
               {payment.reference || '-'}
             </div>

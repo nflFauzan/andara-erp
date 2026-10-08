@@ -1,4 +1,4 @@
-export type PaymentMethod = 'BANK_TRANSFER' | 'CASH' | 'GIRO' | 'OTHER';
+export type PaymentMethod = 'BANK_TRANSFER' | 'CASH' | 'GIRO' | 'DEPOSIT' | 'OTHER';
 export type PaymentStatus = 'CONFIRMED' | 'CANCELLED';
 
 export interface PaymentAllocation {
@@ -25,6 +25,8 @@ export interface Payment {
   customerCode: string;
   date: string;
   amount: number;
+  cashAmount?: number;
+  depositAmount?: number;
   allocatedAmount: number;
   excessAmount: number;
   paymentMethod: PaymentMethod;
@@ -49,6 +51,8 @@ export interface CreatePaymentInput {
   customerId: number;
   paymentDate: string;
   amount: number;
+  cashAmount?: number;
+  depositAmount?: number;
   paymentMethod: PaymentMethod;
   destinationAccount?: string;
   reference?: string;

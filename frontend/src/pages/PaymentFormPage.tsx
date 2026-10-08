@@ -40,8 +40,18 @@ export const PaymentFormPage: React.FC = () => {
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | ''>('');
+
+  // Sumber Dana: Keduanya bisa dipilih sekaligus (Kombinasi Kas/Bank + Potong Deposit)!
+  const [useExternal, setUseExternal] = useState<boolean>(true);
+  const [useDeposit, setUseDeposit] = useState<boolean>(false);
+
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
-  const [amount, setAmount] = useState<string>('');
+
+  // Nominal Inputs
+  const [cashAmount, setCashAmount] = useState<string>('');
+  const [depositAmount, setDepositAmount] = useState<string>('');
+  const [totalAmountInput, setTotalAmountInput] = useState<string>('');
+
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('BANK_TRANSFER');
   const [destinationAccount, setDestinationAccount] = useState('Bank Mandiri 142-00-1234567-8 a.n. CV. ANDARA');
   const [reference, setReference] = useState('');
@@ -74,7 +84,8 @@ export const PaymentFormPage: React.FC = () => {
             setSelectedCustomerId(inv.customerId);
           }
           if (inv.outstanding > 0) {
-            setAmount(inv.outstanding.toString());
+            setCashAmount(inv.outstanding.toString());
+            setTotalAmountInput(inv.outstanding.toString());
           }
           setReference(inv.number);
           setNotes(`Pelunasan Faktur ${inv.number}`);
@@ -90,11 +101,22 @@ export const PaymentFormPage: React.FC = () => {
   useEffect(() => {
     if (selectedCustomerId) {
       loadCustomerInvoices(Number(selectedCustomerId));
+      const cust = customers.find((c) => c.id === Number(selectedCustomerId));
+      if (!cust || cust.depositBalance <= 0) {
+        setUseDeposit(false);
+        setDepositAmount('');
+        setUseExternal(true);
+      }
     } else {
       setInvoices([]);
       setAllocations({});
+      setUseDeposit(false);
+      setDepositAmount('');
+      setUseExternal(true);
+      setCashAmount('');
+      setTotalAmountInput('');
     }
-  }, [selectedCustomerId]);
+  }, [selectedCustomerId, customers]);
 
   const loadCustomers = async () => {
     try {
@@ -151,12 +173,153 @@ export const PaymentFormPage: React.FC = () => {
     }
   };
 
-  // Auto-allocate whenever amount or invoice list changes and autoAllocMode is active
+  // Calculations
+  const currentCustomer = customers.find((c) => c.id === Number(selectedCustomerId));
+  const cashNum = useExternal ? (parseFloat(cashAmount) || 0) : 0;
+  const depositNum = useDeposit ? (parseFloat(depositAmount) || 0) : 0;
+  const totalPaymentNum = cashNum + depositNum;
+
+  const totalAllocatedNum = Object.values(allocations).reduce((acc, curr) => {
+    return acc + (parseFloat(curr.amount) || 0);
+  }, 0);
+  const excessNum = Math.max(0, totalPaymentNum - totalAllocatedNum);
+  const isOverAllocated = totalAllocatedNum > totalPaymentNum;
+
+  // Toggle External Kas/Bank
+  const handleToggleExternal = () => {
+    if (useExternal && !useDeposit) {
+      // Cannot disable both
+      return;
+    }
+    const nextVal = !useExternal;
+    setUseExternal(nextVal);
+    if (!nextVal) {
+      setCashAmount('');
+      setTotalAmountInput(depositNum > 0 ? depositNum.toString() : '');
+    } else {
+      const curTotal = parseFloat(totalAmountInput) || 0;
+      if (curTotal > depositNum) {
+        setCashAmount((curTotal - depositNum).toString());
+      }
+    }
+  };
+
+  // Toggle Saldo Deposit
+  const handleToggleDeposit = () => {
+    if (!currentCustomer || currentCustomer.depositBalance <= 0) return;
+    if (useDeposit && !useExternal) {
+      // Cannot disable both
+      return;
+    }
+    const nextVal = !useDeposit;
+    setUseDeposit(nextVal);
+
+    if (!nextVal) {
+      setDepositAmount('');
+      setTotalAmountInput(cashNum > 0 ? cashNum.toString() : '');
+    } else {
+      // Auto-suggest usable deposit
+      const maxDep = currentCustomer.depositBalance;
+      const totalNeeded = totalAllocatedNum > 0 ? totalAllocatedNum : invoices.reduce((s, i) => s + i.outstanding, 0);
+      const depToUse = Math.min(maxDep, totalNeeded > 0 ? totalNeeded : maxDep);
+      setDepositAmount(depToUse.toString());
+
+      if (useExternal) {
+        if (totalNeeded > depToUse) {
+          setCashAmount((totalNeeded - depToUse).toString());
+          setTotalAmountInput(totalNeeded.toString());
+        } else {
+          setTotalAmountInput((cashNum + depToUse).toString());
+        }
+      } else {
+        setTotalAmountInput(depToUse.toString());
+      }
+    }
+  };
+
+  // Direct handlers for inputs
+  const handleCashAmountChange = (val: string) => {
+    setCashAmount(val);
+    const newCash = parseFloat(val) || 0;
+    const newTotal = newCash + depositNum;
+    setTotalAmountInput(newTotal > 0 ? newTotal.toString() : '');
+  };
+
+  const handleDepositAmountChange = (val: string) => {
+    setDepositAmount(val);
+    const newDep = parseFloat(val) || 0;
+    const newTotal = cashNum + newDep;
+    setTotalAmountInput(newTotal > 0 ? newTotal.toString() : '');
+  };
+
+  const handleTotalAmountChange = (val: string) => {
+    setTotalAmountInput(val);
+    const newTotal = parseFloat(val) || 0;
+
+    if (useExternal && useDeposit) {
+      const maxDep = currentCustomer?.depositBalance || 0;
+      const curDep = parseFloat(depositAmount) || 0;
+      const depToUse = Math.min(curDep > 0 ? curDep : maxDep, newTotal, maxDep);
+      const cashToUse = Math.max(0, newTotal - depToUse);
+      setDepositAmount(depToUse > 0 ? depToUse.toString() : '');
+      setCashAmount(cashToUse > 0 ? cashToUse.toString() : '');
+    } else if (useExternal) {
+      setCashAmount(val);
+    } else if (useDeposit) {
+      const maxDep = currentCustomer?.depositBalance || 0;
+      const depToUse = Math.min(newTotal, maxDep);
+      setDepositAmount(depToUse > 0 ? depToUse.toString() : '');
+    }
+  };
+
+  // Quick Action: Match Total Nominal With All Unpaid Invoices
+  const handleMatchWithAllUnpaid = () => {
+    const totalUnpaid = invoices.reduce((sum, inv) => sum + inv.outstanding, 0);
+    setTotalAmountInput(totalUnpaid.toString());
+
+    if (useExternal && useDeposit) {
+      const maxDep = currentCustomer?.depositBalance || 0;
+      const depToUse = Math.min(maxDep, totalUnpaid);
+      const cashToUse = Math.max(0, totalUnpaid - depToUse);
+      setDepositAmount(depToUse > 0 ? depToUse.toString() : '');
+      setCashAmount(cashToUse > 0 ? cashToUse.toString() : '');
+    } else if (useDeposit) {
+      const maxDep = currentCustomer?.depositBalance || 0;
+      const depToUse = Math.min(maxDep, totalUnpaid);
+      setDepositAmount(depToUse.toString());
+    } else {
+      setCashAmount(totalUnpaid.toString());
+    }
+    setAutoAllocMode(true);
+  };
+
+  // Quick Action: Maximize Deposit
+  const handleUseMaxDeposit = () => {
+    if (!currentCustomer || currentCustomer.depositBalance <= 0) return;
+    const maxDep = currentCustomer.depositBalance;
+    const totalNeeded = totalAllocatedNum > 0 ? totalAllocatedNum : invoices.reduce((sum, inv) => sum + inv.outstanding, 0);
+    const depToUse = Math.min(maxDep, totalNeeded > 0 ? totalNeeded : maxDep);
+    setDepositAmount(depToUse.toString());
+
+    if (useExternal) {
+      if (totalNeeded > depToUse) {
+        const cashToUse = Math.max(0, totalNeeded - depToUse);
+        setCashAmount(cashToUse > 0 ? cashToUse.toString() : '');
+        setTotalAmountInput(totalNeeded.toString());
+      } else {
+        const curCash = parseFloat(cashAmount) || 0;
+        setTotalAmountInput((curCash + depToUse).toString());
+      }
+    } else {
+      setTotalAmountInput(depToUse.toString());
+    }
+  };
+
+  // Auto-allocate whenever totalPaymentNum changes and autoAllocMode is active
   useEffect(() => {
     if (!autoAllocMode || invoices.length === 0) return;
 
-    const totalPay = parseFloat(amount) || 0;
-    let remaining = totalPay;
+    let remaining = totalPaymentNum;
     const newAlloc: Record<number, { amount: string; notes: string }> = {};
 
     for (const inv of invoices) {
@@ -169,7 +332,7 @@ export const PaymentFormPage: React.FC = () => {
     }
 
     setAllocations(newAlloc);
-  }, [amount, invoices, autoAllocMode]);
+  }, [totalPaymentNum, invoices, autoAllocMode]);
 
   // When user edits allocation manually, disable auto-fill mode
   const handleAllocationChange = (invoiceId: number, val: string) => {
@@ -196,8 +359,7 @@ export const PaymentFormPage: React.FC = () => {
   // Reset & trigger automatic FIFO allocation
   const handleResetToAuto = () => {
     setAutoAllocMode(true);
-    const totalPay = parseFloat(amount) || 0;
-    let remaining = totalPay;
+    let remaining = totalPaymentNum;
     const newAlloc: Record<number, { amount: string; notes: string }> = {};
 
     for (const inv of invoices) {
@@ -225,7 +387,22 @@ export const PaymentFormPage: React.FC = () => {
   // Shortcut: Fill nominal and allocate 100% to this specific invoice
   const handlePayInvoiceFull = (invoice: Invoice) => {
     setAutoAllocMode(false);
-    setAmount(invoice.outstanding.toString());
+    const needed = invoice.outstanding;
+    setTotalAmountInput(needed.toString());
+
+    if (useExternal && useDeposit) {
+      const maxDep = currentCustomer?.depositBalance || 0;
+      const depToUse = Math.min(maxDep, needed);
+      const cashToUse = Math.max(0, needed - depToUse);
+      setDepositAmount(depToUse > 0 ? depToUse.toString() : '');
+      setCashAmount(cashToUse > 0 ? cashToUse.toString() : '');
+    } else if (useDeposit) {
+      const maxDep = currentCustomer?.depositBalance || 0;
+      const depToUse = Math.min(maxDep, needed);
+      setDepositAmount(depToUse.toString());
+    } else {
+      setCashAmount(needed.toString());
+    }
 
     const newMap: Record<number, { amount: string; notes: string }> = {};
     invoices.forEach((inv) => {
@@ -240,7 +417,6 @@ export const PaymentFormPage: React.FC = () => {
   // Allocate remaining available payment to this specific invoice
   const allocateMaxForInvoice = (invoice: Invoice) => {
     setAutoAllocMode(false);
-    const parsedTotalPayment = parseFloat(amount) || 0;
     const currentAllocatedElsewhere = Object.entries(allocations).reduce((acc, [id, data]) => {
       if (Number(id) !== invoice.id) {
         return acc + (parseFloat(data.amount) || 0);
@@ -248,7 +424,7 @@ export const PaymentFormPage: React.FC = () => {
       return acc;
     }, 0);
 
-    const remainingAvailableFromPayment = Math.max(0, parsedTotalPayment - currentAllocatedElsewhere);
+    const remainingAvailableFromPayment = Math.max(0, totalPaymentNum - currentAllocatedElsewhere);
     const fillAmount = Math.min(
       invoice.outstanding,
       remainingAvailableFromPayment > 0 ? remainingAvailableFromPayment : invoice.outstanding
@@ -262,16 +438,6 @@ export const PaymentFormPage: React.FC = () => {
       },
     }));
   };
-
-  // Calculations
-  const totalPaymentNum = parseFloat(amount) || 0;
-  const totalAllocatedNum = Object.values(allocations).reduce((acc, curr) => {
-    return acc + (parseFloat(curr.amount) || 0);
-  }, 0);
-  const excessNum = Math.max(0, totalPaymentNum - totalAllocatedNum);
-  const isOverAllocated = totalAllocatedNum > totalPaymentNum;
-
-  const currentCustomer = customers.find((c) => c.id === Number(selectedCustomerId));
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -289,13 +455,33 @@ export const PaymentFormPage: React.FC = () => {
       setErrorMessage('Pilih customer terlebih dahulu');
       return;
     }
+    if (!useExternal && !useDeposit) {
+      setErrorMessage('Pilih setidaknya satu sumber dana pembayaran (Kas/Bank atau Saldo Deposit)');
+      return;
+    }
     if (totalPaymentNum <= 0) {
-      setErrorMessage('Nominal pembayaran harus lebih dari 0');
+      setErrorMessage('Total nominal pembayaran harus lebih dari 0');
       return;
     }
     if (isOverAllocated) {
-      setErrorMessage('Total alokasi melebihi nominal pembayaran yang dimasukkan!');
+      setErrorMessage('Total alokasi melebihi total nominal pembayaran yang dimasukkan!');
       return;
+    }
+
+    if (useDeposit) {
+      const depositBalance = currentCustomer?.depositBalance || 0;
+      if (depositNum > depositBalance) {
+        setErrorMessage(
+          `Nominal potongan deposit (Rp ${depositNum.toLocaleString('id-ID')}) melebihi saldo deposit tersedia (Rp ${depositBalance.toLocaleString('id-ID')})`
+        );
+        return;
+      }
+      if (depositNum > totalAllocatedNum) {
+        setErrorMessage(
+          `Nominal potongan saldo deposit (Rp ${depositNum.toLocaleString('id-ID')}) tidak boleh melebihi total faktur yang dialokasikan (Rp ${totalAllocatedNum.toLocaleString('id-ID')})`
+        );
+        return;
+      }
     }
 
     // Validate that no item exceeds outstanding
@@ -304,7 +490,7 @@ export const PaymentFormPage: React.FC = () => {
       const inv = invoices.find((i) => i.id === Number(invId));
       if (inv && val > inv.outstanding) {
         setErrorMessage(
-          `Alokasi untuk Faktur ${inv.number} (Rp ${val.toLocaleString()}) melebihi sisa tagihan (Rp ${inv.outstanding.toLocaleString()})`
+          `Alokasi untuk Faktur ${inv.number} (Rp ${val.toLocaleString('id-ID')}) melebihi sisa tagihan (Rp ${inv.outstanding.toLocaleString('id-ID')})`
         );
         return;
       }
@@ -332,8 +518,10 @@ export const PaymentFormPage: React.FC = () => {
         customerId: Number(selectedCustomerId),
         paymentDate,
         amount: totalPaymentNum,
-        paymentMethod,
-        destinationAccount: destinationAccount.trim() || undefined,
+        cashAmount: useExternal ? (parseFloat(cashAmount) || 0) : 0,
+        depositAmount: useDeposit ? (parseFloat(depositAmount) || 0) : 0,
+        paymentMethod: useExternal ? paymentMethod : 'DEPOSIT',
+        destinationAccount: useExternal ? destinationAccount.trim() || undefined : 'Saldo Deposit Customer',
         reference: reference.trim() || undefined,
         notes: notes.trim() || undefined,
         allocations: allocationItems,
@@ -466,10 +654,99 @@ export const PaymentFormPage: React.FC = () => {
                 <option value="">-- Pilih Customer --</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.code} - {c.name} {c.depositBalance > 0 ? `(Deposit: Rp ${c.depositBalance.toLocaleString()})` : ''}
+                    {c.code} - {c.name} {c.depositBalance > 0 ? `(Deposit: Rp ${c.depositBalance.toLocaleString('id-ID')})` : ''}
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Sumber Dana Pembayaran (Dapat Memilih Kas/Bank, Saldo Deposit, atau Keduanya Sekaligus) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Sumber Dana Pembayaran <span className="text-rose-500">*</span>
+                </label>
+                {currentCustomer && currentCustomer.depositBalance > 0 && (
+                  <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 font-mono">
+                    Saldo: {formatCurrency(currentCustomer.depositBalance)}
+                  </span>
+                )}
+              </div>
+
+              {/* Status Badge jika kedua opsi dipilih */}
+              {useExternal && useDeposit && (
+                <div className="px-2.5 py-1 bg-gradient-to-r from-brand-500/10 via-purple-500/10 to-amber-500/10 border border-brand-500/20 rounded-lg text-[10.5px] font-extrabold text-brand-700 dark:text-brand-300 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-brand-500 shrink-0" />
+                  <span>Kombinasi Sumber Dana Aktif (Kas/Bank + Potong Deposit)</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2">
+                {/* Opsi 1: Kas / Bank */}
+                <button
+                  type="button"
+                  onClick={handleToggleExternal}
+                  className={`p-2.5 rounded-xl border text-left transition relative flex flex-col gap-1.5 ${
+                    useExternal
+                      ? 'bg-brand-500/10 border-brand-500 text-brand-950 dark:text-brand-100 ring-2 ring-brand-500/20 shadow-xs'
+                      : 'bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-bold text-xs">
+                      <Building2 className={`w-3.5 h-3.5 ${useExternal ? 'text-brand-500' : 'text-slate-400'}`} />
+                      Kas / Bank
+                    </div>
+                    <span
+                      className={`w-4 h-4 rounded-md flex items-center justify-center text-[10px] font-bold transition ${
+                        useExternal
+                          ? 'bg-brand-600 text-white'
+                          : 'border border-slate-300 dark:border-slate-600 text-transparent'
+                      }`}
+                    >
+                      ✓
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                    Penerimaan baru (Transfer / Kas)
+                  </span>
+                </button>
+
+                {/* Opsi 2: Potong Saldo Deposit Customer */}
+                <button
+                  type="button"
+                  disabled={!currentCustomer || currentCustomer.depositBalance <= 0}
+                  onClick={handleToggleDeposit}
+                  className={`p-2.5 rounded-xl border text-left transition relative flex flex-col gap-1.5 ${
+                    useDeposit
+                      ? 'bg-amber-500/15 border-amber-500 text-amber-950 dark:text-amber-100 ring-2 ring-amber-500/25 shadow-xs'
+                      : currentCustomer && currentCustomer.depositBalance > 0
+                      ? 'bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-amber-400 hover:bg-amber-50/50'
+                      : 'bg-slate-100/60 dark:bg-slate-800/40 border-slate-200/50 dark:border-slate-800/50 text-slate-400 cursor-not-allowed opacity-60'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-bold text-xs">
+                      <Wallet className={`w-3.5 h-3.5 ${useDeposit ? 'text-amber-500' : 'text-slate-400'}`} />
+                      Potong Deposit
+                    </div>
+                    <span
+                      className={`w-4 h-4 rounded-md flex items-center justify-center text-[10px] font-bold transition ${
+                        useDeposit
+                          ? 'bg-amber-500 text-slate-950 font-black'
+                          : 'border border-slate-300 dark:border-slate-600 text-transparent'
+                      }`}
+                    >
+                      ✓
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                    {currentCustomer && currentCustomer.depositBalance > 0
+                      ? `Tersedia: ${formatCurrency(currentCustomer.depositBalance)}`
+                      : 'Saldo Deposit Rp 0'}
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* Payment Date */}
@@ -489,81 +766,183 @@ export const PaymentFormPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Total Amount */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Nominal Pembayaran (Rp) <span className="text-rose-500">*</span>
-                </label>
-                {autoAllocMode && invoices.length > 0 && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                    <Sparkles className="w-3 h-3" /> Auto-Alokasi Aktif
-                  </span>
+            {/* Total Nominal Pembayaran & Breakdown Rincian */}
+            <div className="space-y-3 p-3.5 bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded-2xl">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                    Total Nominal Pembayaran (Rp) <span className="text-rose-500">*</span>
+                  </label>
+                  {autoAllocMode && invoices.length > 0 && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                      <Sparkles className="w-3 h-3" /> Auto-Alokasi
+                    </span>
+                  )}
+                </div>
+                <input
+                  type="number"
+                  required
+                  min="0.01"
+                  step="any"
+                  placeholder="0"
+                  value={totalAmountInput || (totalPaymentNum > 0 ? totalPaymentNum.toString() : '')}
+                  onChange={(e) => handleTotalAmountChange(e.target.value)}
+                  className="w-full px-3 py-2 text-base font-black text-slate-900 dark:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30 font-mono"
+                />
+                {totalPaymentNum > 0 && (
+                  <div className="text-[11px] text-brand-600 dark:text-brand-400 font-bold mt-1">
+                    Terbilang: {formatCurrency(totalPaymentNum)}
+                  </div>
+                )}
+                {invoices.length > 0 && (
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      onClick={handleMatchWithAllUnpaid}
+                      className="text-[10.5px] font-bold text-brand-600 dark:text-brand-400 bg-brand-500/10 hover:bg-brand-500/20 px-2.5 py-1 rounded-lg border border-brand-500/20 transition inline-flex items-center gap-1"
+                      title="Setel nominal sama dengan total tagihan semua faktur belum lunas"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      ⚡ Lunasi Semua Tagihan ({formatCurrency(invoices.reduce((s, i) => s + i.outstanding, 0))})
+                    </button>
+                  </div>
                 )}
               </div>
-              <input
-                type="number"
-                required
-                min="0.01"
-                step="any"
-                placeholder="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full px-3 py-2.5 text-lg font-bold text-slate-900 dark:text-white bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30"
-              />
-              {totalPaymentNum > 0 && (
-                <div className="text-xs text-brand-600 dark:text-brand-400 font-bold mt-1">
-                  Terbilang: {formatCurrency(totalPaymentNum)}
+
+              {/* Rincian Komponen Pembayaran (Jika Keduanya Dipilih) */}
+              {useExternal && useDeposit && (
+                <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700/80 space-y-2.5 text-xs">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                    <span>Rincian Pembagian Dana:</span>
+                    <span className="text-[10px] text-slate-400 normal-case font-normal">(Kas/Bank + Deposit)</span>
+                  </div>
+
+                  {/* Input Porsi Deposit */}
+                  <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-amber-950 dark:text-amber-100 flex items-center gap-1">
+                        <Wallet className="w-3.5 h-3.5 text-amber-500" />
+                        1. Potong Saldo Deposit:
+                      </span>
+                      <span className="font-mono text-[11px] text-amber-700 dark:text-amber-300 font-semibold">
+                        Maks: {formatCurrency(currentCustomer?.depositBalance || 0)}
+                      </span>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      max={currentCustomer?.depositBalance || 0}
+                      step="any"
+                      placeholder="0"
+                      value={depositAmount}
+                      onChange={(e) => handleDepositAmountChange(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs font-mono font-bold text-amber-950 dark:text-white bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                    />
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={handleUseMaxDeposit}
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-200 border border-amber-500/30 transition"
+                      >
+                        ⚡ Maksimal Deposit
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Input Porsi Kas / Bank */}
+                  <div className="p-2.5 bg-brand-500/10 border border-brand-500/20 rounded-xl space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-brand-950 dark:text-brand-100 flex items-center gap-1">
+                        <Building2 className="w-3.5 h-3.5 text-brand-500" />
+                        2. Diterima via Kas / Bank:
+                      </span>
+                      <span className="font-mono text-[11px] text-brand-700 dark:text-brand-300 font-semibold">
+                        {cashNum > 0 ? formatCurrency(cashNum) : 'Rp 0'}
+                      </span>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      placeholder="0"
+                      value={cashAmount}
+                      onChange={(e) => handleCashAmountChange(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs font-mono font-bold text-slate-900 dark:text-white bg-white dark:bg-slate-900 border border-brand-300 dark:border-brand-700/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Presets jika hanya DEPOSIT aktif */}
+              {!useExternal && useDeposit && currentCustomer && currentCustomer.depositBalance > 0 && (
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-1.5">
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleUseMaxDeposit}
+                      className="text-[10px] font-bold px-2 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 dark:text-amber-200 border border-amber-500/30 transition"
+                    >
+                      Gunakan Maksimal ({formatCurrency(currentCustomer.depositBalance)})
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-tight">
+                    *Maksimal pemakaian dibatasi oleh saldo deposit customer ({formatCurrency(currentCustomer.depositBalance)}).
+                  </p>
                 </div>
               )}
             </div>
 
-            {/* Payment Method */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                Metode Pembayaran <span className="text-rose-500">*</span>
-              </label>
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                className="w-full px-3 py-2 text-sm bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30 font-medium"
-              >
-                <option value="BANK_TRANSFER">Transfer Bank</option>
-                <option value="CASH">Tunai (Cash)</option>
-                <option value="GIRO">Giro / Cek</option>
-                <option value="OTHER">Lainnya</option>
-              </select>
-            </div>
+            {/* Detail Penerimaan Kas/Bank (Hanya muncul jika useExternal aktif) */}
+            {useExternal && (
+              <div className="space-y-4 pt-1 border-t border-slate-200/80 dark:border-slate-800">
+                {/* Metode Pembayaran */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                    Metode Pembayaran Kas/Bank <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                    className="w-full px-3 py-2 text-sm bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30 font-medium"
+                  >
+                    <option value="BANK_TRANSFER">Transfer Bank</option>
+                    <option value="CASH">Tunai (Cash)</option>
+                    <option value="GIRO">Giro / Cek</option>
+                    <option value="OTHER">Lainnya</option>
+                  </select>
+                </div>
 
-            {/* Destination Account */}
+                {/* Rekening Tujuan / Kas */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                    Rekening Tujuan / Kas Masuk
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Bank Mandiri 142-00-1234567-8 a.n. CV. ANDARA"
+                    value={destinationAccount}
+                    onChange={(e) => setDestinationAccount(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Referensi Transaksi */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                Rekening Tujuan / Kas
+                {useExternal ? 'Nomor Referensi / No. Bukti Transfer' : 'Referensi Pemotongan Deposit'}
               </label>
               <input
                 type="text"
-                placeholder="Contoh: Bank Mandiri 142-00-1234567-8"
-                value={destinationAccount}
-                onChange={(e) => setDestinationAccount(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30"
-              />
-            </div>
-
-            {/* Reference */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                Nomor Referensi / No. Bukti Transfer
-              </label>
-              <input
-                type="text"
-                placeholder="Contoh: TRF-MDR-99210"
+                placeholder={useExternal ? 'Contoh: TRF-MDR-99210' : 'Contoh: DEP-INV-001'}
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                className="w-full px-3 py-2 text-sm bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30 font-mono"
               />
             </div>
 
-            {/* Notes */}
+            {/* Catatan Pembayaran */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                 Catatan Pembayaran
@@ -581,28 +960,49 @@ export const PaymentFormPage: React.FC = () => {
 
         {/* Right Column: Invoice Allocation Engine */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Existing Deposit Notice (Temuan #5) */}
+          {/* Deposit Notice Banner dengan Interaksi Aktif */}
           {currentCustomer && currentCustomer.depositBalance > 0 && (
-            <div className="p-4 bg-amber-500/10 border border-amber-500/25 rounded-2xl flex items-start justify-between gap-3 text-amber-900 dark:text-amber-200">
+            <div className="p-4 bg-amber-500/10 border border-amber-500/25 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-900 dark:text-amber-200">
               <div className="flex items-start gap-3">
                 <div className="p-2 bg-amber-500/20 text-amber-600 dark:text-amber-300 rounded-xl shrink-0 mt-0.5">
                   <Wallet className="w-5 h-5" />
                 </div>
-                <div className="space-y-1">
-                  <div className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
-                    Informasi Saldo Deposit Customer
+                <div className="space-y-0.5">
+                  <div className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                    <span>Saldo Deposit Customer Aktif</span>
+                    {useDeposit && (
+                      <span className="text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/30">
+                        ✓ Digunakan Sebesar {formatCurrency(depositNum)}
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm font-semibold">
-                    Customer ini memiliki Saldo Deposit aktif sebesar{' '}
+                    Customer memiliki Saldo Deposit sebesar{' '}
                     <span className="font-mono font-black text-amber-700 dark:text-amber-300 text-base">
                       {formatCurrency(currentCustomer.depositBalance)}
                     </span>
                   </div>
                   <p className="text-xs text-amber-800/80 dark:text-amber-300/80 leading-relaxed">
-                    Jika pembayaran baru ini memiliki kelebihan nominal setelah alokasi faktur, sisa akan otomatis diakumulasikan ke saldo deposit ini.
+                    {useDeposit
+                      ? `Potongan saldo deposit ${formatCurrency(depositNum)} sedang aktif pada form ini. Sisa saldo nanti: ${formatCurrency(Math.max(0, currentCustomer.depositBalance - depositNum))}.`
+                      : 'Customer memiliki saldo deposit aktif. Anda dapat mencentang "Potong Deposit" di samping untuk menggabungkannya dengan penerimaan Kas/Bank.'}
                   </p>
                 </div>
               </div>
+              {!useDeposit && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseDeposit(true);
+                    handleUseMaxDeposit();
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 shadow-md shadow-amber-500/20 transition shrink-0"
+                  title="Gunakan saldo deposit customer ini sebagai pemotongan pembayaran"
+                >
+                  <Wallet className="w-4 h-4" />
+                  Gunakan Saldo Deposit Ini
+                </button>
+              )}
             </div>
           )}
 
@@ -794,13 +1194,35 @@ export const PaymentFormPage: React.FC = () => {
 
             {/* Live Financial Allocation Summary */}
             <div className="p-4 bg-white/50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800 rounded-2xl space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600 dark:text-slate-400 font-medium">Nominal Pembayaran Diterima:</span>
-                <span className="font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(totalPaymentNum)}</span>
-              </div>
+              {useExternal && useDeposit ? (
+                <>
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    <span>1. Diterima via Kas / Bank:</span>
+                    <span className="font-mono font-bold text-brand-600 dark:text-brand-400">{formatCurrency(cashNum)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    <span>2. Potongan Saldo Deposit Customer:</span>
+                    <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{formatCurrency(depositNum)}</span>
+                  </div>
+                  <div className="border-t border-slate-200/60 dark:border-slate-800/60 pt-2 flex items-center justify-between text-sm">
+                    <span className="text-slate-700 dark:text-slate-300 font-bold">Total Dana Pembayaran:</span>
+                    <span className="font-mono font-extrabold text-slate-900 dark:text-white text-base">{formatCurrency(totalPaymentNum)}</span>
+                  </div>
+                </>
+              ) : useDeposit ? (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600 dark:text-slate-400 font-medium">Nominal Dipotong dari Saldo Deposit:</span>
+                  <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-base">{formatCurrency(depositNum)}</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600 dark:text-slate-400 font-medium">Nominal Pembayaran Kas/Bank Diterima:</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white text-base">{formatCurrency(cashNum)}</span>
+                </div>
+              )}
 
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600 dark:text-slate-400 font-medium">Total Alokasi ke Faktur:</span>
+              <div className="flex items-center justify-between text-sm border-t border-slate-200/60 dark:border-slate-800/60 pt-2">
+                <span className="text-slate-600 dark:text-slate-400 font-medium">Total Alokasi ke Faktur (Settlement):</span>
                 <span
                   className={`font-mono font-bold ${
                     isOverAllocated ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
@@ -810,16 +1232,45 @@ export const PaymentFormPage: React.FC = () => {
                 </span>
               </div>
 
-              <div className="border-t border-slate-200 dark:border-slate-800 pt-2 flex items-center justify-between text-sm">
-                <span className="text-slate-700 dark:text-slate-300 font-semibold">Sisa Lebih / Masuk Deposit Customer:</span>
-                <span className="font-mono font-black text-amber-500 text-base">{formatCurrency(excessNum)}</span>
-              </div>
+              {/* Deposit Balance Impact if deposit is used */}
+              {useDeposit && (
+                <div className="border-t border-slate-200 dark:border-slate-800 pt-2 flex items-center justify-between text-sm">
+                  <span className="text-slate-700 dark:text-slate-300 font-semibold">Sisa Saldo Deposit Customer Nanti:</span>
+                  <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-base">
+                    {formatCurrency(Math.max(0, (currentCustomer?.depositBalance || 0) - depositNum))}
+                  </span>
+                </div>
+              )}
 
-              {/* Status Alert Messages */}
+              {/* Excess from Cash (Surplus) */}
+              {excessNum > 0 && !isOverAllocated && (
+                <div className="border-t border-slate-200 dark:border-slate-800 pt-2 flex items-center justify-between text-sm">
+                  <span className="text-slate-700 dark:text-slate-300 font-semibold">Sisa Lebih Kas / Masuk Deposit Customer:</span>
+                  <span className="font-mono font-black text-amber-500 text-base">{formatCurrency(excessNum)}</span>
+                </div>
+              )}
+
+              {/* Warning/Alert notifications */}
               {isOverAllocated && (
                 <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2 font-semibold">
                   <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
-                  Total alokasi melebihi nominal pembayaran! Harap sesuaikan alokasi faktur.
+                  Total alokasi faktur ({formatCurrency(totalAllocatedNum)}) melebihi total nominal pembayaran ({formatCurrency(totalPaymentNum)})!
+                </div>
+              )}
+
+              {useDeposit && depositNum > (currentCustomer?.depositBalance || 0) && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2 font-semibold">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
+                  Nominal potongan deposit ({formatCurrency(depositNum)}) melebihi saldo deposit aktif customer ({formatCurrency(currentCustomer?.depositBalance || 0)})!
+                </div>
+              )}
+
+              {useDeposit && depositNum > totalAllocatedNum && totalAllocatedNum > 0 && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-800 dark:text-rose-300 text-xs flex items-start gap-2 font-semibold">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
+                  <div>
+                    Potongan deposit ({formatCurrency(depositNum)}) tidak boleh melebihi total tagihan faktur yang dialokasikan ({formatCurrency(totalAllocatedNum)}). Sesuaikan porsi potongan deposit.
+                  </div>
                 </div>
               )}
 
@@ -827,9 +1278,9 @@ export const PaymentFormPage: React.FC = () => {
                 <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-800 dark:text-amber-300 text-xs flex items-start gap-2 leading-relaxed font-medium">
                   <Wallet className="w-4 h-4 shrink-0 text-amber-500 mt-0.5" />
                   <div>
-                    Terdapat sisa pembayaran sebesar <span className="font-bold">{formatCurrency(excessNum)}</span>.{' '}
-                    Sistem akan secara otomatis mencatat kelebihan ini ke{' '}
-                    <span className="font-bold underline">Deposit Customer</span> (AGENTS.md §10.3) yang dapat digunakan untuk pemotongan faktur selanjutnya.
+                    Terdapat sisa pembayaran kas sebesar <span className="font-bold">{formatCurrency(excessNum)}</span>.{' '}
+                    Sistem akan secara otomatis mencatat kelebihan kas ini ke{' '}
+                    <span className="font-bold underline">Deposit Customer</span> (AGENTS.md §10.3) yang dapat digunakan untuk transaksi selanjutnya.
                   </div>
                 </div>
               )}
@@ -881,15 +1332,31 @@ export const PaymentFormPage: React.FC = () => {
                   <span className="font-bold text-slate-800 dark:text-slate-200">{paymentDate}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block font-medium">Metode / Kas:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">
-                    {paymentMethod === 'BANK_TRANSFER' ? 'Transfer Bank' : paymentMethod}
+                  <span className="text-slate-400 block font-medium">Sumber Dana:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                    {useExternal && useDeposit ? (
+                      <span className="text-purple-600 dark:text-purple-400 font-black">
+                        ⚡ Kombinasi (Kas + Deposit)
+                      </span>
+                    ) : useDeposit ? (
+                      <span className="text-amber-600 dark:text-amber-400 font-black">
+                        🪙 Saldo Deposit Customer
+                      </span>
+                    ) : paymentMethod === 'BANK_TRANSFER' ? (
+                      'Transfer Bank'
+                    ) : paymentMethod === 'CASH' ? (
+                      'Tunai'
+                    ) : paymentMethod === 'GIRO' ? (
+                      'Giro'
+                    ) : (
+                      paymentMethod
+                    )}
                   </span>
                 </div>
                 <div>
                   <span className="text-slate-400 block font-medium">No. Referensi:</span>
                   <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">
-                    {reference || '-'}
+                    {reference || (useDeposit && !useExternal ? 'Potong Saldo Deposit' : '-')}
                   </span>
                 </div>
               </div>
@@ -945,22 +1412,42 @@ export const PaymentFormPage: React.FC = () => {
 
               {/* Financial Summary Card */}
               <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl space-y-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Nominal Diterima:</span>
-                  <span className="font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(totalPaymentNum)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Total Settlement Faktur:</span>
-                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                    {formatCurrency(totalAllocatedNum)}
+                {useExternal && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Penerimaan Kas/Bank ({paymentMethod}):</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(cashNum)}</span>
+                  </div>
+                )}
+                {useDeposit && (
+                  <div className="flex items-center justify-between text-amber-700 dark:text-amber-400 font-semibold">
+                    <span>Potongan Saldo Deposit Customer:</span>
+                    <span className="font-mono font-bold">- {formatCurrency(depositNum)}</span>
+                  </div>
+                )}
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-1.5 flex items-center justify-between font-bold">
+                  <span className="text-slate-700 dark:text-slate-300">Total Nominal Pembayaran:</span>
+                  <span className="font-mono font-black text-slate-900 dark:text-white text-sm">
+                    {formatCurrency(totalPaymentNum)}
                   </span>
                 </div>
-                <div className="border-t border-slate-200 dark:border-slate-700 pt-1.5 flex items-center justify-between font-semibold">
-                  <span className="text-slate-700 dark:text-slate-300">Masuk Saldo Deposit:</span>
-                  <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
-                    {formatCurrency(excessNum)}
-                  </span>
+                <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
+                  <span>Total Alokasi Settlement Faktur:</span>
+                  <span className="font-mono font-bold">{formatCurrency(totalAllocatedNum)}</span>
                 </div>
+                {excessNum > 0 && (
+                  <div className="flex items-center justify-between font-semibold text-amber-600 dark:text-amber-400">
+                    <span>Sisa Lebih Masuk Saldo Deposit:</span>
+                    <span className="font-mono font-bold">+ {formatCurrency(excessNum)}</span>
+                  </div>
+                )}
+                {useDeposit && (
+                  <div className="border-t border-slate-200 dark:border-slate-700 pt-1.5 flex items-center justify-between text-slate-600 dark:text-slate-400">
+                    <span>Sisa Saldo Deposit Customer Nanti:</span>
+                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatCurrency(Math.max(0, (currentCustomer?.depositBalance || 0) - depositNum))}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

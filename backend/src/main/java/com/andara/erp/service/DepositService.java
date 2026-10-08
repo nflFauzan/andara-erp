@@ -136,6 +136,46 @@ public class DepositService {
     }
 
     @Transactional
+    public DepositTransaction recordDepositUsed(Customer customer, BigDecimal amount, String referenceType, Long referenceId, String notes, String username) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            return null;
+        }
+
+        BigDecimal currentBalance = depositTransactionRepository.calculateCurrentBalanceByCustomerId(customer.getId());
+        if (currentBalance == null) {
+            currentBalance = BigDecimal.ZERO;
+        }
+        if (currentBalance.compareTo(amount) < 0) {
+            throw new AppException(ErrorCode.DEPOSIT_INSUFFICIENT, "Saldo deposit customer tidak mencukupi (Tersedia: Rp " + currentBalance + ", Dibutuhkan: Rp " + amount + ")");
+        }
+        BigDecimal newBalance = currentBalance.subtract(amount);
+
+        DepositTransaction transaction = new DepositTransaction(
+                customer,
+                DepositTransactionType.DEPOSIT_USED,
+                amount,
+                newBalance,
+                referenceType,
+                referenceId,
+                notes != null && !notes.isBlank() ? notes : "Penggunaan deposit customer " + customer.getName(),
+                username
+        );
+
+        customer.setDepositBalance(newBalance);
+        customerRepository.save(customer);
+
+        DepositTransaction saved = depositTransactionRepository.save(transaction);
+        auditLogService.log(
+                "DEPOSIT_USED",
+                "DEPOSIT_TRANSACTION",
+                saved.getId(),
+                "Saldo: Rp" + currentBalance,
+                "Penggunaan deposit customer " + customer.getName() + " sebesar Rp" + amount + " (Saldo baru: Rp" + newBalance + ")"
+        );
+        return saved;
+    }
+
+    @Transactional
     public DepositTransaction recordDepositRefund(Customer customer, BigDecimal amount, String referenceType, Long referenceId, String notes, String username) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             return null;

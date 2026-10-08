@@ -24,6 +24,7 @@ const METHOD_LABELS: Record<PaymentMethod, string> = {
   BANK_TRANSFER: 'Transfer Bank',
   CASH: 'Tunai',
   GIRO: 'Giro',
+  DEPOSIT: 'Saldo Deposit',
   OTHER: 'Lainnya',
 };
 
@@ -287,6 +288,7 @@ export const PaymentListPage: React.FC = () => {
               <option value="BANK_TRANSFER">Transfer Bank</option>
               <option value="CASH">Tunai</option>
               <option value="GIRO">Giro</option>
+              <option value="DEPOSIT">Saldo Deposit</option>
               <option value="OTHER">Lainnya</option>
             </select>
           </div>
@@ -392,14 +394,28 @@ export const PaymentListPage: React.FC = () => {
                       </td>
 
                       <td className="px-4 py-4">
-                        <div className="font-bold text-slate-800 dark:text-slate-200 text-xs">
-                          {METHOD_LABELS[payment.paymentMethod] || payment.paymentMethod}
+                        <div className="font-bold text-slate-800 dark:text-slate-200 text-xs flex items-center gap-1.5">
+                          {payment.cashAmount && payment.depositAmount && payment.cashAmount > 0 && payment.depositAmount > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-black bg-brand-500/10 text-brand-700 dark:text-brand-300 border border-brand-500/25">
+                              ⚡ Kas + Deposit
+                            </span>
+                          ) : payment.paymentMethod === 'DEPOSIT' || (payment.depositAmount && payment.depositAmount > 0 && (!payment.cashAmount || payment.cashAmount === 0)) ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-black bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/25">
+                              🪙 Saldo Deposit
+                            </span>
+                          ) : (
+                            METHOD_LABELS[payment.paymentMethod] || payment.paymentMethod
+                          )}
                         </div>
-                        {payment.destinationAccount && (
+                        {payment.cashAmount && payment.depositAmount && payment.cashAmount > 0 && payment.depositAmount > 0 ? (
+                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                            Kas: {formatCurrency(payment.cashAmount)} • Dep: {formatCurrency(payment.depositAmount)}
+                          </div>
+                        ) : payment.destinationAccount ? (
                           <div className="text-[11px] text-slate-400 line-clamp-1">
                             {payment.destinationAccount}
                           </div>
-                        )}
+                        ) : null}
                       </td>
 
                       <td className="px-4 py-4 text-right font-black text-slate-900 dark:text-white font-mono">

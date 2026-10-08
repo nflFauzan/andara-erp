@@ -96,7 +96,35 @@ public class PaymentService {
             throw new AppException(ErrorCode.INVALID_REQUEST, "Customer tidak aktif");
         }
 
-        BigDecimal paymentAmount = request.getAmount();
+        // Determine Cash vs Deposit breakdown
+        BigDecimal cashAmount = request.getCashAmount();
+        BigDecimal depositAmount = request.getDepositAmount();
+
+        if (cashAmount == null && depositAmount == null) {
+            // Legacy / simple request fallback
+            if (request.getPaymentMethod() == PaymentMethod.DEPOSIT) {
+                depositAmount = request.getAmount();
+                cashAmount = BigDecimal.ZERO;
+            } else {
+                cashAmount = request.getAmount();
+                depositAmount = BigDecimal.ZERO;
+            }
+        } else {
+            if (cashAmount == null) cashAmount = BigDecimal.ZERO;
+            if (depositAmount == null) depositAmount = BigDecimal.ZERO;
+        }
+
+        if (cashAmount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new AppException(ErrorCode.INVALID_REQUEST, "Nominal kas/bank tidak boleh negatif");
+        }
+        if (depositAmount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new AppException(ErrorCode.INVALID_REQUEST, "Nominal potongan deposit tidak boleh negatif");
+        }
+
+        BigDecimal paymentAmount = cashAmount.add(depositAmount);
+        if (paymentAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new AppException(ErrorCode.INVALID_REQUEST, "Total nominal pembayaran harus lebih dari 0");
+        }
 
         // 1. Calculate and validate allocations
         BigDecimal totalAllocated = BigDecimal.ZERO;
@@ -113,8 +141,26 @@ public class PaymentService {
         if (totalAllocated.compareTo(paymentAmount) > 0) {
             throw new AppException(
                     ErrorCode.PAYMENT_OVER_ALLOCATED,
-                    "Total alokasi (Rp " + totalAllocated + ") melebihi nominal pembayaran (Rp " + paymentAmount + ")"
+                    "Total alokasi (Rp " + totalAllocated + ") melebihi total nominal pembayaran (Rp " + paymentAmount + ")"
             );
+        }
+
+        // Deposit Invariants
+        if (depositAmount.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal currentDeposit = depositService.getDepositBalance(customer.getId());
+            if (currentDeposit.compareTo(depositAmount) < 0) {
+                throw new AppException(
+                        ErrorCode.DEPOSIT_INSUFFICIENT,
+                        "Saldo deposit customer tidak mencukupi (Tersedia: Rp " + currentDeposit + ", Dibutuhkan: Rp " + depositAmount + ")"
+                );
+            }
+            // Deposit deduction cannot exceed totalAllocated
+            if (depositAmount.compareTo(totalAllocated) > 0) {
+                throw new AppException(
+                        ErrorCode.INVALID_REQUEST,
+                        "Potongan deposit (Rp " + depositAmount + ") tidak boleh melebihi total tagihan faktur yang dialokasikan (Rp " + totalAllocated + ")"
+                );
+            }
         }
 
         // 2. Generate Payment Number concurrency-safe
@@ -127,8 +173,23 @@ public class PaymentService {
         payment.setCustomer(customer);
         payment.setDate(paymentDate);
         payment.setAmount(paymentAmount);
-        payment.setPaymentMethod(request.getPaymentMethod());
-        payment.setDestinationAccount(request.getDestinationAccount());
+        payment.setCashAmount(cashAmount);
+        payment.setDepositAmount(depositAmount);
+
+        if (cashAmount.compareTo(BigDecimal.ZERO) > 0) {
+            payment.setPaymentMethod(request.getPaymentMethod() != null && request.getPaymentMethod() != PaymentMethod.DEPOSIT
+                    ? request.getPaymentMethod()
+                    : PaymentMethod.BANK_TRANSFER);
+            payment.setDestinationAccount(request.getDestinationAccount());
+        } else {
+            payment.setPaymentMethod(PaymentMethod.DEPOSIT);
+            payment.setDestinationAccount(
+                    request.getDestinationAccount() != null && !request.getDestinationAccount().isBlank()
+                            ? request.getDestinationAccount()
+                            : "Saldo Deposit Customer"
+            );
+        }
+
         payment.setReference(request.getReference());
         payment.setNotes(request.getNotes());
         payment.setStatus(PaymentStatus.CONFIRMED);
@@ -179,7 +240,20 @@ public class PaymentService {
             invoiceRepository.save(invoice);
         }
 
-        // 5. Overpayment / Excess handling -> Customer Deposit
+        // 5. Overpayment / Excess handling AND Deposit deduction
+        if (depositAmount.compareTo(BigDecimal.ZERO) > 0) {
+            depositService.recordDepositUsed(
+                    customer,
+                    depositAmount,
+                    "PAYMENT",
+                    savedPayment.getId(),
+                    request.getNotes() != null && !request.getNotes().isBlank()
+                            ? request.getNotes()
+                            : "Penggunaan Saldo Deposit untuk transaksi " + savedPayment.getNumber(),
+                    username
+            );
+        }
+
         BigDecimal excess = paymentAmount.subtract(totalAllocated);
         if (excess.compareTo(BigDecimal.ZERO) > 0) {
             depositService.recordDepositIn(
@@ -187,19 +261,22 @@ public class PaymentService {
                     excess,
                     "PAYMENT",
                     savedPayment.getId(),
-                    "Kelebihan pembayaran dari transaksi " + savedPayment.getNumber(),
+                    "Kelebihan pembayaran kas dari transaksi " + savedPayment.getNumber(),
                     username
             );
         }
 
         Payment finalPayment = paymentRepository.save(savedPayment);
-        auditLogService.log(
-                "CREATE_PAYMENT",
-                "PAYMENT",
-                finalPayment.getId(),
-                null,
-                "Pembayaran kas dibuat: " + finalPayment.getNumber() + " nominal Rp" + finalPayment.getAmount() + " (Alokasi: Rp" + totalAllocated + ", Surplus Deposit: Rp" + excess + ")"
-        );
+        String auditDesc;
+        if (cashAmount.compareTo(BigDecimal.ZERO) > 0 && depositAmount.compareTo(BigDecimal.ZERO) > 0) {
+            auditDesc = "Pembayaran kombinasi dibuat: " + finalPayment.getNumber() + " total Rp" + finalPayment.getAmount() +
+                    " (Kas: Rp" + cashAmount + ", Potong Deposit: Rp" + depositAmount + ", Alokasi: Rp" + totalAllocated + ")";
+        } else if (depositAmount.compareTo(BigDecimal.ZERO) > 0) {
+            auditDesc = "Pembayaran via Saldo Deposit dibuat: " + finalPayment.getNumber() + " nominal Rp" + finalPayment.getAmount() + " (Alokasi: Rp" + totalAllocated + ")";
+        } else {
+            auditDesc = "Pembayaran kas dibuat: " + finalPayment.getNumber() + " nominal Rp" + finalPayment.getAmount() + " (Alokasi: Rp" + totalAllocated + ", Surplus Deposit: Rp" + excess + ")";
+        }
+        auditLogService.log("CREATE_PAYMENT", "PAYMENT", finalPayment.getId(), null, auditDesc);
         return mapToDTO(finalPayment);
     }
 
@@ -214,6 +291,18 @@ public class PaymentService {
 
         Customer customer = customerRepository.findByIdForUpdate(payment.getCustomer().getId())
                 .orElseThrow(() -> new AppException(ErrorCode.CUSTOMER_NOT_FOUND, "Customer tidak ditemukan"));
+
+        // If this payment used deposit, refund it back to customer deposit
+        if (payment.getDepositAmount() != null && payment.getDepositAmount().compareTo(BigDecimal.ZERO) > 0) {
+            depositService.recordDepositIn(
+                    customer,
+                    payment.getDepositAmount(),
+                    "PAYMENT_CANCEL",
+                    payment.getId(),
+                    "Pengembalian saldo deposit akibat pembatalan transaksi " + payment.getNumber(),
+                    username
+            );
+        }
 
         // If this payment created excess deposit, check if deposit has already been spent
         BigDecimal excess = payment.getExcessAmount();
@@ -268,6 +357,8 @@ public class PaymentService {
         dto.setNumber(entity.getNumber());
         dto.setDate(entity.getDate());
         dto.setAmount(entity.getAmount());
+        dto.setCashAmount(entity.getCashAmount());
+        dto.setDepositAmount(entity.getDepositAmount());
         dto.setPaymentMethod(entity.getPaymentMethod());
         dto.setDestinationAccount(entity.getDestinationAccount());
         dto.setReference(entity.getReference());

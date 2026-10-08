@@ -4,6 +4,7 @@ public enum PaymentMethod {
     BANK_TRANSFER("Transfer Bank"),
     CASH("Tunai"),
     GIRO("Giro / Cek"),
+    DEPOSIT("Saldo Deposit"),
     OTHER("Lainnya");
 
     private final String label;

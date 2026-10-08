@@ -21,6 +21,10 @@ public class CreatePaymentRequest {
     @DecimalMin(value = "0.01", message = "Nominal pembayaran minimal 0.01")
     private BigDecimal amount;
 
+    private BigDecimal cashAmount;
+
+    private BigDecimal depositAmount;
+
     @NotNull(message = "Metode pembayaran wajib dipilih")
     private PaymentMethod paymentMethod;
 
@@ -62,6 +66,22 @@ public class CreatePaymentRequest {
 
     public PaymentMethod getPaymentMethod() {
         return paymentMethod;
+    }
+
+    public BigDecimal getCashAmount() {
+        return cashAmount;
+    }
+
+    public void setCashAmount(BigDecimal cashAmount) {
+        this.cashAmount = cashAmount;
+    }
+
+    public BigDecimal getDepositAmount() {
+        return depositAmount;
+    }
+
+    public void setDepositAmount(BigDecimal depositAmount) {
+        this.depositAmount = depositAmount;
     }
 
     public void setPaymentMethod(PaymentMethod paymentMethod) {

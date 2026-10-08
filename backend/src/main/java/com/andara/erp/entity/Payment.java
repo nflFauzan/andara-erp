@@ -28,6 +28,12 @@ public class Payment {
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount = BigDecimal.ZERO;
 
+    @Column(name = "cash_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal cashAmount = BigDecimal.ZERO;
+
+    @Column(name = "deposit_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal depositAmount = BigDecimal.ZERO;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false, length = 50)
     private PaymentMethod paymentMethod = PaymentMethod.BANK_TRANSFER;
@@ -149,6 +155,22 @@ public class Payment {
 
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
+    }
+
+    public BigDecimal getCashAmount() {
+        return cashAmount;
+    }
+
+    public void setCashAmount(BigDecimal cashAmount) {
+        this.cashAmount = cashAmount != null ? cashAmount : BigDecimal.ZERO;
+    }
+
+    public BigDecimal getDepositAmount() {
+        return depositAmount;
+    }
+
+    public void setDepositAmount(BigDecimal depositAmount) {
+        this.depositAmount = depositAmount != null ? depositAmount : BigDecimal.ZERO;
     }
 
     public PaymentMethod getPaymentMethod() {

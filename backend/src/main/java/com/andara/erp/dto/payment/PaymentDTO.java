@@ -18,6 +18,8 @@ public class PaymentDTO {
     private String customerCode;
     private LocalDate date;
     private BigDecimal amount;
+    private BigDecimal cashAmount;
+    private BigDecimal depositAmount;
     private BigDecimal allocatedAmount;
     private BigDecimal excessAmount;
     private PaymentMethod paymentMethod;
@@ -88,6 +90,22 @@ public class PaymentDTO {
 
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
+    }
+
+    public BigDecimal getCashAmount() {
+        return cashAmount;
+    }
+
+    public void setCashAmount(BigDecimal cashAmount) {
+        this.cashAmount = cashAmount;
+    }
+
+    public BigDecimal getDepositAmount() {
+        return depositAmount;
+    }
+
+    public void setDepositAmount(BigDecimal depositAmount) {
+        this.depositAmount = depositAmount;
     }
 
     public BigDecimal getAllocatedAmount() {

@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.hamcrest.Matchers.*;
@@ -292,5 +293,152 @@ class PaymentControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    @WithMockUser(username = "operator", roles = {"OPERATOR"})
+    void createPayment_WithDepositMethod_ShouldDeductDepositLedgerAndSettleInvoice() throws Exception {
+        // 1. Seed customer deposit with 5.000.000
+        CreatePaymentRequest seedPayment = new CreatePaymentRequest();
+        seedPayment.setCustomerId(testCustomer.getId());
+        seedPayment.setPaymentDate(LocalDate.now());
+        seedPayment.setAmount(new BigDecimal("5000000.00"));
+        seedPayment.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
+        seedPayment.setNotes("Seed deposit untuk pembayaran faktur");
+
+        mockMvc.perform(post("/api/pembayaran")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(seedPayment)))
+                .andExpect(status().isCreated());
+
+        BigDecimal depositBefore = depositTransactionRepository.calculateCurrentBalanceByCustomerId(testCustomer.getId());
+        assertTrue(depositBefore.compareTo(new BigDecimal("5000000.00")) >= 0);
+
+        // 2. Pay testInvoice (sisa tagihan 5.000.000) using DEPOSIT source
+        CreatePaymentRequest depositPayment = new CreatePaymentRequest();
+        depositPayment.setCustomerId(testCustomer.getId());
+        depositPayment.setPaymentDate(LocalDate.now());
+        depositPayment.setAmount(new BigDecimal("5000000.00"));
+        depositPayment.setPaymentMethod(PaymentMethod.DEPOSIT);
+        depositPayment.setNotes("Pelunasan Faktur menggunakan Saldo Deposit");
+
+        List<AllocationItemRequest> allocations = new ArrayList<>();
+        AllocationItemRequest allocItem = new AllocationItemRequest();
+        allocItem.setInvoiceId(testInvoice.getId());
+        allocItem.setAmount(new BigDecimal("5000000.00"));
+        allocItem.setNotes("Alokasi pelunasan dari deposit");
+        allocations.add(allocItem);
+        depositPayment.setAllocations(allocations);
+
+        mockMvc.perform(post("/api/pembayaran")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(depositPayment)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.paymentMethod").value("DEPOSIT"))
+                .andExpect(jsonPath("$.data.amount").value(5000000.0))
+                .andExpect(jsonPath("$.data.allocatedAmount").value(5000000.0));
+
+        // 3. Verify deposit balance is deducted
+        BigDecimal depositAfter = depositTransactionRepository.calculateCurrentBalanceByCustomerId(testCustomer.getId());
+        assertEquals(depositBefore.subtract(new BigDecimal("5000000.00")), depositAfter);
+
+        // 4. Verify Invoice is now PARTIAL (paid 5jt of 10jt)
+        Invoice updatedInvoice = invoiceRepository.findById(testInvoice.getId()).orElseThrow();
+        assertEquals(InvoicePaymentStatus.PARTIAL, updatedInvoice.getPaymentStatus());
+        assertEquals(new BigDecimal("5000000.00"), updatedInvoice.getPaidAmount());
+        assertEquals(new BigDecimal("5000000.00"), updatedInvoice.getOutstanding());
+    }
+
+    @Test
+    @WithMockUser(username = "operator", roles = {"OPERATOR"})
+    void createPayment_WithDepositMethod_InsufficientBalance_ShouldReturnError() throws Exception {
+        // Customer balance is 0 or less than payment amount
+        CreatePaymentRequest depositPayment = new CreatePaymentRequest();
+        depositPayment.setCustomerId(testCustomer.getId());
+        depositPayment.setPaymentDate(LocalDate.now());
+        depositPayment.setAmount(new BigDecimal("99999999.00")); // Far exceeds deposit
+        depositPayment.setPaymentMethod(PaymentMethod.DEPOSIT);
+
+        List<AllocationItemRequest> allocations = new ArrayList<>();
+        AllocationItemRequest allocItem = new AllocationItemRequest();
+        allocItem.setInvoiceId(testInvoice.getId());
+        allocItem.setAmount(new BigDecimal("99999999.00"));
+        allocations.add(allocItem);
+        depositPayment.setAllocations(allocations);
+
+        mockMvc.perform(post("/api/pembayaran")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(depositPayment)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value("DEPOSIT_INSUFFICIENT"));
+    }
+
+    @Test
+    @WithMockUser(username = "operator", roles = {"OPERATOR"})
+    void createPayment_WithSplitFunding_CashAndDeposit_ShouldSettleInvoiceAndDeductDeposit() throws Exception {
+        // 1. Seed customer deposit with 4.000.000
+        CreatePaymentRequest seedPayment = new CreatePaymentRequest();
+        seedPayment.setCustomerId(testCustomer.getId());
+        seedPayment.setPaymentDate(LocalDate.now());
+        seedPayment.setAmount(new BigDecimal("4000000.00"));
+        seedPayment.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
+        seedPayment.setNotes("Seed deposit untuk pengujian split funding");
+
+        mockMvc.perform(post("/api/pembayaran")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(seedPayment)))
+                .andExpect(status().isCreated());
+
+        BigDecimal depositBefore = depositTransactionRepository.calculateCurrentBalanceByCustomerId(testCustomer.getId());
+        assertTrue(depositBefore.compareTo(new BigDecimal("4000000.00")) >= 0);
+
+        // 2. Pay testInvoice (total 10.000.000) using Split Funding:
+        //    cashAmount: 6.000.000
+        //    depositAmount: 4.000.000
+        //    amount: 10.000.000
+        CreatePaymentRequest splitPayment = new CreatePaymentRequest();
+        splitPayment.setCustomerId(testCustomer.getId());
+        splitPayment.setPaymentDate(LocalDate.now());
+        splitPayment.setAmount(new BigDecimal("10000000.00"));
+        splitPayment.setCashAmount(new BigDecimal("6000000.00"));
+        splitPayment.setDepositAmount(new BigDecimal("4000000.00"));
+        splitPayment.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
+        splitPayment.setDestinationAccount("Bank BCA 12345678");
+        splitPayment.setNotes("Pelunasan Faktur kombinasi Kas + Saldo Deposit");
+
+        List<AllocationItemRequest> allocations = new ArrayList<>();
+        AllocationItemRequest allocItem = new AllocationItemRequest();
+        allocItem.setInvoiceId(testInvoice.getId());
+        allocItem.setAmount(new BigDecimal("10000000.00"));
+        allocItem.setNotes("Pelunasan penuh split funding");
+        allocations.add(allocItem);
+        splitPayment.setAllocations(allocations);
+
+        mockMvc.perform(post("/api/pembayaran")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(splitPayment)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.amount").value(10000000.0))
+                .andExpect(jsonPath("$.data.cashAmount").value(6000000.0))
+                .andExpect(jsonPath("$.data.depositAmount").value(4000000.0))
+                .andExpect(jsonPath("$.data.allocatedAmount").value(10000000.0));
+
+        // 3. Deposit ledger must be reduced by 4.000.000
+        BigDecimal depositAfter = depositTransactionRepository.calculateCurrentBalanceByCustomerId(testCustomer.getId());
+        assertEquals(depositBefore.subtract(new BigDecimal("4000000.00")), depositAfter);
+
+        // 4. Invoice is now PAID (LUNAS)
+        Invoice updatedInvoice = invoiceRepository.findById(testInvoice.getId()).orElseThrow();
+        assertEquals(InvoicePaymentStatus.PAID, updatedInvoice.getPaymentStatus());
+        assertEquals(new BigDecimal("10000000.00"), updatedInvoice.getPaidAmount());
+        assertEquals(BigDecimal.ZERO.setScale(2), updatedInvoice.getOutstanding());
     }
 }
