@@ -19,7 +19,8 @@ import {
   CheckCircle2,
   PieChart,
   ShieldCheck,
-  GitBranch
+  GitBranch,
+  Check
 } from 'lucide-react';
 import { invoiceApi } from '../api/invoiceApi';
 import { customerApi } from '../api/customerApi';
@@ -315,6 +316,17 @@ export const InvoiceFormPage: React.FC = () => {
     }
   }, [selectedCustomerId]);
 
+  // Set of sourcePenawaranDetailId that are already added to current invoice items
+  const existingPenawaranDetailIds = useMemo(() => {
+    const ids = new Set<number>();
+    items.forEach((it) => {
+      if (it.sourcePenawaranDetailId) {
+        ids.add(Number(it.sourcePenawaranDetailId));
+      }
+    });
+    return ids;
+  }, [items]);
+
   // Fetch Billable Items (Single SPH or Multi-SPH)
   const fetchBillableItems = async () => {
     try {
@@ -330,9 +342,11 @@ export const InvoiceFormPage: React.FC = () => {
       setBillableItems(bItems);
       const initialSelection: Record<number, { selected: boolean; quantity: number }> = {};
       bItems.forEach((it) => {
+        const isAlreadyAdded = existingPenawaranDetailIds.has(it.penawaranDetailId);
         const hasRemaining = it.remainingBillableVolume > 0;
+        // Hanya centang jika kuota masih ada dan BELUM pernah ditambahkan ke faktur ini
         initialSelection[it.penawaranDetailId] = {
-          selected: hasRemaining,
+          selected: hasRemaining && !isAlreadyAdded,
           quantity: it.remainingBillableVolume,
         };
       });
@@ -345,10 +359,14 @@ export const InvoiceFormPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!isMultiSphMode && selectedModalPenawaranId) {
-      fetchBillableItems();
+    if (showPenawaranModal) {
+      if (!isMultiSphMode && selectedModalPenawaranId) {
+        fetchBillableItems();
+      } else if (isMultiSphMode && selectedMultiSphIds.length > 0) {
+        fetchBillableItems();
+      }
     }
-  }, [selectedModalPenawaranId, isMultiSphMode]);
+  }, [showPenawaranModal, selectedModalPenawaranId, isMultiSphMode]);
 
   const handleAddItemRow = () => {
     const nextOrder = items.length + 1;
@@ -392,6 +410,11 @@ export const InvoiceFormPage: React.FC = () => {
 
     const imported: ItemRow[] = [];
     billableItems.forEach((bi) => {
+      // Cegah duplikasi: Jangan tambahkan item yang sudah ada di tabel faktur
+      if (existingPenawaranDetailIds.has(bi.penawaranDetailId)) {
+        return;
+      }
+
       const sel = selectedBillableRows[bi.penawaranDetailId];
       if (sel && sel.selected && sel.quantity > 0) {
         imported.push({
@@ -415,7 +438,7 @@ export const InvoiceFormPage: React.FC = () => {
     });
 
     if (imported.length === 0) {
-      alert('Pilih minimal satu item yang masih memiliki sisa volume untuk ditagihkan.');
+      alert('Pilih minimal satu item baru yang belum ada di faktur dan masih memiliki sisa volume untuk ditagihkan.');
       return;
     }
 
@@ -458,7 +481,8 @@ export const InvoiceFormPage: React.FC = () => {
     setSelectedBillableRows((prev) => {
       const next = { ...prev };
       groupItems.forEach((it) => {
-        if (it.remainingBillableVolume > 0) {
+        // Hanya centang item yang belum ada di faktur dan kuotanya masih ada
+        if (!existingPenawaranDetailIds.has(it.penawaranDetailId) && it.remainingBillableVolume > 0) {
           next[it.penawaranDetailId] = {
             selected: select,
             quantity: next[it.penawaranDetailId]?.quantity || it.remainingBillableVolume,
@@ -473,9 +497,15 @@ export const InvoiceFormPage: React.FC = () => {
     setSelectedBillableRows((prev) => {
       const next = { ...prev };
       billableItems.forEach((it) => {
-        if (it.remainingBillableVolume > 0) {
+        // Hanya centang item yang belum ada di faktur dan masih memiliki kuota
+        if (!existingPenawaranDetailIds.has(it.penawaranDetailId) && it.remainingBillableVolume > 0) {
           next[it.penawaranDetailId] = {
             selected: select,
+            quantity: next[it.penawaranDetailId]?.quantity || it.remainingBillableVolume,
+          };
+        } else if (!select && !existingPenawaranDetailIds.has(it.penawaranDetailId)) {
+          next[it.penawaranDetailId] = {
+            selected: false,
             quantity: next[it.penawaranDetailId]?.quantity || it.remainingBillableVolume,
           };
         }
@@ -483,6 +513,13 @@ export const InvoiceFormPage: React.FC = () => {
       return next;
     });
   };
+
+  // Hitung jumlah item baru yang dicentang dan siap ditambahkan ke faktur
+  const newSelectedCount = useMemo(() => {
+    return billableItems.filter(
+      (bi) => !existingPenawaranDetailIds.has(bi.penawaranDetailId) && selectedBillableRows[bi.penawaranDetailId]?.selected
+    ).length;
+  }, [billableItems, existingPenawaranDetailIds, selectedBillableRows]);
 
   // Subtotal & Tax Calculations
   const rawItemsTotal = useMemo(() => {
@@ -1833,49 +1870,84 @@ export const InvoiceFormPage: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                     {groupedBillable.map((group, gIdx) => {
-                      const activeGroupItems = group.items.filter((it) => it.remainingBillableVolume > 0);
+                      const selectableGroupItems = group.items.filter(
+                        (it) => !existingPenawaranDetailIds.has(it.penawaranDetailId) && it.remainingBillableVolume > 0
+                      );
+                      const alreadyInInvoiceGroupItems = group.items.filter(
+                        (it) => existingPenawaranDetailIds.has(it.penawaranDetailId)
+                      );
+                      const isGroupFullyInInvoice =
+                        alreadyInInvoiceGroupItems.length === group.items.length && group.items.length > 0;
                       const isGroupAllSelected =
-                        activeGroupItems.length > 0 &&
-                        activeGroupItems.every((it) => selectedBillableRows[it.penawaranDetailId]?.selected);
+                        selectableGroupItems.length > 0 &&
+                        selectableGroupItems.every((it) => selectedBillableRows[it.penawaranDetailId]?.selected);
                       const letter = String.fromCharCode(65 + gIdx);
 
                       return (
                         <React.Fragment key={group.groupKey}>
                           {/* Group Header */}
-                          <tr className="bg-slate-100/80 dark:bg-slate-900/80 font-bold border-t border-b border-slate-200 dark:border-slate-800">
+                          <tr
+                            className={`font-bold border-t border-b border-slate-200 dark:border-slate-800 ${
+                              isGroupFullyInInvoice
+                                ? 'bg-blue-50/70 dark:bg-blue-950/30'
+                                : 'bg-slate-100/80 dark:bg-slate-900/80'
+                            }`}
+                          >
                             <td className="p-2 text-center">
                               <input
                                 type="checkbox"
-                                disabled={activeGroupItems.length === 0}
+                                disabled={selectableGroupItems.length === 0}
                                 checked={isGroupAllSelected}
-                                onChange={(e) => handleToggleKegiatanGroup(group.items, e.target.checked)}
-                                className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
-                                title={`Pilih seluruh item kegiatan ${group.groupName}`}
+                                onChange={(e) => handleToggleKegiatanGroup(selectableGroupItems, e.target.checked)}
+                                className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                title={
+                                  isGroupFullyInInvoice
+                                    ? `Seluruh item kegiatan ${group.groupName} sudah ada di faktur ini`
+                                    : selectableGroupItems.length === 0
+                                    ? `Seluruh item kegiatan ${group.groupName} telah habis kuota penagihannya`
+                                    : `Pilih seluruh item kegiatan ${group.groupName}`
+                                }
                               />
                             </td>
                             <td colSpan={5} className="p-2 text-slate-900 dark:text-slate-100">
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center justify-between flex-wrap gap-2">
                                 <span className="flex items-center gap-1.5 uppercase tracking-wide">
                                   <Layers className="w-3.5 h-3.5 text-brand-500" />
                                   Kegiatan {letter}: {group.groupName}
                                 </span>
-                                <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
-                                  {group.items.length} item ({activeGroupItems.length} dapat ditagihkan)
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  {isGroupFullyInInvoice ? (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">
+                                      <Check className="w-3 h-3 text-blue-600" /> Seluruh kegiatan sudah ada di faktur ({alreadyInInvoiceGroupItems.length} item)
+                                    </span>
+                                  ) : alreadyInInvoiceGroupItems.length > 0 ? (
+                                    <span className="text-[10px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800">
+                                      {alreadyInInvoiceGroupItems.length} sudah di faktur • {selectableGroupItems.length} dapat dipilih
+                                    </span>
+                                  ) : (
+                                    <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                                      {group.items.length} item ({selectableGroupItems.length} dapat ditagihkan)
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </td>
                           </tr>
 
                           {/* Items in Kegiatan Group */}
                           {group.items.map((bi) => {
-                            const sel = selectedBillableRows[bi.penawaranDetailId] || { selected: false, quantity: 0 };
+                            const isAlreadyAdded = existingPenawaranDetailIds.has(bi.penawaranDetailId);
                             const isExhausted = bi.remainingBillableVolume <= 0;
+                            const isDisabled = isAlreadyAdded || isExhausted;
+                            const sel = selectedBillableRows[bi.penawaranDetailId] || { selected: false, quantity: 0 };
 
                             return (
                               <tr
                                 key={bi.penawaranDetailId}
                                 className={`transition-colors ${
-                                  isExhausted
+                                  isAlreadyAdded
+                                    ? 'opacity-70 bg-blue-50/20 dark:bg-blue-950/15'
+                                    : isExhausted
                                     ? 'opacity-40 bg-slate-50 dark:bg-slate-950/40'
                                     : sel.selected
                                     ? 'bg-brand-500/10'
@@ -1885,22 +1957,37 @@ export const InvoiceFormPage: React.FC = () => {
                                 <td className="p-2.5 text-center">
                                   <input
                                     type="checkbox"
-                                    disabled={isExhausted}
-                                    checked={sel.selected}
-                                    onChange={(e) =>
+                                    disabled={isDisabled}
+                                    checked={!isDisabled && Boolean(sel.selected)}
+                                    onChange={(e) => {
+                                      if (isDisabled) return;
                                       setSelectedBillableRows((prev) => ({
                                         ...prev,
                                         [bi.penawaranDetailId]: {
                                           ...sel,
                                           selected: e.target.checked,
                                         },
-                                      }))
-                                    }
-                                    className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
+                                      }));
+                                    }}
+                                    className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                                   />
                                 </td>
                                 <td className="p-2.5">
-                                  <div className="font-bold text-slate-800 dark:text-slate-100 text-xs">{bi.description}</div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-bold text-slate-800 dark:text-slate-100 text-xs">
+                                      {bi.description}
+                                    </span>
+                                    {isAlreadyAdded && (
+                                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-300 dark:border-blue-800">
+                                        <CheckCircle2 className="w-3 h-3 text-blue-600" /> Sudah Ada di Faktur
+                                      </span>
+                                    )}
+                                    {isExhausted && !isAlreadyAdded && (
+                                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">
+                                        <AlertCircle className="w-3 h-3 text-slate-400" /> Kuota Habis (Faktur Lain)
+                                      </span>
+                                    )}
+                                  </div>
                                   <div className="text-[10px] text-slate-400 font-mono mt-0.5">
                                     Harga Satuan: {formatCurrency(bi.unitPrice)} / {bi.unit}
                                     {bi.notes && <span className="ml-2 italic text-slate-500">• {bi.notes}</span>}
@@ -1913,7 +2000,15 @@ export const InvoiceFormPage: React.FC = () => {
                                   {bi.alreadyBilledVolume} {bi.unit}
                                 </td>
                                 <td className="p-2.5 text-right font-mono font-bold">
-                                  <span className={isExhausted ? 'text-slate-400' : 'text-emerald-600 dark:text-emerald-400'}>
+                                  <span
+                                    className={
+                                      isAlreadyAdded
+                                        ? 'text-blue-600 dark:text-blue-400'
+                                        : isExhausted
+                                        ? 'text-slate-400'
+                                        : 'text-emerald-600 dark:text-emerald-400'
+                                    }
+                                  >
                                     {bi.remainingBillableVolume} {bi.unit}
                                   </span>
                                 </td>
@@ -1923,9 +2018,10 @@ export const InvoiceFormPage: React.FC = () => {
                                     step="0.01"
                                     min="0.01"
                                     max={bi.remainingBillableVolume}
-                                    disabled={isExhausted || !sel.selected}
-                                    value={sel.quantity}
+                                    disabled={isDisabled || !sel.selected}
+                                    value={isAlreadyAdded ? 0 : sel.quantity}
                                     onChange={(e) => {
+                                      if (isDisabled) return;
                                       const val = parseFloat(e.target.value) || 0;
                                       setSelectedBillableRows((prev) => ({
                                         ...prev,
@@ -1935,7 +2031,7 @@ export const InvoiceFormPage: React.FC = () => {
                                         },
                                       }));
                                     }}
-                                    className="w-28 text-right font-mono text-xs px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
+                                    className="w-28 text-right font-mono text-xs px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-40 disabled:cursor-not-allowed"
                                   />
                                 </td>
                               </tr>
@@ -1951,7 +2047,7 @@ export const InvoiceFormPage: React.FC = () => {
 
             <div className="flex items-center justify-between pt-3 border-t border-slate-200/60 dark:border-slate-800 shrink-0">
               <span className="text-xs text-slate-500 dark:text-slate-400">
-                Centang kegiatan atau item untuk ditagihkan pada termin ini.
+                Item dan kegiatan yang telah dipilih sebelumnya dikunci otomatis untuk mencegah tagihan ganda.
               </span>
               <div className="flex items-center gap-2">
                 <button
@@ -1964,10 +2060,11 @@ export const InvoiceFormPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleImportSelectedFromPenawaran}
-                  className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 rounded-xl transition shadow-md shadow-brand-500/25 flex items-center gap-1.5"
+                  disabled={newSelectedCount === 0}
+                  className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 rounded-xl transition shadow-md shadow-brand-500/25 flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <DownloadCloud className="w-3.5 h-3.5" />
-                  Tambahkan Item Terpilih
+                  Tambahkan Item Terpilih {newSelectedCount > 0 ? `(${newSelectedCount})` : ''}
                 </button>
               </div>
             </div>

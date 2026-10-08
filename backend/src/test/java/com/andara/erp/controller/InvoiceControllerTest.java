@@ -207,6 +207,42 @@ class InvoiceControllerTest {
 
     @Test
     @WithMockUser(username = "operator", roles = {"OPERATOR"})
+    void createInvoice_DuplicatePenawaranDetailIdInSameRequest_ShouldFailWithDoubleBillingPrevented() throws Exception {
+        CreateInvoiceRequest request = new CreateInvoiceRequest();
+        request.setCustomerId(1L);
+        request.setSourcePenawaranId(1L);
+        request.setDate(LocalDate.now());
+
+        CreateInvoiceDetailRequest item1 = new CreateInvoiceDetailRequest(
+                "Instalasi Titik Lampu",
+                new BigDecimal("2.00"),
+                "titik",
+                new BigDecimal("300000.00")
+        );
+        item1.setSourcePenawaranDetailId(3L);
+
+        CreateInvoiceDetailRequest item2 = new CreateInvoiceDetailRequest(
+                "Instalasi Titik Lampu Duplikat",
+                new BigDecimal("3.00"),
+                "titik",
+                new BigDecimal("300000.00")
+        );
+        item2.setSourcePenawaranDetailId(3L);
+
+        request.setDetails(List.of(item1, item2));
+
+        mockMvc.perform(post("/api/faktur")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value("DOUBLE_BILLING_PREVENTED"))
+                .andExpect(jsonPath("$.message", containsString("tidak boleh diduplikasi dalam faktur yang sama")));
+    }
+
+    @Test
+    @WithMockUser(username = "operator", roles = {"OPERATOR"})
     void updateInvoice_WithPayments_ShouldFailWithFinancialRecordLocked() throws Exception {
         // Create an invoice and simulate a paid amount
         CreateInvoiceRequest createReq = new CreateInvoiceRequest();

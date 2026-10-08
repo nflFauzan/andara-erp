@@ -17,7 +17,9 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class InvoiceService {
@@ -626,6 +628,8 @@ public class InvoiceService {
             }
         }
 
+        Set<Long> seenPenawaranDetailIds = new HashSet<>();
+        Set<Long> seenKegiatanItemIds = new HashSet<>();
         int order = 1;
         for (CreateInvoiceDetailRequest itemReq : itemRequests) {
             InvoiceDetail detail = new InvoiceDetail();
@@ -648,6 +652,12 @@ public class InvoiceService {
 
             // Source Penawaran Detail & Anti-Double-Billing enforcement (only for non-deduction physical items)
             if (!isDeduction && itemReq.getSourcePenawaranDetailId() != null) {
+                if (!seenPenawaranDetailIds.add(itemReq.getSourcePenawaranDetailId())) {
+                    throw new AppException(
+                            ErrorCode.DOUBLE_BILLING_PREVENTED,
+                            "Item penawaran sumber tidak boleh diduplikasi dalam faktur yang sama: " + itemReq.getDescription()
+                    );
+                }
                 PenawaranDetail pDetail = penawaranDetailRepository.findById(itemReq.getSourcePenawaranDetailId())
                         .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Item penawaran sumber tidak ditemukan"));
 
@@ -685,6 +695,12 @@ public class InvoiceService {
                     detail.setSourceKegiatan(kegiatan);
                 }
                 if (itemReq.getSourceKegiatanItemId() != null) {
+                    if (!seenKegiatanItemIds.add(itemReq.getSourceKegiatanItemId())) {
+                        throw new AppException(
+                                ErrorCode.DOUBLE_BILLING_PREVENTED,
+                                "Item kegiatan tidak boleh diduplikasi dalam faktur yang sama: " + itemReq.getDescription()
+                        );
+                    }
                     KegiatanItem kegiatanItem = kegiatanItemRepository.findById(itemReq.getSourceKegiatanItemId())
                             .orElseThrow(() -> new AppException(ErrorCode.KEGIATAN_ITEM_NOT_FOUND, "Item kegiatan tidak ditemukan"));
                     detail.setSourceKegiatanItem(kegiatanItem);
