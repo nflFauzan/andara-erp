@@ -37,7 +37,14 @@ public class UpdateInvoiceRequest {
 
     private String workLocation;
 
-    @NotEmpty(message = "Item faktur minimal harus ada 1")
+    private com.andara.erp.entity.BillingMode billingMode;
+
+    private java.math.BigDecimal terminPercentage;
+
+    private String terminName;
+
+    private Long previousDpInvoiceId;
+
     @Valid
     private List<CreateInvoiceDetailRequest> details = new ArrayList<>();
 
@@ -154,5 +161,37 @@ public class UpdateInvoiceRequest {
 
     public void setTaxPphRate(java.math.BigDecimal taxPphRate) {
         this.taxPphRate = taxPphRate;
+    }
+
+    public com.andara.erp.entity.BillingMode getBillingMode() {
+        return billingMode;
+    }
+
+    public void setBillingMode(com.andara.erp.entity.BillingMode billingMode) {
+        this.billingMode = billingMode;
+    }
+
+    public java.math.BigDecimal getTerminPercentage() {
+        return terminPercentage;
+    }
+
+    public void setTerminPercentage(java.math.BigDecimal terminPercentage) {
+        this.terminPercentage = terminPercentage;
+    }
+
+    public String getTerminName() {
+        return terminName;
+    }
+
+    public void setTerminName(String terminName) {
+        this.terminName = terminName;
+    }
+
+    public Long getPreviousDpInvoiceId() {
+        return previousDpInvoiceId;
+    }
+
+    public void setPreviousDpInvoiceId(Long previousDpInvoiceId) {
+        this.previousDpInvoiceId = previousDpInvoiceId;
     }
 }

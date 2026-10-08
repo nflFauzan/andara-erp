@@ -40,6 +40,12 @@ export const invoiceApi = {
     return response.data.data!;
   },
 
+  async getPenawaranTerminSummary(penawaranId: number): Promise<import('../types/invoice').PenawaranTerminSummary> {
+    const response = await api.get<ApiResponse<import('../types/invoice').PenawaranTerminSummary>>(`/faktur/penawaran/${penawaranId}/termin-summary`);
+    return response.data.data!;
+  },
+
+
   async createInvoice(data: CreateInvoiceInput): Promise<Invoice> {
     const response = await api.post<ApiResponse<Invoice>>('/faktur', data);
     return response.data.data!;

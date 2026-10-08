@@ -26,6 +26,12 @@ public class InvoiceDTO {
     private String clientPoNumber;
     private String clientSpkNumber;
     private String bastNumber;
+    private com.andara.erp.entity.BillingMode billingMode;
+    private String billingModeLabel;
+    private BigDecimal terminPercentage;
+    private String terminName;
+    private Long previousDpInvoiceId;
+    private String previousDpInvoiceNumber;
     private InvoiceStatus status;
     private String statusLabel;
     private InvoicePaymentStatus paymentStatus;
@@ -79,6 +85,14 @@ public class InvoiceDTO {
         dto.setClientPoNumber(entity.getClientPoNumber());
         dto.setClientSpkNumber(entity.getClientSpkNumber());
         dto.setBastNumber(entity.getBastNumber());
+        dto.setBillingMode(entity.getBillingMode());
+        dto.setBillingModeLabel(entity.getBillingMode() != null ? entity.getBillingMode().getLabel() : null);
+        dto.setTerminPercentage(entity.getTerminPercentage());
+        dto.setTerminName(entity.getTerminName());
+        if (entity.getPreviousDpInvoice() != null) {
+            dto.setPreviousDpInvoiceId(entity.getPreviousDpInvoice().getId());
+            dto.setPreviousDpInvoiceNumber(entity.getPreviousDpInvoice().getNumber());
+        }
         dto.setDate(entity.getDate());
         dto.setDueDate(entity.getDueDate());
         dto.setStatus(entity.getStatus());
@@ -452,4 +466,53 @@ public class InvoiceDTO {
     public void setNetTotalAmount(BigDecimal netTotalAmount) {
         this.netTotalAmount = netTotalAmount;
     }
+
+    public com.andara.erp.entity.BillingMode getBillingMode() {
+        return billingMode;
+    }
+
+    public void setBillingMode(com.andara.erp.entity.BillingMode billingMode) {
+        this.billingMode = billingMode;
+    }
+
+    public String getBillingModeLabel() {
+        return billingModeLabel;
+    }
+
+    public void setBillingModeLabel(String billingModeLabel) {
+        this.billingModeLabel = billingModeLabel;
+    }
+
+    public BigDecimal getTerminPercentage() {
+        return terminPercentage;
+    }
+
+    public void setTerminPercentage(BigDecimal terminPercentage) {
+        this.terminPercentage = terminPercentage;
+    }
+
+    public String getTerminName() {
+        return terminName;
+    }
+
+    public void setTerminName(String terminName) {
+        this.terminName = terminName;
+    }
+
+    public Long getPreviousDpInvoiceId() {
+        return previousDpInvoiceId;
+    }
+
+    public void setPreviousDpInvoiceId(Long previousDpInvoiceId) {
+        this.previousDpInvoiceId = previousDpInvoiceId;
+    }
+
+    public String getPreviousDpInvoiceNumber() {
+        return previousDpInvoiceNumber;
+    }
+
+    public void setPreviousDpInvoiceNumber(String previousDpInvoiceNumber) {
+        this.previousDpInvoiceNumber = previousDpInvoiceNumber;
+    }
 }
+

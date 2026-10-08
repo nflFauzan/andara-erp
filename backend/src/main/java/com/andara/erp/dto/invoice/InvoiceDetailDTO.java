@@ -20,6 +20,8 @@ public class InvoiceDetailDTO {
     private BigDecimal unitPrice;
     private BigDecimal amount;
     private Integer sortOrder;
+    private com.andara.erp.entity.InvoiceItemType itemType;
+    private Boolean isDeduction;
     private String notes;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
@@ -51,6 +53,8 @@ public class InvoiceDetailDTO {
         dto.setUnitPrice(detail.getUnitPrice());
         dto.setAmount(detail.getAmount());
         dto.setSortOrder(detail.getSortOrder());
+        dto.setItemType(detail.getItemType());
+        dto.setIsDeduction(detail.getIsDeduction());
         dto.setNotes(detail.getNotes());
         dto.setCreatedAt(detail.getCreatedAt());
         dto.setUpdatedAt(detail.getUpdatedAt());
@@ -193,5 +197,21 @@ public class InvoiceDetailDTO {
 
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public com.andara.erp.entity.InvoiceItemType getItemType() {
+        return itemType;
+    }
+
+    public void setItemType(com.andara.erp.entity.InvoiceItemType itemType) {
+        this.itemType = itemType;
+    }
+
+    public Boolean getIsDeduction() {
+        return isDeduction;
+    }
+
+    public void setIsDeduction(Boolean isDeduction) {
+        this.isDeduction = isDeduction;
     }
 }

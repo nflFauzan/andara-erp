@@ -50,6 +50,13 @@ public class InvoiceDetail {
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder = 0;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "item_type", nullable = false, length = 30)
+    private InvoiceItemType itemType = InvoiceItemType.STANDARD;
+
+    @Column(name = "is_deduction", nullable = false)
+    private Boolean isDeduction = false;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
@@ -68,6 +75,8 @@ public class InvoiceDetail {
         this.unit = unit;
         this.unitPrice = unitPrice;
         this.sortOrder = sortOrder != null ? sortOrder : 0;
+        this.itemType = InvoiceItemType.STANDARD;
+        this.isDeduction = false;
         calculateAmount();
     }
 
@@ -83,18 +92,35 @@ public class InvoiceDetail {
         if (sortOrder == null) {
             sortOrder = 0;
         }
+        if (itemType == null) {
+            itemType = InvoiceItemType.STANDARD;
+        }
+        if (isDeduction == null) {
+            isDeduction = false;
+        }
         calculateAmount();
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = OffsetDateTime.now();
+        if (itemType == null) {
+            itemType = InvoiceItemType.STANDARD;
+        }
+        if (isDeduction == null) {
+            isDeduction = false;
+        }
         calculateAmount();
     }
 
     public void calculateAmount() {
         if (quantity != null && unitPrice != null) {
-            this.amount = quantity.multiply(unitPrice).setScale(2, java.math.RoundingMode.HALF_UP);
+            BigDecimal baseAmount = quantity.multiply(unitPrice).setScale(2, java.math.RoundingMode.HALF_UP);
+            if (Boolean.TRUE.equals(isDeduction)) {
+                this.amount = baseAmount.abs().negate();
+            } else {
+                this.amount = baseAmount;
+            }
         } else {
             this.amount = BigDecimal.ZERO;
         }
@@ -222,5 +248,21 @@ public class InvoiceDetail {
 
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public InvoiceItemType getItemType() {
+        return itemType;
+    }
+
+    public void setItemType(InvoiceItemType itemType) {
+        this.itemType = itemType != null ? itemType : InvoiceItemType.STANDARD;
+    }
+
+    public Boolean getIsDeduction() {
+        return isDeduction;
+    }
+
+    public void setIsDeduction(Boolean isDeduction) {
+        this.isDeduction = isDeduction != null ? isDeduction : false;
     }
 }

@@ -316,6 +316,25 @@ export const InvoiceDetailPage: React.FC = () => {
                 No. BAST: <strong className="font-mono text-slate-800">{invoice.bastNumber}</strong>
               </p>
             )}
+            {invoice.billingMode === 'PERCENTAGE_TERMIN' && (
+              <div className="py-1 px-2.5 rounded-lg bg-purple-50 border border-purple-200/80 my-1 inline-block text-left sm:text-right">
+                <p className="text-purple-900 font-bold text-xs">
+                  ⚡ Penagihan Termin: {invoice.terminPercentage}%
+                  {invoice.terminName ? ` (${invoice.terminName})` : ''}
+                </p>
+                {invoice.previousDpInvoiceNumber && (
+                  <p className="text-[11px] text-purple-700 mt-0.5">
+                    Potongan Uang Muka dari:{' '}
+                    <Link
+                      to={`/faktur/${invoice.previousDpInvoiceId}`}
+                      className="font-mono font-bold underline hover:text-purple-900"
+                    >
+                      {invoice.previousDpInvoiceNumber}
+                    </Link>
+                  </p>
+                )}
+              </div>
+            )}
             {invoice.workLocation && (
               <p className="text-slate-600 flex items-center gap-1 sm:justify-end">
                 <MapPin className="w-3.5 h-3.5 text-slate-400" />
@@ -350,36 +369,51 @@ export const InvoiceDetailPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {invoice.details && invoice.details.length > 0 ? (
-                  invoice.details.map((detail, idx) => (
-                    <tr key={detail.id || idx} className="hover:bg-slate-50/50">
-                      <td className="py-3 px-3 text-center text-xs font-mono text-slate-500">
-                        {idx + 1}
-                      </td>
-                      <td className="py-3 px-3">
-                        <div className="font-bold text-slate-800">{detail.description}</div>
-                        {(detail.sphKegiatanName || detail.sourceKegiatanName) && (
-                          <span className="text-[11px] text-brand-600 font-semibold">
-                            • Kegiatan: {detail.sphKegiatanName || detail.sourceKegiatanName}
-                          </span>
-                        )}
-                        {detail.notes && (
-                          <div className="text-[11px] text-slate-500 italic mt-0.5">{detail.notes}</div>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-right font-mono font-medium text-slate-700">
-                        {detail.quantity}
-                      </td>
-                      <td className="py-3 px-3 text-center text-xs text-slate-600">
-                        {detail.unit}
-                      </td>
-                      <td className="py-3 px-3 text-right font-mono text-slate-700">
-                        {formatCurrency(detail.unitPrice)}
-                      </td>
-                      <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
-                        {formatCurrency(detail.amount)}
-                      </td>
-                    </tr>
-                  ))
+                  invoice.details.map((detail, idx) => {
+                    const isDed = detail.isDeduction || detail.itemType === 'DP_DEDUCTION' || detail.itemType === 'RETENTION_DEDUCTION';
+                    return (
+                      <tr
+                        key={detail.id || idx}
+                        className={isDed ? 'bg-rose-50/60 hover:bg-rose-50' : 'hover:bg-slate-50/50'}
+                      >
+                        <td className="py-3 px-3 text-center text-xs font-mono text-slate-500">
+                          {idx + 1}
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            <span className={`font-bold ${isDed ? 'text-rose-900' : 'text-slate-800'}`}>
+                              {detail.description}
+                            </span>
+                            {isDed && (
+                              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-rose-200 text-rose-800">
+                                {detail.itemType === 'RETENTION_DEDUCTION' ? 'RETENSI' : 'POTONGAN DP'}
+                              </span>
+                            )}
+                          </div>
+                          {(detail.sphKegiatanName || detail.sourceKegiatanName) && (
+                            <span className="text-[11px] text-brand-600 font-semibold">
+                              • Kegiatan: {detail.sphKegiatanName || detail.sourceKegiatanName}
+                            </span>
+                          )}
+                          {detail.notes && (
+                            <div className="text-[11px] text-slate-500 italic mt-0.5">{detail.notes}</div>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono font-medium text-slate-700">
+                          {detail.quantity}
+                        </td>
+                        <td className="py-3 px-3 text-center text-xs text-slate-600">
+                          {detail.unit}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono text-slate-700">
+                          {formatCurrency(detail.unitPrice)}
+                        </td>
+                        <td className={`py-3 px-3 text-right font-mono font-bold ${isDed ? 'text-rose-600' : 'text-slate-900'}`}>
+                          {isDed ? `- ${formatCurrency(Math.abs(detail.amount))}` : formatCurrency(detail.amount)}
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td colSpan={6} className="py-6 text-center text-xs text-slate-400">

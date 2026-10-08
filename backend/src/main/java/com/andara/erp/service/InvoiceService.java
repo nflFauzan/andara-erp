@@ -237,6 +237,53 @@ public class InvoiceService {
         invoice.setCreatedBy(getCurrentUsername());
         invoice.setUpdatedBy(getCurrentUsername());
 
+        // Billing Mode & Termin % Handling
+        BillingMode billingMode = request.getBillingMode() != null ? request.getBillingMode() : BillingMode.ITEM_VOLUME;
+        invoice.setBillingMode(billingMode);
+
+        if (billingMode == BillingMode.PERCENTAGE_TERMIN) {
+            if (sourcePenawaran == null) {
+                throw new AppException(ErrorCode.INVALID_REQUEST, "Penagihan mode Termin Persentase wajib memilih Surat Penawaran Harga (SPH) acuan");
+            }
+            if (request.getTerminPercentage() == null || request.getTerminPercentage().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new AppException(ErrorCode.INVALID_REQUEST, "Persentase termin harus lebih besar dari 0%");
+            }
+            if (request.getTerminPercentage().compareTo(new BigDecimal("100.00")) > 0) {
+                throw new AppException(ErrorCode.INVALID_REQUEST, "Persentase termin tidak boleh melebihi 100%");
+            }
+
+            BigDecimal alreadyBilled = invoiceRepository.sumBilledTerminPercentageBySourcePenawaranId(sourcePenawaran.getId(), null);
+            if (alreadyBilled == null) {
+                alreadyBilled = BigDecimal.ZERO;
+            }
+            BigDecimal cumulative = alreadyBilled.add(request.getTerminPercentage());
+            if (cumulative.compareTo(new BigDecimal("100.00")) > 0) {
+                BigDecimal remaining = new BigDecimal("100.00").subtract(alreadyBilled).max(BigDecimal.ZERO);
+                throw new AppException(
+                        ErrorCode.DOUBLE_BILLING_PREVENTED,
+                        "Akumulasi termin (" + cumulative + "%) melebihi 100% total penawaran. Sisa termin yang tersedia: " + remaining + "%"
+                );
+            }
+
+            invoice.setTerminPercentage(request.getTerminPercentage());
+            String terminName = (request.getTerminName() != null && !request.getTerminName().trim().isEmpty())
+                    ? request.getTerminName().trim()
+                    : "Termin " + request.getTerminPercentage().stripTrailingZeros().toPlainString() + "%";
+            invoice.setTerminName(terminName);
+
+            if (request.getPreviousDpInvoiceId() != null) {
+                Invoice prevDp = invoiceRepository.findById(request.getPreviousDpInvoiceId())
+                        .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Faktur DP referensi tidak ditemukan"));
+                if (prevDp.getStatus() == InvoiceStatus.CANCELLED) {
+                    throw new AppException(ErrorCode.INVALID_REQUEST, "Faktur DP yang dibatalkan tidak dapat digunakan sebagai potongan");
+                }
+                if (!prevDp.getCustomer().getId().equals(customer.getId())) {
+                    throw new AppException(ErrorCode.INVALID_REQUEST, "Faktur DP harus berasal dari customer yang sama");
+                }
+                invoice.setPreviousDpInvoice(prevDp);
+            }
+        }
+
         buildDetails(invoice, request.getDetails(), null);
 
         Invoice saved = invoiceRepository.save(invoice);
@@ -300,12 +347,229 @@ public class InvoiceService {
         invoice.setUpdatedBy(getCurrentUsername());
         invoice.setUpdatedAt(OffsetDateTime.now());
 
+        // Billing Mode & Termin % Handling on Update
+        BillingMode billingMode = request.getBillingMode() != null ? request.getBillingMode() : invoice.getBillingMode();
+        if (billingMode == null) {
+            billingMode = BillingMode.ITEM_VOLUME;
+        }
+        invoice.setBillingMode(billingMode);
+
+        if (billingMode == BillingMode.PERCENTAGE_TERMIN) {
+            Penawaran sourcePenawaran = invoice.getSourcePenawaran();
+            if (sourcePenawaran == null) {
+                throw new AppException(ErrorCode.INVALID_REQUEST, "Penagihan mode Termin Persentase wajib memiliki Surat Penawaran Harga (SPH) acuan");
+            }
+            if (request.getTerminPercentage() == null || request.getTerminPercentage().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new AppException(ErrorCode.INVALID_REQUEST, "Persentase termin harus lebih besar dari 0%");
+            }
+            if (request.getTerminPercentage().compareTo(new BigDecimal("100.00")) > 0) {
+                throw new AppException(ErrorCode.INVALID_REQUEST, "Persentase termin tidak boleh melebihi 100%");
+            }
+
+            BigDecimal alreadyBilled = invoiceRepository.sumBilledTerminPercentageBySourcePenawaranId(sourcePenawaran.getId(), invoice.getId());
+            if (alreadyBilled == null) {
+                alreadyBilled = BigDecimal.ZERO;
+            }
+            BigDecimal cumulative = alreadyBilled.add(request.getTerminPercentage());
+            if (cumulative.compareTo(new BigDecimal("100.00")) > 0) {
+                BigDecimal remaining = new BigDecimal("100.00").subtract(alreadyBilled).max(BigDecimal.ZERO);
+                throw new AppException(
+                        ErrorCode.DOUBLE_BILLING_PREVENTED,
+                        "Akumulasi termin (" + cumulative + "%) melebihi 100% total penawaran. Sisa termin yang tersedia: " + remaining + "%"
+                );
+            }
+
+            invoice.setTerminPercentage(request.getTerminPercentage());
+            String terminName = (request.getTerminName() != null && !request.getTerminName().trim().isEmpty())
+                    ? request.getTerminName().trim()
+                    : "Termin " + request.getTerminPercentage().stripTrailingZeros().toPlainString() + "%";
+            invoice.setTerminName(terminName);
+
+            if (request.getPreviousDpInvoiceId() != null) {
+                Invoice prevDp = invoiceRepository.findById(request.getPreviousDpInvoiceId())
+                        .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Faktur DP referensi tidak ditemukan"));
+                if (prevDp.getStatus() == InvoiceStatus.CANCELLED) {
+                    throw new AppException(ErrorCode.INVALID_REQUEST, "Faktur DP yang dibatalkan tidak dapat digunakan sebagai potongan");
+                }
+                if (!prevDp.getCustomer().getId().equals(customer.getId())) {
+                    throw new AppException(ErrorCode.INVALID_REQUEST, "Faktur DP harus berasal dari customer yang sama");
+                }
+                invoice.setPreviousDpInvoice(prevDp);
+            } else {
+                invoice.setPreviousDpInvoice(null);
+            }
+        } else {
+            invoice.setTerminPercentage(null);
+            invoice.setTerminName(null);
+            invoice.setPreviousDpInvoice(null);
+        }
+
         // Replace details safely
         invoice.getDetails().clear();
         buildDetails(invoice, request.getDetails(), invoice.getId());
 
         Invoice updated = invoiceRepository.save(invoice);
         return InvoiceDTO.fromEntity(updated, true);
+    }
+
+    @Transactional(readOnly = true)
+    public PenawaranTerminSummaryDTO getTerminSummary(Long penawaranId) {
+        Penawaran penawaran = penawaranRepository.findById(penawaranId)
+                .orElseThrow(() -> new AppException(ErrorCode.PENAWARAN_NOT_FOUND, "Penawaran dengan ID " + penawaranId + " tidak ditemukan"));
+
+        BigDecimal alreadyBilled = invoiceRepository.sumBilledTerminPercentageBySourcePenawaranId(penawaranId, null);
+        if (alreadyBilled == null) {
+            alreadyBilled = BigDecimal.ZERO;
+        }
+        BigDecimal remaining = new BigDecimal("100.00").subtract(alreadyBilled).max(BigDecimal.ZERO);
+
+        PenawaranTerminSummaryDTO summary = new PenawaranTerminSummaryDTO();
+        summary.setPenawaranId(penawaran.getId());
+        summary.setPenawaranNumber(penawaran.getNumber());
+        summary.setTotalPenawaranAmount(penawaran.getTotalAmount());
+        summary.setAlreadyBilledPercentage(alreadyBilled);
+        summary.setRemainingPercentage(remaining);
+
+        List<Invoice> activeTermins = invoiceRepository.findActiveTerminInvoicesByPenawaranId(penawaranId);
+        List<PenawaranTerminSummaryDTO.BilledTerminItemDTO> billedItems = new ArrayList<>();
+        for (Invoice inv : activeTermins) {
+            PenawaranTerminSummaryDTO.BilledTerminItemDTO item = new PenawaranTerminSummaryDTO.BilledTerminItemDTO();
+            item.setInvoiceId(inv.getId());
+            item.setInvoiceNumber(inv.getNumber());
+            item.setTerminName(inv.getTerminName());
+            item.setTerminPercentage(inv.getTerminPercentage());
+            item.setSubtotalDpp(inv.getSubtotalDpp());
+            item.setTotalAmount(inv.getTotalAmount());
+            item.setDate(inv.getDate());
+            item.setStatus(inv.getStatus() != null ? inv.getStatus().name() : null);
+            item.setPaymentStatus(inv.getPaymentStatus() != null ? inv.getPaymentStatus().name() : null);
+            billedItems.add(item);
+        }
+        summary.setBilledInvoices(billedItems);
+
+        List<Invoice> availableDps = invoiceRepository.findAvailableDpInvoices(penawaran.getCustomer().getId(), penawaranId, null);
+        List<PenawaranTerminSummaryDTO.AvailableDpInvoiceDTO> dpItems = new ArrayList<>();
+        for (Invoice dp : availableDps) {
+            PenawaranTerminSummaryDTO.AvailableDpInvoiceDTO dpDto = new PenawaranTerminSummaryDTO.AvailableDpInvoiceDTO();
+            dpDto.setInvoiceId(dp.getId());
+            dpDto.setInvoiceNumber(dp.getNumber());
+            dpDto.setTerminName(dp.getTerminName());
+            dpDto.setTerminPercentage(dp.getTerminPercentage());
+            dpDto.setSubtotalDpp(dp.getSubtotalDpp());
+            dpDto.setTotalAmount(dp.getTotalAmount());
+            dpDto.setPaidAmount(dp.getPaidAmount());
+            dpDto.setDate(dp.getDate());
+            dpItems.add(dpDto);
+        }
+        summary.setAvailableDpInvoices(dpItems);
+
+        return summary;
+    }
+
+    private void buildDetails(Invoice invoice, List<CreateInvoiceDetailRequest> itemRequests, Long currentInvoiceId) {
+        if (itemRequests == null || itemRequests.isEmpty()) {
+            if (invoice.getBillingMode() == BillingMode.PERCENTAGE_TERMIN && invoice.getSourcePenawaran() != null) {
+                // Auto-generate termin item and DP deduction if details are omitted
+                Penawaran penawaran = invoice.getSourcePenawaran();
+                BigDecimal totalPenawaran = penawaran.getTotalAmount();
+                BigDecimal terminAmount = totalPenawaran
+                        .multiply(invoice.getTerminPercentage())
+                        .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+
+                InvoiceDetail terminDetail = new InvoiceDetail();
+                terminDetail.setDescription(invoice.getTerminName() + " (" + invoice.getTerminPercentage().stripTrailingZeros().toPlainString() + "%) - " + penawaran.getNumber());
+                terminDetail.setQuantity(BigDecimal.ONE);
+                terminDetail.setUnit("Termin");
+                terminDetail.setUnitPrice(terminAmount);
+                terminDetail.setSortOrder(1);
+                terminDetail.setIsDeduction(false);
+                terminDetail.setItemType(InvoiceItemType.STANDARD);
+                terminDetail.calculateAmount();
+                invoice.addDetail(terminDetail);
+
+                if (invoice.getPreviousDpInvoice() != null) {
+                    Invoice dpInvoice = invoice.getPreviousDpInvoice();
+                    InvoiceDetail dpDetail = new InvoiceDetail();
+                    dpDetail.setDescription("Potongan Uang Muka (DP) - Faktur " + dpInvoice.getNumber());
+                    dpDetail.setQuantity(BigDecimal.ONE);
+                    dpDetail.setUnit("Termin");
+                    dpDetail.setUnitPrice(dpInvoice.getSubtotalDpp());
+                    dpDetail.setSortOrder(2);
+                    dpDetail.setIsDeduction(true);
+                    dpDetail.setItemType(InvoiceItemType.DP_DEDUCTION);
+                    dpDetail.calculateAmount();
+                    invoice.addDetail(dpDetail);
+                }
+                return;
+            } else {
+                throw new AppException(ErrorCode.INVALID_REQUEST, "Faktur harus memiliki minimal 1 item");
+            }
+        }
+
+        int order = 1;
+        for (CreateInvoiceDetailRequest itemReq : itemRequests) {
+            InvoiceDetail detail = new InvoiceDetail();
+            detail.setDescription(itemReq.getDescription().trim());
+            detail.setQuantity(itemReq.getQuantity());
+            detail.setUnit(itemReq.getUnit().trim());
+            detail.setUnitPrice(itemReq.getUnitPrice());
+            detail.setSortOrder(itemReq.getSortOrder() != null && itemReq.getSortOrder() > 0 ? itemReq.getSortOrder() : order++);
+            detail.setNotes(itemReq.getNotes());
+
+            boolean isDeduction = Boolean.TRUE.equals(itemReq.getIsDeduction()) || itemReq.getItemType() == InvoiceItemType.DP_DEDUCTION;
+            detail.setIsDeduction(isDeduction);
+            detail.setItemType(itemReq.getItemType() != null ? itemReq.getItemType() : (isDeduction ? InvoiceItemType.DP_DEDUCTION : InvoiceItemType.STANDARD));
+
+            // Source Penawaran Detail & Anti-Double-Billing enforcement (only for non-deduction physical items)
+            if (!isDeduction && itemReq.getSourcePenawaranDetailId() != null) {
+                PenawaranDetail pDetail = penawaranDetailRepository.findById(itemReq.getSourcePenawaranDetailId())
+                        .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Item penawaran sumber tidak ditemukan"));
+
+                // Sum already billed quantity from all non-cancelled invoices (excluding current invoice if editing)
+                BigDecimal alreadyBilled = invoiceDetailRepository.sumBilledQuantityBySourcePenawaranDetailId(pDetail.getId(), currentInvoiceId);
+                BigDecimal requested = itemReq.getQuantity();
+                BigDecimal maxAllowed = pDetail.getVolume().subtract(alreadyBilled).max(BigDecimal.ZERO);
+
+                if (alreadyBilled.add(requested).compareTo(pDetail.getVolume()) > 0) {
+                    throw new AppException(
+                            ErrorCode.DOUBLE_BILLING_PREVENTED,
+                            "Item '" + pDetail.getDescription() + "' melebihi sisa volume yang dapat ditagihkan. Tersisa: " +
+                                    maxAllowed + " " + pDetail.getUnit() + ", diminta: " + requested + " " + pDetail.getUnit()
+                    );
+                }
+
+                detail.setSourcePenawaranDetail(pDetail);
+                if (pDetail.getSphKegiatan() != null) {
+                    detail.setSphKegiatan(pDetail.getSphKegiatan());
+                }
+                if (pDetail.getKegiatan() != null) {
+                    detail.setSourceKegiatan(pDetail.getKegiatan());
+                }
+                if (pDetail.getKegiatanItem() != null) {
+                    detail.setSourceKegiatanItem(pDetail.getKegiatanItem());
+                }
+            } else if (!isDeduction) {
+                // Direct kegiatan / kegiatan item link (if manual billing with activity link)
+                if (itemReq.getSourceKegiatanId() != null) {
+                    Kegiatan kegiatan = kegiatanRepository.findById(itemReq.getSourceKegiatanId())
+                            .orElseThrow(() -> new AppException(ErrorCode.KEGIATAN_NOT_FOUND, "Kegiatan tidak ditemukan"));
+                    detail.setSourceKegiatan(kegiatan);
+                }
+                if (itemReq.getSourceKegiatanItemId() != null) {
+                    KegiatanItem kegiatanItem = kegiatanItemRepository.findById(itemReq.getSourceKegiatanItemId())
+                            .orElseThrow(() -> new AppException(ErrorCode.KEGIATAN_ITEM_NOT_FOUND, "Item kegiatan tidak ditemukan"));
+                    detail.setSourceKegiatanItem(kegiatanItem);
+                }
+            }
+
+            // Authoritative server calculation
+            detail.calculateAmount();
+            invoice.addDetail(detail);
+        }
+
+        if (invoice.getSubtotalDpp() != null && invoice.getSubtotalDpp().compareTo(BigDecimal.ZERO) < 0) {
+            throw new AppException(ErrorCode.INVALID_REQUEST, "Subtotal DPP faktur tidak boleh bernilai negatif setelah pemotongan");
+        }
     }
 
     @Transactional
@@ -365,69 +629,6 @@ public class InvoiceService {
                 null
         );
         invoiceRepository.delete(invoice);
-    }
-
-    private void buildDetails(Invoice invoice, List<CreateInvoiceDetailRequest> itemRequests, Long currentInvoiceId) {
-        if (itemRequests == null || itemRequests.isEmpty()) {
-            throw new AppException(ErrorCode.INVALID_REQUEST, "Faktur harus memiliki minimal 1 item");
-        }
-
-        int order = 1;
-        for (CreateInvoiceDetailRequest itemReq : itemRequests) {
-            InvoiceDetail detail = new InvoiceDetail();
-            detail.setDescription(itemReq.getDescription().trim());
-            detail.setQuantity(itemReq.getQuantity());
-            detail.setUnit(itemReq.getUnit().trim());
-            detail.setUnitPrice(itemReq.getUnitPrice());
-            detail.setSortOrder(itemReq.getSortOrder() != null && itemReq.getSortOrder() > 0 ? itemReq.getSortOrder() : order++);
-            detail.setNotes(itemReq.getNotes());
-
-            // Source Penawaran Detail & Anti-Double-Billing enforcement
-            if (itemReq.getSourcePenawaranDetailId() != null) {
-                PenawaranDetail pDetail = penawaranDetailRepository.findById(itemReq.getSourcePenawaranDetailId())
-                        .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Item penawaran sumber tidak ditemukan"));
-
-                // Sum already billed quantity from all non-cancelled invoices (excluding current invoice if editing)
-                BigDecimal alreadyBilled = invoiceDetailRepository.sumBilledQuantityBySourcePenawaranDetailId(pDetail.getId(), currentInvoiceId);
-                BigDecimal requested = itemReq.getQuantity();
-                BigDecimal maxAllowed = pDetail.getVolume().subtract(alreadyBilled).max(BigDecimal.ZERO);
-
-                if (alreadyBilled.add(requested).compareTo(pDetail.getVolume()) > 0) {
-                    throw new AppException(
-                            ErrorCode.DOUBLE_BILLING_PREVENTED,
-                            "Item '" + pDetail.getDescription() + "' melebihi sisa volume yang dapat ditagihkan. Tersisa: " +
-                                    maxAllowed + " " + pDetail.getUnit() + ", diminta: " + requested + " " + pDetail.getUnit()
-                    );
-                }
-
-                detail.setSourcePenawaranDetail(pDetail);
-                if (pDetail.getSphKegiatan() != null) {
-                    detail.setSphKegiatan(pDetail.getSphKegiatan());
-                }
-                if (pDetail.getKegiatan() != null) {
-                    detail.setSourceKegiatan(pDetail.getKegiatan());
-                }
-                if (pDetail.getKegiatanItem() != null) {
-                    detail.setSourceKegiatanItem(pDetail.getKegiatanItem());
-                }
-            } else {
-                // Direct kegiatan / kegiatan item link (if manual billing with activity link)
-                if (itemReq.getSourceKegiatanId() != null) {
-                    Kegiatan kegiatan = kegiatanRepository.findById(itemReq.getSourceKegiatanId())
-                            .orElseThrow(() -> new AppException(ErrorCode.KEGIATAN_NOT_FOUND, "Kegiatan tidak ditemukan"));
-                    detail.setSourceKegiatan(kegiatan);
-                }
-                if (itemReq.getSourceKegiatanItemId() != null) {
-                    KegiatanItem kegiatanItem = kegiatanItemRepository.findById(itemReq.getSourceKegiatanItemId())
-                            .orElseThrow(() -> new AppException(ErrorCode.KEGIATAN_ITEM_NOT_FOUND, "Item kegiatan tidak ditemukan"));
-                    detail.setSourceKegiatanItem(kegiatanItem);
-                }
-            }
-
-            // Authoritative server calculation
-            detail.calculateAmount();
-            invoice.addDetail(detail);
-        }
     }
 
     private void validateStatusTransition(InvoiceStatus from, InvoiceStatus to) {

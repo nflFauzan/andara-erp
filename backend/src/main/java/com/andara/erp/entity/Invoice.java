@@ -27,6 +27,20 @@ public class Invoice {
     @JoinColumn(name = "source_penawaran_id")
     private Penawaran sourcePenawaran;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "billing_mode", nullable = false, length = 30)
+    private BillingMode billingMode = BillingMode.ITEM_VOLUME;
+
+    @Column(name = "termin_percentage", precision = 5, scale = 2)
+    private BigDecimal terminPercentage;
+
+    @Column(name = "termin_name", length = 100)
+    private String terminName;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "previous_dp_invoice_id")
+    private Invoice previousDpInvoice;
+
     @Column(name = "client_po_number", length = 100)
     private String clientPoNumber;
 
@@ -482,5 +496,37 @@ public class Invoice {
 
     public void setNetTotalAmount(BigDecimal netTotalAmount) {
         this.netTotalAmount = netTotalAmount;
+    }
+
+    public BillingMode getBillingMode() {
+        return billingMode;
+    }
+
+    public void setBillingMode(BillingMode billingMode) {
+        this.billingMode = billingMode != null ? billingMode : BillingMode.ITEM_VOLUME;
+    }
+
+    public BigDecimal getTerminPercentage() {
+        return terminPercentage;
+    }
+
+    public void setTerminPercentage(BigDecimal terminPercentage) {
+        this.terminPercentage = terminPercentage;
+    }
+
+    public String getTerminName() {
+        return terminName;
+    }
+
+    public void setTerminName(String terminName) {
+        this.terminName = terminName;
+    }
+
+    public Invoice getPreviousDpInvoice() {
+        return previousDpInvoice;
+    }
+
+    public void setPreviousDpInvoice(Invoice previousDpInvoice) {
+        this.previousDpInvoice = previousDpInvoice;
     }
 }

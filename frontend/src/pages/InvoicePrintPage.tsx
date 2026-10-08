@@ -267,6 +267,26 @@ export const InvoicePrintPage: React.FC = () => {
               </div>
             )}
 
+            {invoice.billingMode === 'PERCENTAGE_TERMIN' && (
+              <div className="flex items-baseline px-3 py-0.5">
+                <span className="w-[150px] shrink-0 font-bold">Termin Penagihan</span>
+                <span className="w-[18px] shrink-0 font-bold text-center">:</span>
+                <span className="flex-1 font-bold text-black">
+                  {invoice.terminPercentage}% {invoice.terminName ? `(${invoice.terminName})` : ''}
+                </span>
+              </div>
+            )}
+
+            {invoice.previousDpInvoiceNumber && (
+              <div className="flex items-baseline px-3 py-0.5">
+                <span className="w-[150px] shrink-0 font-bold">Kompensasi DP</span>
+                <span className="w-[18px] shrink-0 font-bold text-center">:</span>
+                <span className="flex-1 font-mono font-bold text-black">
+                  Dipotong dari Faktur DP {invoice.previousDpInvoiceNumber}
+                </span>
+              </div>
+            )}
+
             {/* Baris 2: Diajukan Kepada Yth */}
             <div className="flex items-baseline px-3 py-0.5">
               <span className="w-[150px] shrink-0 font-bold">Diajukan Kepada Yth</span>
@@ -348,31 +368,43 @@ export const InvoicePrintPage: React.FC = () => {
                     </tr>
 
                     {/* Item-item di dalam group */}
-                    {group.items.map((detail, dIdx) => (
-                      <tr key={detail.id || dIdx} className="border-b border-black">
-                        <td className="border-r border-black py-0.5 px-2 text-left">
-                          {detail.description}
-                        </td>
-                        <td className="border-r border-black py-0.5 px-1.5 text-right font-sans">
-                          {formatQuantity(detail.quantity)}
-                        </td>
-                        <td className="border-r border-black py-0.5 px-1 text-center">
-                          {detail.unit}
-                        </td>
-                        <td className="border-r border-black py-0.5 px-1">
-                          <div className="flex justify-between items-center w-full px-1">
-                            <span>Rp</span>
-                            <span>{formatNumber(detail.unitPrice)}</span>
-                          </div>
-                        </td>
-                        <td className="py-0.5 px-1">
-                          <div className="flex justify-between items-center w-full px-1">
-                            <span>Rp</span>
-                            <span>{formatNumber(detail.amount)}</span>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {group.items.map((detail, dIdx) => {
+                      const isDed = detail.isDeduction || detail.itemType === 'DP_DEDUCTION' || detail.itemType === 'RETENTION_DEDUCTION';
+                      return (
+                        <tr key={detail.id || dIdx} className="border-b border-black">
+                          <td className="border-r border-black py-0.5 px-2 text-left">
+                            <span className={isDed ? 'font-bold' : ''}>{detail.description}</span>
+                          </td>
+                          <td className="border-r border-black py-0.5 px-1.5 text-right font-sans">
+                            {formatQuantity(detail.quantity)}
+                          </td>
+                          <td className="border-r border-black py-0.5 px-1 text-center">
+                            {detail.unit}
+                          </td>
+                          <td className="border-r border-black py-0.5 px-1">
+                            <div className="flex justify-between items-center w-full px-1">
+                              <span>Rp</span>
+                              <span>{formatNumber(detail.unitPrice)}</span>
+                            </div>
+                          </td>
+                          <td className="py-0.5 px-1">
+                            <div className="flex justify-between items-center w-full px-1">
+                              {isDed ? (
+                                <>
+                                  <span>(Rp</span>
+                                  <span>{formatNumber(Math.abs(Number(detail.amount) || 0))})</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>Rp</span>
+                                  <span>{formatNumber(detail.amount)}</span>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
 
                     {/* Baris Subtotal Group: TOTAL A / TOTAL B / TOTAL C (Sesuai Master Reference: Col 1-3 merged, Col 4 Rp, Col 5 subtotal) */}
                     <tr
@@ -403,31 +435,43 @@ export const InvoicePrintPage: React.FC = () => {
                 ))
               ) : (
                 /* JIKA TIDAK ADA GROUPING (FLAT ITEM) */
-                invoice.details?.map((detail, dIdx) => (
-                  <tr key={detail.id || dIdx} className="border-b border-black">
-                    <td className="border-r border-black py-0.5 px-2 text-left">
-                      {detail.description}
-                    </td>
-                    <td className="border-r border-black py-0.5 px-1.5 text-right font-sans">
-                      {formatQuantity(detail.quantity)}
-                    </td>
-                    <td className="border-r border-black py-0.5 px-1 text-center">
-                      {detail.unit}
-                    </td>
-                    <td className="border-r border-black py-0.5 px-1">
-                      <div className="flex justify-between items-center w-full px-1">
-                        <span>Rp</span>
-                        <span>{formatNumber(detail.unitPrice)}</span>
-                      </div>
-                    </td>
-                    <td className="py-0.5 px-1">
-                      <div className="flex justify-between items-center w-full px-1">
-                        <span>Rp</span>
-                        <span>{formatNumber(detail.amount)}</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                invoice.details?.map((detail, dIdx) => {
+                  const isDed = detail.isDeduction || detail.itemType === 'DP_DEDUCTION' || detail.itemType === 'RETENTION_DEDUCTION';
+                  return (
+                    <tr key={detail.id || dIdx} className="border-b border-black">
+                      <td className="border-r border-black py-0.5 px-2 text-left">
+                        <span className={isDed ? 'font-bold' : ''}>{detail.description}</span>
+                      </td>
+                      <td className="border-r border-black py-0.5 px-1.5 text-right font-sans">
+                        {formatQuantity(detail.quantity)}
+                      </td>
+                      <td className="border-r border-black py-0.5 px-1 text-center">
+                        {detail.unit}
+                      </td>
+                      <td className="border-r border-black py-0.5 px-1">
+                        <div className="flex justify-between items-center w-full px-1">
+                          <span>Rp</span>
+                          <span>{formatNumber(detail.unitPrice)}</span>
+                        </div>
+                      </td>
+                      <td className="py-0.5 px-1">
+                        <div className="flex justify-between items-center w-full px-1">
+                          {isDed ? (
+                            <>
+                              <span>(Rp</span>
+                              <span>{formatNumber(Math.abs(Number(detail.amount) || 0))})</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>Rp</span>
+                              <span>{formatNumber(detail.amount)}</span>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
 
               {/* Baris DPP / Subtotal jika ada PPN */}

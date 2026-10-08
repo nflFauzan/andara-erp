@@ -16,7 +16,8 @@ import {
   FileSpreadsheet,
   FileSignature,
   Percent,
-  CheckCircle2
+  CheckCircle2,
+  PieChart
 } from 'lucide-react';
 import { invoiceApi } from '../api/invoiceApi';
 import { customerApi } from '../api/customerApi';
@@ -24,7 +25,14 @@ import { penawaranApi } from '../api/penawaranApi';
 import { useAuth } from '../context/AuthContext';
 import { Customer } from '../types/customer';
 import { Penawaran } from '../types/penawaran';
-import { CreateInvoiceDetailInput, PenawaranBillableItem, TaxPpnType, TaxPphType } from '../types/invoice';
+import {
+  CreateInvoiceDetailInput,
+  PenawaranBillableItem,
+  TaxPpnType,
+  TaxPphType,
+  BillingMode,
+  PenawaranTerminSummary
+} from '../types/invoice';
 import { BentoCard } from '@/components/common/BentoCard';
 import { PageHeader } from '@/components/common/PageHeader';
 
@@ -51,6 +59,15 @@ export const InvoiceFormPage: React.FC = () => {
   const [sourcePenawaranNumber, setSourcePenawaranNumber] = useState<string | null>(null);
   const [workLocation, setWorkLocation] = useState('');
 
+  // Fase 2: Billing Mode, Termin % & DP Deduction
+  const [billingMode, setBillingMode] = useState<BillingMode>('ITEM_VOLUME');
+  const [terminPercentage, setTerminPercentage] = useState<number>(30);
+  const [terminName, setTerminName] = useState<string>('Uang Muka (DP 30%)');
+  const [deductPreviousDp, setDeductPreviousDp] = useState<boolean>(false);
+  const [selectedPreviousDpId, setSelectedPreviousDpId] = useState<number | null>(null);
+  const [terminSummary, setTerminSummary] = useState<PenawaranTerminSummary | null>(null);
+  const [loadingTerminSummary, setLoadingTerminSummary] = useState<boolean>(false);
+
   // Fase 1: Client Reference Numbers
   const [clientPoNumber, setClientPoNumber] = useState('');
   const [clientSpkNumber, setClientSpkNumber] = useState('');
@@ -59,6 +76,7 @@ export const InvoiceFormPage: React.FC = () => {
   // Fase 1: Tax Types
   const [taxPpnType, setTaxPpnType] = useState<TaxPpnType>('NONE');
   const [taxPphType, setTaxPphType] = useState<TaxPphType>('NONE');
+
 
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const defaultDueDate = new Date();
@@ -118,6 +136,13 @@ export const InvoiceFormPage: React.FC = () => {
           setDueDate(data.dueDate || '');
           setNotes(data.notes || '');
           setTerms(data.terms || '');
+          if (data.billingMode) setBillingMode(data.billingMode);
+          if (data.terminPercentage) setTerminPercentage(Number(data.terminPercentage));
+          if (data.terminName) setTerminName(data.terminName);
+          if (data.previousDpInvoiceId) {
+            setDeductPreviousDp(true);
+            setSelectedPreviousDpId(data.previousDpInvoiceId);
+          }
           if (data.details && data.details.length > 0) {
             setItems(
               data.details.map((d, idx) => ({
@@ -132,6 +157,8 @@ export const InvoiceFormPage: React.FC = () => {
                 unit: d.unit,
                 unitPrice: d.unitPrice,
                 sortOrder: d.sortOrder || idx + 1,
+                isDeduction: d.isDeduction,
+                itemType: d.itemType,
                 notes: d.notes,
               }))
             );
@@ -145,6 +172,86 @@ export const InvoiceFormPage: React.FC = () => {
         });
     }
   }, [isEdit, id]);
+
+  // Load Termin Summary when sourcePenawaranId is present
+  useEffect(() => {
+    if (sourcePenawaranId) {
+      setLoadingTerminSummary(true);
+      invoiceApi
+        .getPenawaranTerminSummary(sourcePenawaranId)
+        .then((summary) => {
+          setTerminSummary(summary);
+          // If in percentage termin mode and creating fresh, suggest sensible termin defaults
+          if (!isEdit && summary) {
+            if (summary.alreadyBilledPercentage === 0) {
+              setTerminPercentage(30);
+              setTerminName('Uang Muka (DP 30%)');
+            } else {
+              const rem = summary.remainingPercentage || 0;
+              setTerminPercentage(rem);
+              setTerminName(rem === 100 ? 'Pelunasan 100%' : `Termin Progres (${rem}%)`);
+            }
+          }
+        })
+        .catch(console.error)
+        .finally(() => {
+          setLoadingTerminSummary(false);
+        });
+    } else {
+      setTerminSummary(null);
+    }
+  }, [sourcePenawaranId, isEdit]);
+
+  // Synchronize item rows automatically when PERCENTAGE_TERMIN mode is active
+  useEffect(() => {
+    if (billingMode !== 'PERCENTAGE_TERMIN') return;
+    if (!terminSummary) return;
+
+    const totalKontrak = Number(terminSummary.totalPenawaranAmount) || 0;
+    const pct = Number(terminPercentage) || 0;
+    const baseTerminAmount = Math.round((totalKontrak * pct) / 100);
+
+    const terminItem: ItemRow = {
+      tempId: 'termin-main-row',
+      description: `${terminName.trim() || 'Penagihan Termin'} (${pct}%) - SPH ${terminSummary.penawaranNumber}`,
+      quantity: 1,
+      unit: 'Termin',
+      unitPrice: baseTerminAmount,
+      sortOrder: 1,
+      isDeduction: false,
+      itemType: 'STANDARD',
+    };
+
+    const newItems: ItemRow[] = [terminItem];
+
+    if (deductPreviousDp && selectedPreviousDpId) {
+      const dpInv = terminSummary.availableDpInvoices?.find(
+        (dp) => dp.invoiceId === Number(selectedPreviousDpId)
+      );
+      if (dpInv) {
+        newItems.push({
+          tempId: 'termin-dp-deduction-row',
+          description: `Potongan Uang Muka (DP) - Faktur ${dpInv.invoiceNumber}`,
+          quantity: 1,
+          unit: 'Termin',
+          unitPrice: Number(dpInv.subtotalDpp) || Number(dpInv.totalAmount) || 0,
+          sortOrder: 2,
+          isDeduction: true,
+          itemType: 'DP_DEDUCTION',
+        });
+      }
+    }
+
+    setItems(newItems);
+  }, [
+    billingMode,
+    terminSummary,
+    terminPercentage,
+    terminName,
+    deductPreviousDp,
+    selectedPreviousDpId,
+  ]);
+
 
   // If initialPenawaranId query param exists, load penawaran meta and open the selection modal
   // (do NOT auto-import all items — user must explicitly choose which kegiatan/items to bill)
@@ -341,7 +448,8 @@ export const InvoiceFormPage: React.FC = () => {
     return items.reduce((sum, item) => {
       const qty = Number(item.quantity) || 0;
       const price = Number(item.unitPrice) || 0;
-      return sum + qty * price;
+      const lineTotal = qty * price;
+      return item.isDeduction ? sum - lineTotal : sum + lineTotal;
     }, 0);
   }, [items]);
 
@@ -417,6 +525,25 @@ export const InvoiceFormPage: React.FC = () => {
       return;
     }
 
+    if (billingMode === 'PERCENTAGE_TERMIN') {
+      if (!sourcePenawaranId) {
+        setErrorMsg('Penagihan mode Termin Persentase wajib memilih Surat Penawaran Harga (SPH) acuan.');
+        return;
+      }
+      if (!terminPercentage || terminPercentage <= 0) {
+        setErrorMsg('Persentase termin harus lebih besar dari 0%.');
+        return;
+      }
+      if (terminPercentage > 100) {
+        setErrorMsg('Persentase termin tidak boleh melebihi 100%.');
+        return;
+      }
+      if (taxCalculation.subtotalDpp < 0) {
+        setErrorMsg('Subtotal DPP faktur tidak boleh bernilai negatif setelah pemotongan Uang Muka (DP).');
+        return;
+      }
+    }
+
     // Validate items
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
@@ -455,12 +582,18 @@ export const InvoiceFormPage: React.FC = () => {
         unit: it.unit.trim(),
         unitPrice: Number(it.unitPrice),
         sortOrder: idx + 1,
+        isDeduction: Boolean(it.isDeduction),
+        itemType: it.itemType || (it.isDeduction ? 'DP_DEDUCTION' : 'STANDARD'),
         notes: it.notes,
       }));
 
       if (isEdit && id) {
         await invoiceApi.updateInvoice(Number(id), {
           customerId: Number(selectedCustomerId),
+          billingMode,
+          terminPercentage: billingMode === 'PERCENTAGE_TERMIN' ? Number(terminPercentage) : undefined,
+          terminName: billingMode === 'PERCENTAGE_TERMIN' ? terminName.trim() : undefined,
+          previousDpInvoiceId: (billingMode === 'PERCENTAGE_TERMIN' && deductPreviousDp && selectedPreviousDpId) ? Number(selectedPreviousDpId) : undefined,
           workLocation: workLocation.trim() || undefined,
           clientPoNumber: clientPoNumber.trim() || undefined,
           clientSpkNumber: clientSpkNumber.trim() || undefined,
@@ -478,6 +611,10 @@ export const InvoiceFormPage: React.FC = () => {
         const created = await invoiceApi.createInvoice({
           customerId: Number(selectedCustomerId),
           sourcePenawaranId: sourcePenawaranId || undefined,
+          billingMode,
+          terminPercentage: billingMode === 'PERCENTAGE_TERMIN' ? Number(terminPercentage) : undefined,
+          terminName: billingMode === 'PERCENTAGE_TERMIN' ? terminName.trim() : undefined,
+          previousDpInvoiceId: (billingMode === 'PERCENTAGE_TERMIN' && deductPreviousDp && selectedPreviousDpId) ? Number(selectedPreviousDpId) : undefined,
           workLocation: workLocation.trim() || undefined,
           clientPoNumber: clientPoNumber.trim() || undefined,
           clientSpkNumber: clientSpkNumber.trim() || undefined,
@@ -680,7 +817,275 @@ export const InvoiceFormPage: React.FC = () => {
         </BentoCard>
 
         {/* Items Section */}
-        <BentoCard className="p-6 space-y-4">
+        <BentoCard className="p-6 space-y-5">
+          {/* Mode Penagihan Switcher (Khusus jika bersumber dari SPH) */}
+          {sourcePenawaranId && (
+            <div className="bg-slate-100/80 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setBillingMode('ITEM_VOLUME')}
+                className={`flex-1 w-full py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                  billingMode === 'ITEM_VOLUME'
+                    ? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm border border-slate-200/60 dark:border-slate-700'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <Layers className="w-4 h-4" />
+                <span>Mode Kuantitas Fisik (Item & Volume SPH)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setBillingMode('PERCENTAGE_TERMIN');
+                  if (terminSummary) {
+                    if (terminSummary.alreadyBilledPercentage === 0) {
+                      setTerminPercentage(30);
+                      setTerminName('Uang Muka (DP 30%)');
+                    } else {
+                      const rem = terminSummary.remainingPercentage || 0;
+                      setTerminPercentage(rem);
+                      setTerminName(rem === 100 ? 'Pelunasan 100%' : `Termin Progres (${rem}%)`);
+                    }
+                  }
+                }}
+                className={`flex-1 w-full py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                  billingMode === 'PERCENTAGE_TERMIN'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <PieChart className="w-4 h-4" />
+                <span>Mode Termin Proyek (%) & Potongan DP</span>
+              </button>
+            </div>
+          )}
+
+          {/* Panel Kontrol Khusus Mode Termin Proyek (%) */}
+          {billingMode === 'PERCENTAGE_TERMIN' && (
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-slate-50 dark:from-indigo-950/20 dark:via-purple-950/20 dark:to-slate-900/50 border border-indigo-500/20 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-500/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400">
+                    <PieChart className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                      Pengaturan Termin Proyek Bertahap
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Total Kontrak SPH: <strong className="font-mono text-slate-700 dark:text-slate-200">{formatCurrency(terminSummary?.totalPenawaranAmount || 0)}</strong>
+                    </p>
+                  </div>
+                </div>
+
+                {loadingTerminSummary && (
+                  <span className="text-xs text-indigo-500 font-semibold animate-pulse">
+                    Memuat status termin...
+                  </span>
+                )}
+              </div>
+
+              {/* Visual Progress Bar Termin */}
+              {terminSummary && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-600 dark:text-slate-400 font-medium">
+                      Akumulasi Penagihan SPH:
+                    </span>
+                    <div className="flex items-center gap-3 font-mono text-[11px]">
+                      <span className="text-blue-600 dark:text-blue-400">
+                        Tertagih: {terminSummary.alreadyBilledPercentage}%
+                      </span>
+                      <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+                        Faktur Ini: {terminPercentage}%
+                      </span>
+                      <span className="text-slate-500">
+                        Sisa: {Math.max(0, 100 - (terminSummary.alreadyBilledPercentage || 0) - (Number(terminPercentage) || 0))}%
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Multi-segment Progress Bar */}
+                  <div className="w-full h-3 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden flex">
+                    <div
+                      style={{ width: `${Math.min(100, terminSummary.alreadyBilledPercentage)}%` }}
+                      className="h-full bg-blue-500 transition-all duration-300"
+                      title={`Tertagih sebelumnya: ${terminSummary.alreadyBilledPercentage}%`}
+                    />
+                    <div
+                      style={{
+                        width: `${Math.min(
+                          Math.max(0, 100 - terminSummary.alreadyBilledPercentage),
+                          Number(terminPercentage) || 0
+                        )}%`,
+                      }}
+                      className="h-full bg-indigo-500 transition-all duration-300"
+                      title={`Ditagihkan sekarang: ${terminPercentage}%`}
+                    />
+                  </div>
+
+                  {/* Quick Preset Buttons */}
+                  <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                    <span className="text-[11px] text-slate-400 mr-1">Preset Cepat:</span>
+                    {terminSummary.alreadyBilledPercentage === 0 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTerminPercentage(20);
+                            setTerminName('Uang Muka (DP 20%)');
+                          }}
+                          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 transition"
+                        >
+                          DP 20%
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTerminPercentage(30);
+                            setTerminName('Uang Muka (DP 30%)');
+                          }}
+                          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 transition"
+                        >
+                          DP 30%
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTerminPercentage(50);
+                            setTerminName('Uang Muka (DP 50%)');
+                          }}
+                          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 transition"
+                        >
+                          DP 50%
+                        </button>
+                      </>
+                    )}
+
+                    {terminSummary.alreadyBilledPercentage > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const rem = terminSummary.remainingPercentage || 0;
+                          setTerminPercentage(rem);
+                          setTerminName(`Pelunasan Akhir (${rem}%)`);
+                        }}
+                        className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 transition"
+                      >
+                        Pelunasan Sisa ({terminSummary.remainingPercentage}%)
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Inputs: Nama Termin & Persentase */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-indigo-500/10">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Nama / Judul Termin <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={terminName}
+                    onChange={(e) => setTerminName(e.target.value)}
+                    placeholder="Contoh: Uang Muka (DP 30%), Termin I (Progres 50%), Pelunasan 30%"
+                    className="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                    <span>Persentase (%) <span className="text-rose-500">*</span></span>
+                    <span className="text-[10px] text-slate-400 font-normal">
+                      Max: {terminSummary?.remainingPercentage || 100}%
+                    </span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      max={terminSummary?.remainingPercentage || 100}
+                      required
+                      value={terminPercentage}
+                      onChange={(e) => setTerminPercentage(parseFloat(e.target.value) || 0)}
+                      className="w-full text-sm font-mono px-3.5 py-2 pr-8 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition text-right"
+                    />
+                    <span className="absolute right-3 top-2.5 text-xs font-bold text-slate-400 pointer-events-none">
+                      %
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Opsi Pemotongan Uang Muka (DP) */}
+              <div className="p-4 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={deductPreviousDp}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setDeductPreviousDp(checked);
+                        if (checked && terminSummary?.availableDpInvoices && terminSummary.availableDpInvoices.length > 0) {
+                          setSelectedPreviousDpId(terminSummary.availableDpInvoices[0].invoiceId);
+                        } else {
+                          setSelectedPreviousDpId(null);
+                        }
+                      }}
+                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                    />
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      Potong Uang Muka (DP) yang telah dibayar sebelumnya
+                    </span>
+                  </label>
+
+                  {deductPreviousDp && selectedPreviousDpId && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20">
+                      Memotong Subtotal DPP
+                    </span>
+                  )}
+                </div>
+
+                {deductPreviousDp && (
+                  <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 space-y-2">
+                    {terminSummary?.availableDpInvoices && terminSummary.availableDpInvoices.length > 0 ? (
+                      <div className="space-y-1.5">
+                        <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                          Pilih Faktur DP Referensi yang akan dipotongkan:
+                        </label>
+                        <select
+                          value={selectedPreviousDpId || ''}
+                          onChange={(e) => setSelectedPreviousDpId(e.target.value ? Number(e.target.value) : null)}
+                          className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                        >
+                          {terminSummary.availableDpInvoices.map((dp) => (
+                            <option key={dp.invoiceId} value={dp.invoiceId}>
+                              {dp.invoiceNumber} - {dp.terminName || 'Uang Muka'} (Potongan DPP: {formatCurrency(dp.subtotalDpp)})
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-[11px] text-slate-400">
+                          Nominal DPP DP ini akan menjadi baris pengurang pada faktur termin saat ini. PPN/PPh akan dihitung atas sisa DPP bersih.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
+                        <span>
+                          Belum ada faktur Uang Muka (DP) yang tercatat untuk SPH ini.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/60 dark:border-slate-800 pb-4">
             <div>
               <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100 flex items-center gap-2">
@@ -688,12 +1093,14 @@ export const InvoiceFormPage: React.FC = () => {
                 Rincian Item Penagihan
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Nilai subtotal dan total dihitung secara otoritatif oleh sistem.
+                {billingMode === 'PERCENTAGE_TERMIN'
+                  ? 'Item dan potongan DP ter-generate secara otomatis sesuai konfigurasi termin.'
+                  : 'Nilai subtotal dan total dihitung secara otoritatif oleh sistem.'}
               </p>
             </div>
 
             <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
-              {selectedCustomerId && approvedPenawaranList.length > 0 && (
+              {billingMode === 'ITEM_VOLUME' && selectedCustomerId && approvedPenawaranList.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setShowPenawaranModal(true)}
@@ -704,7 +1111,7 @@ export const InvoiceFormPage: React.FC = () => {
                 </button>
               )}
 
-              {!isAdmin && (
+              {billingMode === 'ITEM_VOLUME' && !isAdmin && (
                 <button
                   type="button"
                   onClick={handleAddItemRow}
@@ -716,6 +1123,7 @@ export const InvoiceFormPage: React.FC = () => {
               )}
             </div>
           </div>
+
 
           {/* Items Table */}
           <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800">
@@ -733,32 +1141,49 @@ export const InvoiceFormPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                 {items.map((row, index) => {
-                  const subtotal = (Number(row.quantity) || 0) * (Number(row.unitPrice) || 0);
+                  const lineTotal = (Number(row.quantity) || 0) * (Number(row.unitPrice) || 0);
+                  const isDeduction = Boolean(row.isDeduction);
                   const isExceeding =
                     row.maxBillableQuantity !== undefined &&
                     Number(row.quantity) > row.maxBillableQuantity;
 
                   return (
-                    <tr key={row.tempId} className="hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors">
+                    <tr
+                      key={row.tempId}
+                      className={`transition-colors ${
+                        isDeduction
+                          ? 'bg-rose-500/5 dark:bg-rose-500/10 hover:bg-rose-500/10'
+                          : 'hover:bg-white/40 dark:hover:bg-slate-800/40'
+                      }`}
+                    >
                       <td className="py-3 px-3 text-center text-xs font-mono text-slate-400">
                         {index + 1}
                       </td>
                       <td className="py-3 px-3">
-                        {row.sphKegiatanName && (
-                          <div className="mb-1.5">
+                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                          {isDeduction && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/20">
+                              POTONGAN DP
+                            </span>
+                          )}
+                          {row.sphKegiatanName && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
                               <Layers className="w-3 h-3 text-indigo-500" />
                               {row.sphKegiatanName}
                             </span>
-                          </div>
-                        )}
+                          )}
+                        </div>
                         <input
                           type="text"
                           required
                           placeholder="Deskripsi penagihan jasa / barang..."
                           value={row.description}
                           onChange={(e) => handleItemChange(row.tempId, 'description', e.target.value)}
-                          className="w-full text-sm px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
+                          className={`w-full text-sm px-3 py-1.5 rounded-xl border bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition ${
+                            isDeduction
+                              ? 'border-rose-300 dark:border-rose-900/60 font-semibold text-rose-900 dark:text-rose-200'
+                              : 'border-slate-200 dark:border-slate-800'
+                          }`}
                         />
                         {row.maxBillableQuantity !== undefined && (
                           <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1 font-mono">
@@ -778,11 +1203,12 @@ export const InvoiceFormPage: React.FC = () => {
                           step="0.01"
                           min="0.01"
                           required
+                          disabled={billingMode === 'PERCENTAGE_TERMIN'}
                           value={row.quantity}
                           onChange={(e) =>
                             handleItemChange(row.tempId, 'quantity', parseFloat(e.target.value) || 0)
                           }
-                          className={`w-full text-right font-mono text-sm px-3 py-1.5 rounded-xl border focus:outline-none focus:ring-2 transition ${
+                          className={`w-full text-right font-mono text-sm px-3 py-1.5 rounded-xl border focus:outline-none focus:ring-2 transition disabled:opacity-70 ${
                             isExceeding
                               ? 'border-rose-500 bg-rose-500/10 focus:ring-rose-500/30 text-rose-600 dark:text-rose-400'
                               : 'border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:ring-brand-500/30'
@@ -793,10 +1219,11 @@ export const InvoiceFormPage: React.FC = () => {
                         <input
                           type="text"
                           required
+                          disabled={billingMode === 'PERCENTAGE_TERMIN'}
                           placeholder="m2, unit"
                           value={row.unit}
                           onChange={(e) => handleItemChange(row.tempId, 'unit', e.target.value)}
-                          className="w-full text-sm px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
+                          className="w-full text-sm px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:opacity-70 transition"
                         />
                       </td>
                       <td className="py-3 px-3 text-right">
@@ -805,20 +1232,23 @@ export const InvoiceFormPage: React.FC = () => {
                           min="0"
                           step="1000"
                           required
+                          disabled={billingMode === 'PERCENTAGE_TERMIN'}
                           value={row.unitPrice}
                           onChange={(e) =>
                             handleItemChange(row.tempId, 'unitPrice', parseFloat(e.target.value) || 0)
                           }
-                          className="w-full text-right font-mono text-sm px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
+                          className="w-full text-right font-mono text-sm px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:opacity-70 transition"
                         />
                       </td>
-                      <td className="py-3 px-3 text-right font-mono font-bold text-slate-900 dark:text-white">
-                        {formatCurrency(subtotal)}
+                      <td className="py-3 px-3 text-right font-mono font-bold">
+                        <span className={isDeduction ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}>
+                          {isDeduction ? `- ${formatCurrency(lineTotal)}` : formatCurrency(lineTotal)}
+                        </span>
                       </td>
                       <td className="py-3 px-3 text-center">
                         <button
                           type="button"
-                          disabled={items.length <= 1}
+                          disabled={billingMode === 'PERCENTAGE_TERMIN' || items.length <= 1}
                           onClick={() => handleRemoveItemRow(row.tempId)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition disabled:opacity-20"
                           title="Hapus baris item"

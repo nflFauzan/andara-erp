@@ -27,6 +27,8 @@ public class CreateInvoiceDetailRequest {
     private BigDecimal unitPrice;
 
     private Integer sortOrder = 0;
+    private com.andara.erp.entity.InvoiceItemType itemType = com.andara.erp.entity.InvoiceItemType.STANDARD;
+    private Boolean isDeduction = false;
     private String notes;
 
     public CreateInvoiceDetailRequest() {
@@ -37,6 +39,8 @@ public class CreateInvoiceDetailRequest {
         this.quantity = quantity;
         this.unit = unit;
         this.unitPrice = unitPrice;
+        this.itemType = com.andara.erp.entity.InvoiceItemType.STANDARD;
+        this.isDeduction = false;
     }
 
     public Long getSourcePenawaranDetailId() {
@@ -109,6 +113,22 @@ public class CreateInvoiceDetailRequest {
 
     public void setSortOrder(Integer sortOrder) {
         this.sortOrder = sortOrder;
+    }
+
+    public com.andara.erp.entity.InvoiceItemType getItemType() {
+        return itemType;
+    }
+
+    public void setItemType(com.andara.erp.entity.InvoiceItemType itemType) {
+        this.itemType = itemType != null ? itemType : com.andara.erp.entity.InvoiceItemType.STANDARD;
+    }
+
+    public Boolean getIsDeduction() {
+        return isDeduction;
+    }
+
+    public void setIsDeduction(Boolean isDeduction) {
+        this.isDeduction = isDeduction != null ? isDeduction : false;
     }
 
     public String getNotes() {

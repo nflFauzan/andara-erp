@@ -107,4 +107,33 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT inv FROM Invoice inv WHERE inv.id = :id")
     Optional<Invoice> findByIdForUpdate(@Param("id") Long id);
+
+    @Query("SELECT COALESCE(SUM(inv.terminPercentage), 0) FROM Invoice inv " +
+            "WHERE inv.sourcePenawaran.id = :penawaranId " +
+            "AND inv.status != 'CANCELLED' " +
+            "AND inv.billingMode = com.andara.erp.entity.BillingMode.PERCENTAGE_TERMIN " +
+            "AND (:excludeInvoiceId IS NULL OR inv.id != :excludeInvoiceId)")
+    BigDecimal sumBilledTerminPercentageBySourcePenawaranId(
+            @Param("penawaranId") Long penawaranId,
+            @Param("excludeInvoiceId") Long excludeInvoiceId
+    );
+
+    @Query("SELECT inv FROM Invoice inv " +
+            "WHERE inv.sourcePenawaran.id = :penawaranId " +
+            "AND inv.status != 'CANCELLED' " +
+            "AND inv.billingMode = com.andara.erp.entity.BillingMode.PERCENTAGE_TERMIN " +
+            "ORDER BY inv.date ASC, inv.id ASC")
+    List<Invoice> findActiveTerminInvoicesByPenawaranId(@Param("penawaranId") Long penawaranId);
+
+    @Query("SELECT inv FROM Invoice inv " +
+            "WHERE inv.customer.id = :customerId " +
+            "AND (:penawaranId IS NULL OR inv.sourcePenawaran.id = :penawaranId) " +
+            "AND inv.status != 'CANCELLED' " +
+            "AND (:excludeInvoiceId IS NULL OR inv.id != :excludeInvoiceId) " +
+            "ORDER BY inv.date DESC, inv.id DESC")
+    List<Invoice> findAvailableDpInvoices(
+            @Param("customerId") Long customerId,
+            @Param("penawaranId") Long penawaranId,
+            @Param("excludeInvoiceId") Long excludeInvoiceId
+    );
 }

@@ -3,6 +3,9 @@ export type InvoicePaymentStatus = 'UNPAID' | 'PARTIAL' | 'PAID';
 export type TaxPpnType = 'NONE' | 'INCLUDE' | 'EXCLUDE_11' | 'EXCLUDE_12';
 export type TaxPphType = 'NONE' | 'PPH23_2' | 'PPH_FINAL_KONSTRUKSI_1_75' | 'PPH_FINAL_KONSTRUKSI_2_65';
 
+export type BillingMode = 'ITEM_VOLUME' | 'PERCENTAGE_TERMIN';
+export type InvoiceItemType = 'STANDARD' | 'DP_DEDUCTION' | 'RETENTION_DEDUCTION';
+
 export interface InvoiceDetail {
   id: number;
   invoiceId: number;
@@ -18,6 +21,8 @@ export interface InvoiceDetail {
   unitPrice: number;
   amount: number;
   sortOrder: number;
+  isDeduction?: boolean;
+  itemType?: InvoiceItemType;
   notes?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -33,6 +38,12 @@ export interface Invoice {
   customerPhone?: string;
   sourcePenawaranId?: number;
   sourcePenawaranNumber?: string;
+  billingMode?: BillingMode;
+  billingModeLabel?: string;
+  terminPercentage?: number;
+  terminName?: string;
+  previousDpInvoiceId?: number;
+  previousDpInvoiceNumber?: string;
   workLocation?: string;
   clientPoNumber?: string;
   clientSpkNumber?: string;
@@ -88,12 +99,18 @@ export interface CreateInvoiceDetailInput {
   unit: string;
   unitPrice: number;
   sortOrder?: number;
+  isDeduction?: boolean;
+  itemType?: InvoiceItemType;
   notes?: string;
 }
 
 export interface CreateInvoiceInput {
   customerId: number;
   sourcePenawaranId?: number;
+  billingMode?: BillingMode;
+  terminPercentage?: number;
+  terminName?: string;
+  previousDpInvoiceId?: number;
   workLocation?: string;
   clientPoNumber?: string;
   clientSpkNumber?: string;
@@ -111,6 +128,10 @@ export interface CreateInvoiceInput {
 
 export interface UpdateInvoiceInput {
   customerId: number;
+  billingMode?: BillingMode;
+  terminPercentage?: number;
+  terminName?: string;
+  previousDpInvoiceId?: number;
   workLocation?: string;
   clientPoNumber?: string;
   clientSpkNumber?: string;
@@ -146,6 +167,39 @@ export interface PenawaranBillableItem {
   fullyBilled: boolean;
   sortOrder: number;
   notes?: string;
+}
+
+export interface BilledTerminItem {
+  invoiceId: number;
+  invoiceNumber: string;
+  terminName: string;
+  terminPercentage: number;
+  subtotalDpp: number;
+  totalAmount: number;
+  date: string;
+  status: InvoiceStatus;
+  paymentStatus: InvoicePaymentStatus;
+}
+
+export interface AvailableDpInvoice {
+  invoiceId: number;
+  invoiceNumber: string;
+  terminName: string;
+  terminPercentage: number;
+  subtotalDpp: number;
+  totalAmount: number;
+  paidAmount: number;
+  date: string;
+}
+
+export interface PenawaranTerminSummary {
+  penawaranId: number;
+  penawaranNumber: string;
+  totalPenawaranAmount: number;
+  alreadyBilledPercentage: number;
+  remainingPercentage: number;
+  billedInvoices: BilledTerminItem[];
+  availableDpInvoices: AvailableDpInvoice[];
 }
 
 export interface InvoiceQueryParams {

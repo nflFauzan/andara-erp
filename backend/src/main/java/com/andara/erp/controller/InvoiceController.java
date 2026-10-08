@@ -59,6 +59,13 @@ public class InvoiceController {
         return ApiResponse.success(items);
     }
 
+    @GetMapping("/penawaran/{penawaranId}/termin-summary")
+    public ApiResponse<PenawaranTerminSummaryDTO> getTerminSummary(@PathVariable Long penawaranId) {
+        PenawaranTerminSummaryDTO summary = invoiceService.getTerminSummary(penawaranId);
+        return ApiResponse.success(summary);
+    }
+
+
     @PostMapping
     public ResponseEntity<ApiResponse<InvoiceDTO>> createInvoice(
             @Valid @RequestBody CreateInvoiceRequest request
