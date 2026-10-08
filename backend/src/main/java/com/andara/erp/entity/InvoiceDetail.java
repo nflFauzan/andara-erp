@@ -21,6 +21,10 @@ public class InvoiceDetail {
     private PenawaranDetail sourcePenawaranDetail;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_penawaran_id")
+    private Penawaran sourcePenawaran;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sph_kegiatan_id")
     private SphKegiatan sphKegiatan;
 
@@ -264,5 +268,13 @@ public class InvoiceDetail {
 
     public void setIsDeduction(Boolean isDeduction) {
         this.isDeduction = isDeduction != null ? isDeduction : false;
+    }
+
+    public Penawaran getSourcePenawaran() {
+        return sourcePenawaran;
+    }
+
+    public void setSourcePenawaran(Penawaran sourcePenawaran) {
+        this.sourcePenawaran = sourcePenawaran;
     }
 }

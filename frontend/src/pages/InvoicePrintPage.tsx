@@ -225,7 +225,7 @@ export const InvoicePrintPage: React.FC = () => {
             style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact', backgroundColor: '#ffff00' }}
           >
             <span className="font-black italic text-[11pt] tracking-[0.25em] text-[#ff0000] uppercase font-sans">
-              INVOICE
+              {invoice.isRetentionInvoice ? 'INVOICE RETENSI' : 'INVOICE'}
             </span>
           </div>
         </div>
@@ -283,6 +283,26 @@ export const InvoicePrintPage: React.FC = () => {
                 <span className="w-[18px] shrink-0 font-bold text-center">:</span>
                 <span className="flex-1 font-mono font-bold text-black">
                   Dipotong dari Faktur DP {invoice.previousDpInvoiceNumber}
+                </span>
+              </div>
+            )}
+
+            {invoice.isRetentionInvoice && invoice.parentSettlementInvoiceNumber && (
+              <div className="flex items-baseline px-3 py-0.5">
+                <span className="w-[150px] shrink-0 font-bold">Faktur Induk</span>
+                <span className="w-[18px] shrink-0 font-bold text-center">:</span>
+                <span className="flex-1 font-mono font-bold text-black">
+                  {invoice.parentSettlementInvoiceNumber}
+                </span>
+              </div>
+            )}
+
+            {Boolean(invoice.retentionPercentage && invoice.retentionPercentage > 0) && !invoice.isRetentionInvoice && (
+              <div className="flex items-baseline px-3 py-0.5">
+                <span className="w-[150px] shrink-0 font-bold">Retensi Pemeliharaan</span>
+                <span className="w-[18px] shrink-0 font-bold text-center">:</span>
+                <span className="flex-1 font-bold text-black">
+                  {invoice.retentionPercentage}% (Masa Pemeliharaan {invoice.retentionMonths ? `${invoice.retentionMonths} Bulan ` : ''}s/d {formatTanggalResmi(invoice.retentionDueDate)})
                 </span>
               </div>
             )}
@@ -374,6 +394,11 @@ export const InvoicePrintPage: React.FC = () => {
                         <tr key={detail.id || dIdx} className="border-b border-black">
                           <td className="border-r border-black py-0.5 px-2 text-left">
                             <span className={isDed ? 'font-bold' : ''}>{detail.description}</span>
+                            {detail.sourcePenawaranNumber && (
+                              <span className="text-[7pt] font-mono text-slate-700 block">
+                                Ref SPH: {detail.sourcePenawaranNumber}
+                              </span>
+                            )}
                           </td>
                           <td className="border-r border-black py-0.5 px-1.5 text-right font-sans">
                             {formatQuantity(detail.quantity)}
@@ -441,6 +466,11 @@ export const InvoicePrintPage: React.FC = () => {
                     <tr key={detail.id || dIdx} className="border-b border-black">
                       <td className="border-r border-black py-0.5 px-2 text-left">
                         <span className={isDed ? 'font-bold' : ''}>{detail.description}</span>
+                        {detail.sourcePenawaranNumber && (
+                          <span className="text-[7pt] font-mono text-slate-700 block">
+                            Ref SPH: {detail.sourcePenawaranNumber}
+                          </span>
+                        )}
                       </td>
                       <td className="border-r border-black py-0.5 px-1.5 text-right font-sans">
                         {formatQuantity(detail.quantity)}

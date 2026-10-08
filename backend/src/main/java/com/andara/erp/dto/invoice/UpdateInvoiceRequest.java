@@ -45,6 +45,13 @@ public class UpdateInvoiceRequest {
 
     private Long previousDpInvoiceId;
 
+    private Boolean applyRetention = false;
+    private java.math.BigDecimal retentionPercentage;
+    private Integer retentionMonths = 3;
+    private LocalDate retentionDueDate;
+    private Boolean isRetentionInvoice = false;
+    private Long parentSettlementInvoiceId;
+
     @Valid
     private List<CreateInvoiceDetailRequest> details = new ArrayList<>();
 
@@ -193,5 +200,53 @@ public class UpdateInvoiceRequest {
 
     public void setPreviousDpInvoiceId(Long previousDpInvoiceId) {
         this.previousDpInvoiceId = previousDpInvoiceId;
+    }
+
+    public Boolean getApplyRetention() {
+        return applyRetention != null && applyRetention;
+    }
+
+    public void setApplyRetention(Boolean applyRetention) {
+        this.applyRetention = applyRetention != null ? applyRetention : false;
+    }
+
+    public java.math.BigDecimal getRetentionPercentage() {
+        return retentionPercentage;
+    }
+
+    public void setRetentionPercentage(java.math.BigDecimal retentionPercentage) {
+        this.retentionPercentage = retentionPercentage;
+    }
+
+    public Integer getRetentionMonths() {
+        return retentionMonths != null ? retentionMonths : 3;
+    }
+
+    public void setRetentionMonths(Integer retentionMonths) {
+        this.retentionMonths = retentionMonths;
+    }
+
+    public LocalDate getRetentionDueDate() {
+        return retentionDueDate;
+    }
+
+    public void setRetentionDueDate(LocalDate retentionDueDate) {
+        this.retentionDueDate = retentionDueDate;
+    }
+
+    public Boolean getIsRetentionInvoice() {
+        return isRetentionInvoice != null && isRetentionInvoice;
+    }
+
+    public void setIsRetentionInvoice(Boolean isRetentionInvoice) {
+        this.isRetentionInvoice = isRetentionInvoice != null ? isRetentionInvoice : false;
+    }
+
+    public Long getParentSettlementInvoiceId() {
+        return parentSettlementInvoiceId;
+    }
+
+    public void setParentSettlementInvoiceId(Long parentSettlementInvoiceId) {
+        this.parentSettlementInvoiceId = parentSettlementInvoiceId;
     }
 }

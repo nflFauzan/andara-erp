@@ -65,7 +65,17 @@ public class InvoiceController {
         return ApiResponse.success(summary);
     }
 
+    @GetMapping("/retensi")
+    public ApiResponse<List<RetentionMonitoringDTO>> getRetentionMonitoring() {
+        List<RetentionMonitoringDTO> items = invoiceService.getRetentionMonitoring();
+        return ApiResponse.success(items);
+    }
 
+    @GetMapping("/multi-sph-billable")
+    public ApiResponse<List<PenawaranBillableItemDTO>> getMultiSphBillableItems(@RequestParam List<Long> penawaranIds) {
+        List<PenawaranBillableItemDTO> items = invoiceService.getMultiSphBillableItems(penawaranIds);
+        return ApiResponse.success(items);
+    }
     @PostMapping
     public ResponseEntity<ApiResponse<InvoiceDTO>> createInvoice(
             @Valid @RequestBody CreateInvoiceRequest request

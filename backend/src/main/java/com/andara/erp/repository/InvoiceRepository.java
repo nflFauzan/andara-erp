@@ -26,6 +26,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     List<Invoice> findBySourcePenawaranId(Long sourcePenawaranId);
 
+    List<Invoice> findByParentSettlementInvoiceId(Long parentSettlementInvoiceId);
+
     long countByCustomerId(Long customerId);
 
     @Query("SELECT COUNT(inv) FROM Invoice inv WHERE inv.status != 'CANCELLED' AND inv.date BETWEEN :startDate AND :endDate")
@@ -136,4 +138,22 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
             @Param("penawaranId") Long penawaranId,
             @Param("excludeInvoiceId") Long excludeInvoiceId
     );
+
+    @Query("SELECT inv FROM Invoice inv " +
+            "JOIN FETCH inv.customer c " +
+            "LEFT JOIN FETCH inv.sourcePenawaran p " +
+            "LEFT JOIN FETCH inv.parentSettlementInvoice psi " +
+            "WHERE inv.isRetentionInvoice = true " +
+            "AND inv.status != 'CANCELLED' " +
+            "ORDER BY inv.retentionDueDate ASC NULLS LAST, inv.date ASC")
+    List<Invoice> findActiveRetentionInvoices();
+
+    @Query("SELECT inv FROM Invoice inv " +
+            "JOIN FETCH inv.customer c " +
+            "LEFT JOIN FETCH inv.sourcePenawaran p " +
+            "LEFT JOIN FETCH inv.parentSettlementInvoice psi " +
+            "WHERE (inv.isRetentionInvoice = true OR inv.retentionAmount > 0) " +
+            "AND inv.status != 'CANCELLED' " +
+            "ORDER BY inv.retentionDueDate ASC NULLS LAST, inv.date DESC")
+    List<Invoice> findAllRetentionRelatedInvoices();
 }

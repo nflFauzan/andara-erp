@@ -17,7 +17,8 @@ import {
   FileSignature,
   Percent,
   CheckCircle2,
-  PieChart
+  PieChart,
+  ShieldCheck
 } from 'lucide-react';
 import { invoiceApi } from '../api/invoiceApi';
 import { customerApi } from '../api/customerApi';
@@ -38,6 +39,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 
 interface ItemRow extends CreateInvoiceDetailInput {
   tempId: string;
+  sourcePenawaranNumber?: string;
   sphKegiatanName?: string;
   maxBillableQuantity?: number;
 }
@@ -68,6 +70,16 @@ export const InvoiceFormPage: React.FC = () => {
   const [terminSummary, setTerminSummary] = useState<PenawaranTerminSummary | null>(null);
   const [loadingTerminSummary, setLoadingTerminSummary] = useState<boolean>(false);
 
+  // Fase 3: Retensi Konstruksi (V-11)
+  const [applyRetention, setApplyRetention] = useState<boolean>(false);
+  const [retentionPercentage, setRetentionPercentage] = useState<number>(5);
+  const [retentionMonths, setRetentionMonths] = useState<number>(6);
+  const [retentionDueDate, setRetentionDueDate] = useState<string>('');
+
+  // Fase 4: Konsolidasi Multi-SPH (V-09)
+  const [isMultiSphMode, setIsMultiSphMode] = useState<boolean>(false);
+  const [selectedMultiSphIds, setSelectedMultiSphIds] = useState<number[]>([]);
+
   // Fase 1: Client Reference Numbers
   const [clientPoNumber, setClientPoNumber] = useState('');
   const [clientSpkNumber, setClientSpkNumber] = useState('');
@@ -76,7 +88,6 @@ export const InvoiceFormPage: React.FC = () => {
   // Fase 1: Tax Types
   const [taxPpnType, setTaxPpnType] = useState<TaxPpnType>('NONE');
   const [taxPphType, setTaxPphType] = useState<TaxPphType>('NONE');
-
 
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const defaultDueDate = new Date();
@@ -143,10 +154,17 @@ export const InvoiceFormPage: React.FC = () => {
             setDeductPreviousDp(true);
             setSelectedPreviousDpId(data.previousDpInvoiceId);
           }
+          if (data.retentionPercentage || data.retentionAmount) {
+            setApplyRetention(true);
+            setRetentionPercentage(Number(data.retentionPercentage) || 5);
+            if (data.retentionDueDate) setRetentionDueDate(data.retentionDueDate);
+          }
           if (data.details && data.details.length > 0) {
             setItems(
               data.details.map((d, idx) => ({
                 tempId: `row-${idx + 1}`,
+                sourcePenawaranId: d.sourcePenawaranId,
+                sourcePenawaranNumber: d.sourcePenawaranNumber,
                 sourcePenawaranDetailId: d.sourcePenawaranDetailId,
                 sphKegiatanId: d.sphKegiatanId,
                 sphKegiatanName: d.sphKegiatanName,
@@ -172,6 +190,15 @@ export const InvoiceFormPage: React.FC = () => {
         });
     }
   }, [isEdit, id]);
+
+  // Auto-calculate retentionDueDate if date or retentionMonths changes (when creating or not manually set)
+  useEffect(() => {
+    if (!isEdit && date && retentionMonths) {
+      const d = new Date(date);
+      d.setMonth(d.getMonth() + Number(retentionMonths));
+      setRetentionDueDate(d.toISOString().split('T')[0]);
+    }
+  }, [date, retentionMonths, isEdit]);
 
   // Load Termin Summary when sourcePenawaranId is present
   useEffect(() => {
@@ -287,33 +314,40 @@ export const InvoiceFormPage: React.FC = () => {
     }
   }, [selectedCustomerId]);
 
-  // When selectedModalPenawaranId changes, fetch billable items
-  useEffect(() => {
-    if (selectedModalPenawaranId) {
+  // Fetch Billable Items (Single SPH or Multi-SPH)
+  const fetchBillableItems = async () => {
+    try {
       setLoadingBillable(true);
-      invoiceApi
-        .getBillableItemsFromPenawaran(Number(selectedModalPenawaranId))
-        .then((bItems) => {
-          setBillableItems(bItems);
-          const initialSelection: Record<number, { selected: boolean; quantity: number }> = {};
-          bItems.forEach((it) => {
-            const hasRemaining = it.remainingBillableVolume > 0;
-            initialSelection[it.penawaranDetailId] = {
-              selected: hasRemaining,
-              quantity: it.remainingBillableVolume,
-            };
-          });
-          setSelectedBillableRows(initialSelection);
-        })
-        .catch(console.error)
-        .finally(() => {
-          setLoadingBillable(false);
-        });
-    } else {
-      setBillableItems([]);
-      setSelectedBillableRows({});
+      let bItems: PenawaranBillableItem[] = [];
+      if (isMultiSphMode) {
+        if (selectedMultiSphIds.length > 0) {
+          bItems = await invoiceApi.getMultiSphBillableItems(selectedMultiSphIds);
+        }
+      } else if (selectedModalPenawaranId) {
+        bItems = await invoiceApi.getBillableItemsFromPenawaran(Number(selectedModalPenawaranId));
+      }
+      setBillableItems(bItems);
+      const initialSelection: Record<number, { selected: boolean; quantity: number }> = {};
+      bItems.forEach((it) => {
+        const hasRemaining = it.remainingBillableVolume > 0;
+        initialSelection[it.penawaranDetailId] = {
+          selected: hasRemaining,
+          quantity: it.remainingBillableVolume,
+        };
+      });
+      setSelectedBillableRows(initialSelection);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingBillable(false);
     }
-  }, [selectedModalPenawaranId]);
+  };
+
+  useEffect(() => {
+    if (!isMultiSphMode && selectedModalPenawaranId) {
+      fetchBillableItems();
+    }
+  }, [selectedModalPenawaranId, isMultiSphMode]);
 
   const handleAddItemRow = () => {
     const nextOrder = items.length + 1;
@@ -351,7 +385,9 @@ export const InvoiceFormPage: React.FC = () => {
 
   const handleImportSelectedFromPenawaran = () => {
     const chosenPenawaran = approvedPenawaranList.find((p) => p.id === Number(selectedModalPenawaranId));
-    if (!chosenPenawaran) return;
+
+    if (!isMultiSphMode && !chosenPenawaran) return;
+    if (isMultiSphMode && selectedMultiSphIds.length === 0) return;
 
     const imported: ItemRow[] = [];
     billableItems.forEach((bi) => {
@@ -359,6 +395,8 @@ export const InvoiceFormPage: React.FC = () => {
       if (sel && sel.selected && sel.quantity > 0) {
         imported.push({
           tempId: `imported-penawaran-${bi.penawaranDetailId}-${Date.now()}-${imported.length}`,
+          sourcePenawaranId: bi.penawaranId || (chosenPenawaran ? chosenPenawaran.id : undefined),
+          sourcePenawaranNumber: bi.penawaranNumber || (chosenPenawaran ? chosenPenawaran.number : undefined),
           sourcePenawaranDetailId: bi.penawaranDetailId,
           sphKegiatanId: bi.sphKegiatanId,
           sphKegiatanName: bi.sphKegiatanName,
@@ -380,8 +418,13 @@ export const InvoiceFormPage: React.FC = () => {
       return;
     }
 
-    setSourcePenawaranId(chosenPenawaran.id);
-    setSourcePenawaranNumber(chosenPenawaran.number);
+    if (isMultiSphMode) {
+      setSourcePenawaranId(selectedMultiSphIds[0] || null);
+      setSourcePenawaranNumber(`Konsolidasi Multi-SPH (${selectedMultiSphIds.length} SPH)`);
+    } else if (chosenPenawaran) {
+      setSourcePenawaranId(chosenPenawaran.id);
+      setSourcePenawaranNumber(chosenPenawaran.number);
+    }
 
     // Replace if first row is untouched
     if (items.length === 1 && !items[0].description.trim() && items[0].unitPrice === 0) {
@@ -393,25 +436,22 @@ export const InvoiceFormPage: React.FC = () => {
     setShowPenawaranModal(false);
   };
 
-  // Group billableItems by SPH Kegiatan ID (NOT name string, to prevent merging groups with same name)
+  // Group billableItems by SPH Kegiatan ID (and SPH Number in Multi-SPH mode)
   const groupedBillable = useMemo(() => {
-    // Use a Map keyed by a stable unique group key: sphKegiatanId or kegiatanId or 'manual'
-    const map = new Map<string, { groupKey: string; groupName: string; items: PenawaranBillableItem[] }>();
+    const map = new Map<string, { groupKey: string; groupName: string; sphNumber?: string; items: PenawaranBillableItem[] }>();
     billableItems.forEach((bi) => {
-      // Determine a stable group key using the ID, not the name
-      const groupKey = bi.sphKegiatanId != null
-        ? `sph:${bi.sphKegiatanId}`
-        : bi.kegiatanId != null
-        ? `kegiatan:${bi.kegiatanId}`
-        : 'manual';
-      const groupName = bi.sphKegiatanName || bi.kegiatanName || 'Pekerjaan Utama';
+      const sphPrefix = bi.penawaranNumber ? `[${bi.penawaranNumber}] ` : '';
+      const groupKey = isMultiSphMode
+        ? `sph:${bi.penawaranId}:keg:${bi.sphKegiatanId || bi.kegiatanId || 'main'}`
+        : (bi.sphKegiatanId != null ? `sph:${bi.sphKegiatanId}` : (bi.kegiatanId != null ? `kegiatan:${bi.kegiatanId}` : 'manual'));
+      const groupName = `${sphPrefix}${bi.sphKegiatanName || bi.kegiatanName || 'Pekerjaan Utama'}`;
       if (!map.has(groupKey)) {
-        map.set(groupKey, { groupKey, groupName, items: [] });
+        map.set(groupKey, { groupKey, groupName, sphNumber: bi.penawaranNumber, items: [] });
       }
       map.get(groupKey)!.items.push(bi);
     });
     return Array.from(map.values());
-  }, [billableItems]);
+  }, [billableItems, isMultiSphMode]);
 
   const handleToggleKegiatanGroup = (groupItems: PenawaranBillableItem[], select: boolean) => {
     setSelectedBillableRows((prev) => {
@@ -520,7 +560,7 @@ export const InvoiceFormPage: React.FC = () => {
       return;
     }
 
-    if (isAdmin && !sourcePenawaranId) {
+    if (isAdmin && !sourcePenawaranId && (!selectedMultiSphIds || selectedMultiSphIds.length === 0)) {
       setErrorMsg('Role Admin diwajibkan menerbitkan Faktur Penjualan berdasarkan Surat Penawaran Harga (SPH) resmi.');
       return;
     }
@@ -572,7 +612,12 @@ export const InvoiceFormPage: React.FC = () => {
       setLoading(true);
       setErrorMsg(null);
 
+      const effectiveMultiSphIds = isMultiSphMode && selectedMultiSphIds.length > 0
+        ? selectedMultiSphIds
+        : (sourcePenawaranId ? [sourcePenawaranId] : undefined);
+
       const payloadItems = items.map((it, idx) => ({
+        sourcePenawaranId: it.sourcePenawaranId || (sourcePenawaranId || undefined),
         sourcePenawaranDetailId: it.sourcePenawaranDetailId,
         sphKegiatanId: it.sphKegiatanId,
         sourceKegiatanId: it.sourceKegiatanId,
@@ -590,10 +635,15 @@ export const InvoiceFormPage: React.FC = () => {
       if (isEdit && id) {
         await invoiceApi.updateInvoice(Number(id), {
           customerId: Number(selectedCustomerId),
+          sourcePenawaranIds: effectiveMultiSphIds,
           billingMode,
           terminPercentage: billingMode === 'PERCENTAGE_TERMIN' ? Number(terminPercentage) : undefined,
           terminName: billingMode === 'PERCENTAGE_TERMIN' ? terminName.trim() : undefined,
           previousDpInvoiceId: (billingMode === 'PERCENTAGE_TERMIN' && deductPreviousDp && selectedPreviousDpId) ? Number(selectedPreviousDpId) : undefined,
+          applyRetention,
+          retentionPercentage: applyRetention ? Number(retentionPercentage) : undefined,
+          retentionMonths: applyRetention ? Number(retentionMonths) : undefined,
+          retentionDueDate: applyRetention ? (retentionDueDate || undefined) : undefined,
           workLocation: workLocation.trim() || undefined,
           clientPoNumber: clientPoNumber.trim() || undefined,
           clientSpkNumber: clientSpkNumber.trim() || undefined,
@@ -610,11 +660,16 @@ export const InvoiceFormPage: React.FC = () => {
       } else {
         const created = await invoiceApi.createInvoice({
           customerId: Number(selectedCustomerId),
-          sourcePenawaranId: sourcePenawaranId || undefined,
+          sourcePenawaranId: sourcePenawaranId || (effectiveMultiSphIds && effectiveMultiSphIds[0]) || undefined,
+          sourcePenawaranIds: effectiveMultiSphIds,
           billingMode,
           terminPercentage: billingMode === 'PERCENTAGE_TERMIN' ? Number(terminPercentage) : undefined,
           terminName: billingMode === 'PERCENTAGE_TERMIN' ? terminName.trim() : undefined,
           previousDpInvoiceId: (billingMode === 'PERCENTAGE_TERMIN' && deductPreviousDp && selectedPreviousDpId) ? Number(selectedPreviousDpId) : undefined,
+          applyRetention,
+          retentionPercentage: applyRetention ? Number(retentionPercentage) : undefined,
+          retentionMonths: applyRetention ? Number(retentionMonths) : undefined,
+          retentionDueDate: applyRetention ? (retentionDueDate || undefined) : undefined,
           workLocation: workLocation.trim() || undefined,
           clientPoNumber: clientPoNumber.trim() || undefined,
           clientSpkNumber: clientSpkNumber.trim() || undefined,
@@ -1086,6 +1141,99 @@ export const InvoiceFormPage: React.FC = () => {
             </div>
           )}
 
+          {/* FASE 3: Ketentuan Retensi Pemeliharaan Konstruksi (V-11) */}
+          <div className="p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-950/20 border border-amber-500/30 space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={applyRetention}
+                  onChange={(e) => setApplyRetention(e.target.checked)}
+                  className="rounded border-amber-400 text-amber-600 focus:ring-amber-500 w-4 h-4 cursor-pointer"
+                />
+                <span className="text-xs font-bold text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  Terapkan Retensi Pemeliharaan Proyek (Masa Garansi Konstruksi)
+                </span>
+              </label>
+
+              {applyRetention && (
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30">
+                  Potongan Tagihan Fisik: {retentionPercentage}%
+                </span>
+              )}
+            </div>
+
+            {applyRetention && (
+              <div className="pt-3 border-t border-amber-500/20 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs animate-in fade-in">
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300">
+                    Persentase Retensi (%) <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      max="100"
+                      value={retentionPercentage}
+                      onChange={(e) => setRetentionPercentage(parseFloat(e.target.value) || 0)}
+                      className="w-full text-xs font-mono px-3 py-2 pr-8 rounded-xl border border-amber-300 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-right"
+                    />
+                    <span className="absolute right-3 top-2 text-xs font-bold text-amber-600 pointer-events-none">
+                      %
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-amber-700/80 dark:text-amber-400/80">
+                    Standar konstruksi: 5% dari nilai kontrak/tagihan.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300">
+                    Durasi Masa Pemeliharaan
+                  </label>
+                  <select
+                    value={retentionMonths}
+                    onChange={(e) => {
+                      const m = Number(e.target.value);
+                      setRetentionMonths(m);
+                      if (date) {
+                        const d = new Date(date);
+                        d.setMonth(d.getMonth() + m);
+                        setRetentionDueDate(d.toISOString().split('T')[0]);
+                      }
+                    }}
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-amber-300 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                  >
+                    <option value={3}>3 Bulan (Masa Pemeliharaan Singkat)</option>
+                    <option value={6}>6 Bulan (Standar Garansi Konstruksi)</option>
+                    <option value={12}>12 Bulan (1 Tahun Pemeliharaan Penuh)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300">
+                    Target Jatuh Tempo Tagih Retensi
+                  </label>
+                  <input
+                    type="date"
+                    value={retentionDueDate}
+                    onChange={(e) => setRetentionDueDate(e.target.value)}
+                    className="w-full text-xs font-mono px-3 py-2 rounded-xl border border-amber-300 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                  />
+                  <p className="text-[10px] text-amber-700/80 dark:text-amber-400/80">
+                    Jatuh tempo penagihan draft companion faktur retensi.
+                  </p>
+                </div>
+
+                <div className="sm:col-span-3 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/60 text-[11px] text-amber-900 dark:text-amber-300 leading-relaxed">
+                  💡 <strong>Otomatisasi Sistem:</strong> Sistem akan memotong tagihan fisik faktur ini via baris <code>RETENTION_DEDUCTION</code> dan sekaligus membuatkan <strong>Companion Draft Faktur Retensi ({retentionPercentage}%)</strong> berstatus <code>DRAFT</code> berjatuh tempo sesuai tanggal di atas.
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/60 dark:border-slate-800 pb-4">
             <div>
               <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100 flex items-center gap-2">
@@ -1163,7 +1311,13 @@ export const InvoiceFormPage: React.FC = () => {
                         <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                           {isDeduction && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/20">
-                              POTONGAN DP
+                              {row.itemType === 'RETENTION_DEDUCTION' ? 'POTONGAN RETENSI' : 'POTONGAN DP'}
+                            </span>
+                          )}
+                          {row.sourcePenawaranNumber && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                              <FileSpreadsheet className="w-3 h-3 text-emerald-500" />
+                              SPH: {row.sourcePenawaranNumber}
                             </span>
                           )}
                           {row.sphKegiatanName && (
@@ -1472,41 +1626,152 @@ export const InvoiceFormPage: React.FC = () => {
               </button>
             </div>
 
-            {/* SPH Select Bar */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0 bg-white/50 dark:bg-slate-900/50 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
-              <div className="flex-1 space-y-1">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                  Pilih Dokumen SPH Acuan:
-                </label>
-                <select
-                  value={selectedModalPenawaranId}
-                  onChange={(e) => setSelectedModalPenawaranId(e.target.value ? Number(e.target.value) : '')}
-                  className="w-full text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
-                >
-                  {approvedPenawaranList.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.number} - {p.date} ({p.itemCount} item, {formatCurrency(p.totalAmount)})
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {/* Tab Mode: Tunggal vs Konsolidasi Multi-SPH */}
+            <div className="flex items-center gap-2 border-b border-slate-200/60 dark:border-slate-800 pb-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMultiSphMode(false);
+                  if (approvedPenawaranList.length > 0 && !selectedModalPenawaranId) {
+                    setSelectedModalPenawaranId(approvedPenawaranList[0].id);
+                  }
+                }}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                  !isMultiSphMode
+                    ? 'bg-brand-500 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <span>Satu SPH Acuan</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMultiSphMode(true);
+                  if (selectedMultiSphIds.length === 0 && approvedPenawaranList.length > 0) {
+                    setSelectedMultiSphIds(approvedPenawaranList.slice(0, 2).map((p) => p.id));
+                  }
+                }}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                  isMultiSphMode
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Konsolidasi Multi-SPH (Rekap Bulanan)</span>
+              </button>
+            </div>
 
-              <div className="flex items-center gap-2 self-end sm:self-center">
-                <button
-                  type="button"
-                  onClick={() => handleSelectAllBillable(true)}
-                  className="px-3 py-1.5 text-xs font-bold text-brand-700 dark:text-brand-300 bg-brand-500/10 border border-brand-500/25 rounded-xl hover:bg-brand-500/20 transition shadow-xs"
-                >
-                  Pilih Semua Item
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSelectAllBillable(false)}
-                  className="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition shadow-xs"
-                >
-                  Kosongkan
-                </button>
-              </div>
+            {/* SPH Select Bar */}
+            <div className="flex flex-col gap-3 shrink-0 bg-white/50 dark:bg-slate-900/50 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
+              {!isMultiSphMode ? (
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  <div className="flex-1 space-y-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                      Pilih Dokumen SPH Acuan:
+                    </label>
+                    <select
+                      value={selectedModalPenawaranId}
+                      onChange={(e) => setSelectedModalPenawaranId(e.target.value ? Number(e.target.value) : '')}
+                      className="w-full text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                    >
+                      {approvedPenawaranList.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.number} - {p.date} ({p.itemCount} item, {formatCurrency(p.totalAmount)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-center">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectAllBillable(true)}
+                      className="px-3 py-1.5 text-xs font-bold text-brand-700 dark:text-brand-300 bg-brand-500/10 border border-brand-500/25 rounded-xl hover:bg-brand-500/20 transition shadow-xs"
+                    >
+                      Pilih Semua Item
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectAllBillable(false)}
+                      className="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition shadow-xs"
+                    >
+                      Kosongkan
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-purple-900 dark:text-purple-300">
+                      Pilih 2 atau Lebih SPH yang akan Dikonsolidasikan ({selectedMultiSphIds.length} SPH dipilih):
+                    </label>
+                    <button
+                      type="button"
+                      onClick={fetchBillableItems}
+                      className="px-3 py-1 text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 rounded-lg transition"
+                    >
+                      Muat Ulang Item Lintas SPH
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto p-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs">
+                    {approvedPenawaranList.map((p) => {
+                      const isChecked = selectedMultiSphIds.includes(p.id);
+                      return (
+                        <label
+                          key={p.id}
+                          className={`flex items-center gap-2 p-2 rounded-lg border transition cursor-pointer select-none ${
+                            isChecked
+                              ? 'bg-purple-500/10 border-purple-500/30 text-purple-950 dark:text-purple-200'
+                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              const updated = checked
+                                ? [...selectedMultiSphIds, p.id]
+                                : selectedMultiSphIds.filter((sid) => sid !== p.id);
+                              setSelectedMultiSphIds(updated);
+                            }}
+                            className="rounded border-purple-400 text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer"
+                          />
+                          <div className="min-w-0">
+                            <p className="font-bold truncate">{p.number}</p>
+                            <p className="text-[10px] text-slate-400 truncate">
+                              {p.date} • {formatCurrency(p.totalAmount)}
+                            </p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <p className="text-[11px] text-slate-500 italic">
+                      Item yang ditarik akan tetap melacak SPH asalnya secara independen untuk mencegah tagihan ganda.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectAllBillable(true)}
+                        className="px-2.5 py-1 text-xs font-bold text-brand-700 dark:text-brand-300 bg-brand-500/10 rounded-lg hover:bg-brand-500/20"
+                      >
+                        Pilih Semua
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectAllBillable(false)}
+                        className="px-2.5 py-1 text-xs font-bold text-slate-500 hover:text-slate-700"
+                      >
+                        Kosongkan
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Billable Items List Grouped by Kegiatan */}

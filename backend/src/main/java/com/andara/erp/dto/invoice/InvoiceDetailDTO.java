@@ -9,6 +9,8 @@ public class InvoiceDetailDTO {
     private Long id;
     private Long invoiceId;
     private Long sourcePenawaranDetailId;
+    private Long sourcePenawaranId;
+    private String sourcePenawaranNumber;
     private Long sphKegiatanId;
     private String sphKegiatanName;
     private Long sourceKegiatanId;
@@ -35,6 +37,13 @@ public class InvoiceDetailDTO {
         dto.setInvoiceId(detail.getInvoice() != null ? detail.getInvoice().getId() : null);
         if (detail.getSourcePenawaranDetail() != null) {
             dto.setSourcePenawaranDetailId(detail.getSourcePenawaranDetail().getId());
+        }
+        if (detail.getSourcePenawaran() != null) {
+            dto.setSourcePenawaranId(detail.getSourcePenawaran().getId());
+            dto.setSourcePenawaranNumber(detail.getSourcePenawaran().getNumber());
+        } else if (detail.getSourcePenawaranDetail() != null && detail.getSourcePenawaranDetail().getPenawaran() != null) {
+            dto.setSourcePenawaranId(detail.getSourcePenawaranDetail().getPenawaran().getId());
+            dto.setSourcePenawaranNumber(detail.getSourcePenawaranDetail().getPenawaran().getNumber());
         }
         if (detail.getSphKegiatan() != null) {
             dto.setSphKegiatanId(detail.getSphKegiatan().getId());
@@ -213,5 +222,21 @@ public class InvoiceDetailDTO {
 
     public void setIsDeduction(Boolean isDeduction) {
         this.isDeduction = isDeduction;
+    }
+
+    public Long getSourcePenawaranId() {
+        return sourcePenawaranId;
+    }
+
+    public void setSourcePenawaranId(Long sourcePenawaranId) {
+        this.sourcePenawaranId = sourcePenawaranId;
+    }
+
+    public String getSourcePenawaranNumber() {
+        return sourcePenawaranNumber;
+    }
+
+    public void setSourcePenawaranNumber(String sourcePenawaranNumber) {
+        this.sourcePenawaranNumber = sourcePenawaranNumber;
     }
 }

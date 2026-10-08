@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 public class CreateInvoiceDetailRequest {
 
     private Long sourcePenawaranDetailId;
+    private Long sourcePenawaranId;
     private Long sphKegiatanId;
     private Long sourceKegiatanId;
     private Long sourceKegiatanItemId;
@@ -137,5 +138,13 @@ public class CreateInvoiceDetailRequest {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public Long getSourcePenawaranId() {
+        return sourcePenawaranId;
+    }
+
+    public void setSourcePenawaranId(Long sourcePenawaranId) {
+        this.sourcePenawaranId = sourcePenawaranId;
     }
 }

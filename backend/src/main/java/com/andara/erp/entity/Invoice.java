@@ -41,6 +41,22 @@ public class Invoice {
     @JoinColumn(name = "previous_dp_invoice_id")
     private Invoice previousDpInvoice;
 
+    @Column(name = "is_retention_invoice", nullable = false)
+    private Boolean isRetentionInvoice = false;
+
+    @Column(name = "retention_percentage", precision = 5, scale = 2)
+    private BigDecimal retentionPercentage = BigDecimal.ZERO;
+
+    @Column(name = "retention_amount", precision = 15, scale = 2)
+    private BigDecimal retentionAmount = BigDecimal.ZERO;
+
+    @Column(name = "retention_due_date")
+    private LocalDate retentionDueDate;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_settlement_invoice_id")
+    private Invoice parentSettlementInvoice;
+
     @Column(name = "client_po_number", length = 100)
     private String clientPoNumber;
 
@@ -528,5 +544,45 @@ public class Invoice {
 
     public void setPreviousDpInvoice(Invoice previousDpInvoice) {
         this.previousDpInvoice = previousDpInvoice;
+    }
+
+    public Boolean getIsRetentionInvoice() {
+        return isRetentionInvoice != null && isRetentionInvoice;
+    }
+
+    public void setIsRetentionInvoice(Boolean isRetentionInvoice) {
+        this.isRetentionInvoice = isRetentionInvoice != null ? isRetentionInvoice : false;
+    }
+
+    public BigDecimal getRetentionPercentage() {
+        return retentionPercentage;
+    }
+
+    public void setRetentionPercentage(BigDecimal retentionPercentage) {
+        this.retentionPercentage = retentionPercentage;
+    }
+
+    public BigDecimal getRetentionAmount() {
+        return retentionAmount;
+    }
+
+    public void setRetentionAmount(BigDecimal retentionAmount) {
+        this.retentionAmount = retentionAmount;
+    }
+
+    public LocalDate getRetentionDueDate() {
+        return retentionDueDate;
+    }
+
+    public void setRetentionDueDate(LocalDate retentionDueDate) {
+        this.retentionDueDate = retentionDueDate;
+    }
+
+    public Invoice getParentSettlementInvoice() {
+        return parentSettlementInvoice;
+    }
+
+    public void setParentSettlementInvoice(Invoice parentSettlementInvoice) {
+        this.parentSettlementInvoice = parentSettlementInvoice;
     }
 }

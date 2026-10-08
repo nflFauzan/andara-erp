@@ -32,6 +32,16 @@ public class InvoiceDTO {
     private String terminName;
     private Long previousDpInvoiceId;
     private String previousDpInvoiceNumber;
+    private Boolean isRetentionInvoice;
+    private Boolean applyRetention;
+    private BigDecimal retentionPercentage;
+    private BigDecimal retentionAmount;
+    private Integer retentionMonths;
+    private LocalDate retentionDueDate;
+    private Long parentSettlementInvoiceId;
+    private String parentSettlementInvoiceNumber;
+    private Long retentionInvoiceId;
+    private String retentionInvoiceNumber;
     private InvoiceStatus status;
     private String statusLabel;
     private InvoicePaymentStatus paymentStatus;
@@ -92,6 +102,14 @@ public class InvoiceDTO {
         if (entity.getPreviousDpInvoice() != null) {
             dto.setPreviousDpInvoiceId(entity.getPreviousDpInvoice().getId());
             dto.setPreviousDpInvoiceNumber(entity.getPreviousDpInvoice().getNumber());
+        }
+        dto.setIsRetentionInvoice(entity.getIsRetentionInvoice());
+        dto.setRetentionPercentage(entity.getRetentionPercentage());
+        dto.setRetentionAmount(entity.getRetentionAmount());
+        dto.setRetentionDueDate(entity.getRetentionDueDate());
+        if (entity.getParentSettlementInvoice() != null) {
+            dto.setParentSettlementInvoiceId(entity.getParentSettlementInvoice().getId());
+            dto.setParentSettlementInvoiceNumber(entity.getParentSettlementInvoice().getNumber());
         }
         dto.setDate(entity.getDate());
         dto.setDueDate(entity.getDueDate());
@@ -513,6 +531,86 @@ public class InvoiceDTO {
 
     public void setPreviousDpInvoiceNumber(String previousDpInvoiceNumber) {
         this.previousDpInvoiceNumber = previousDpInvoiceNumber;
+    }
+
+    public Boolean getIsRetentionInvoice() {
+        return isRetentionInvoice != null && isRetentionInvoice;
+    }
+
+    public void setIsRetentionInvoice(Boolean isRetentionInvoice) {
+        this.isRetentionInvoice = isRetentionInvoice != null ? isRetentionInvoice : false;
+    }
+
+    public BigDecimal getRetentionPercentage() {
+        return retentionPercentage;
+    }
+
+    public void setRetentionPercentage(BigDecimal retentionPercentage) {
+        this.retentionPercentage = retentionPercentage;
+    }
+
+    public BigDecimal getRetentionAmount() {
+        return retentionAmount;
+    }
+
+    public void setRetentionAmount(BigDecimal retentionAmount) {
+        this.retentionAmount = retentionAmount;
+    }
+
+    public LocalDate getRetentionDueDate() {
+        return retentionDueDate;
+    }
+
+    public void setRetentionDueDate(LocalDate retentionDueDate) {
+        this.retentionDueDate = retentionDueDate;
+    }
+
+    public Long getParentSettlementInvoiceId() {
+        return parentSettlementInvoiceId;
+    }
+
+    public void setParentSettlementInvoiceId(Long parentSettlementInvoiceId) {
+        this.parentSettlementInvoiceId = parentSettlementInvoiceId;
+    }
+
+    public String getParentSettlementInvoiceNumber() {
+        return parentSettlementInvoiceNumber;
+    }
+
+    public void setParentSettlementInvoiceNumber(String parentSettlementInvoiceNumber) {
+        this.parentSettlementInvoiceNumber = parentSettlementInvoiceNumber;
+    }
+
+    public Boolean getApplyRetention() {
+        return applyRetention != null && applyRetention;
+    }
+
+    public void setApplyRetention(Boolean applyRetention) {
+        this.applyRetention = applyRetention;
+    }
+
+    public Integer getRetentionMonths() {
+        return retentionMonths;
+    }
+
+    public void setRetentionMonths(Integer retentionMonths) {
+        this.retentionMonths = retentionMonths;
+    }
+
+    public Long getRetentionInvoiceId() {
+        return retentionInvoiceId;
+    }
+
+    public void setRetentionInvoiceId(Long retentionInvoiceId) {
+        this.retentionInvoiceId = retentionInvoiceId;
+    }
+
+    public String getRetentionInvoiceNumber() {
+        return retentionInvoiceNumber;
+    }
+
+    public void setRetentionInvoiceNumber(String retentionInvoiceNumber) {
+        this.retentionInvoiceNumber = retentionInvoiceNumber;
     }
 }
 

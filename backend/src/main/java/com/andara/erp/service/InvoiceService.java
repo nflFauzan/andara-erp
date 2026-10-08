@@ -139,6 +139,8 @@ public class InvoiceService {
             BigDecimal remaining = detail.getVolume().subtract(billed).max(BigDecimal.ZERO);
 
             PenawaranBillableItemDTO dto = new PenawaranBillableItemDTO();
+            dto.setPenawaranId(penawaran.getId());
+            dto.setPenawaranNumber(penawaran.getNumber());
             dto.setPenawaranDetailId(detail.getId());
             // sphKegiatan is lazy-loaded here — safe within @Transactional, critical for frontend grouping
             if (detail.getSphKegiatan() != null) {
@@ -168,6 +170,49 @@ public class InvoiceService {
         return billableList;
     }
 
+    @Transactional(readOnly = true)
+    public List<PenawaranBillableItemDTO> getMultiSphBillableItems(List<Long> penawaranIds) {
+        if (penawaranIds == null || penawaranIds.isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST, "Daftar ID penawaran tidak boleh kosong");
+        }
+
+        List<PenawaranBillableItemDTO> allBillable = new ArrayList<>();
+        Long expectedCustomerId = null;
+
+        for (Long penawaranId : penawaranIds) {
+            Penawaran penawaran = penawaranRepository.findById(penawaranId)
+                    .orElseThrow(() -> new AppException(ErrorCode.PENAWARAN_NOT_FOUND, "Penawaran dengan ID " + penawaranId + " tidak ditemukan"));
+
+            if (penawaran.getStatus() != PenawaranStatus.APPROVED) {
+                throw new AppException(
+                        ErrorCode.INVALID_REQUEST,
+                        "Penawaran " + penawaran.getNumber() + " belum berstatus APPROVED (Status saat ini: " + penawaran.getStatus() + ")"
+                );
+            }
+
+            if (expectedCustomerId == null) {
+                expectedCustomerId = penawaran.getCustomer().getId();
+            } else if (!expectedCustomerId.equals(penawaran.getCustomer().getId())) {
+                throw new AppException(
+                        ErrorCode.INVALID_REQUEST,
+                        "Semua Penawaran yang dikonsolidasi harus berasal dari Customer yang sama"
+                );
+            }
+
+            allBillable.addAll(getBillableItemsFromPenawaran(penawaranId));
+        }
+
+        return allBillable;
+    }
+
+    @Transactional(readOnly = true)
+    public List<RetentionMonitoringDTO> getRetentionMonitoring() {
+        List<Invoice> retentionInvoices = invoiceRepository.findAllRetentionRelatedInvoices();
+        return retentionInvoices.stream()
+                .map(RetentionMonitoringDTO::fromEntity)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     @Transactional
     public InvoiceDTO createInvoice(CreateInvoiceRequest request) {
         Customer customer = customerRepository.findById(request.getCustomerId())
@@ -177,17 +222,23 @@ public class InvoiceService {
             throw new AppException(ErrorCode.INVALID_REQUEST, "Customer nonaktif tidak dapat dipilih untuk faktur");
         }
 
+        List<Long> sourcePenawaranIds = request.getSourcePenawaranIds();
+        Long primaryPenawaranId = request.getSourcePenawaranId();
+        if (primaryPenawaranId == null && sourcePenawaranIds != null && !sourcePenawaranIds.isEmpty()) {
+            primaryPenawaranId = sourcePenawaranIds.get(0);
+        }
+
         // Role check: ADMIN must create invoice from SPH
         boolean isAdmin = SecurityContextHolder.getContext().getAuthentication() != null
                 && SecurityContextHolder.getContext().getAuthentication().getAuthorities()
                 .stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        if (isAdmin && request.getSourcePenawaranId() == null) {
+        if (isAdmin && primaryPenawaranId == null) {
             throw new AppException(ErrorCode.FORBIDDEN, "Role Admin wajib membuat faktur penjualan yang bersumber dari Surat Penawaran Harga (SPH)");
         }
 
         Penawaran sourcePenawaran = null;
-        if (request.getSourcePenawaranId() != null) {
-            sourcePenawaran = penawaranRepository.findById(request.getSourcePenawaranId())
+        if (primaryPenawaranId != null) {
+            sourcePenawaran = penawaranRepository.findById(primaryPenawaranId)
                     .orElseThrow(() -> new AppException(ErrorCode.PENAWARAN_NOT_FOUND, "Penawaran sumber tidak ditemukan"));
 
             // Guard: penawaran sumber harus berstatus APPROVED
@@ -201,6 +252,19 @@ public class InvoiceService {
 
             if (!sourcePenawaran.getCustomer().getId().equals(customer.getId())) {
                 throw new AppException(ErrorCode.INVALID_REQUEST, "Customer faktur harus sama dengan customer pada penawaran sumber");
+            }
+        }
+
+        if (sourcePenawaranIds != null && sourcePenawaranIds.size() > 1) {
+            for (Long sphId : sourcePenawaranIds) {
+                Penawaran sph = penawaranRepository.findById(sphId)
+                        .orElseThrow(() -> new AppException(ErrorCode.PENAWARAN_NOT_FOUND, "Penawaran sumber dengan ID " + sphId + " tidak ditemukan"));
+                if (sph.getStatus() != PenawaranStatus.APPROVED) {
+                    throw new AppException(ErrorCode.INVALID_REQUEST, "Penawaran " + sph.getNumber() + " belum berstatus APPROVED");
+                }
+                if (!sph.getCustomer().getId().equals(customer.getId())) {
+                    throw new AppException(ErrorCode.INVALID_REQUEST, "Semua penawaran sumber harus milik customer yang sama");
+                }
             }
         }
 
@@ -236,6 +300,31 @@ public class InvoiceService {
         invoice.setWorkLocation(request.getWorkLocation());
         invoice.setCreatedBy(getCurrentUsername());
         invoice.setUpdatedBy(getCurrentUsername());
+
+        // Retention setup
+        boolean isRetentionInvoice = Boolean.TRUE.equals(request.getIsRetentionInvoice());
+        invoice.setIsRetentionInvoice(isRetentionInvoice);
+        if (request.getParentSettlementInvoiceId() != null) {
+            Invoice parentInv = invoiceRepository.findById(request.getParentSettlementInvoiceId())
+                    .orElseThrow(() -> new AppException(ErrorCode.INVOICE_NOT_FOUND, "Faktur pelunasan induk tidak ditemukan"));
+            invoice.setParentSettlementInvoice(parentInv);
+        }
+
+        boolean applyRetention = Boolean.TRUE.equals(request.getApplyRetention());
+        if (applyRetention) {
+            BigDecimal retPct = request.getRetentionPercentage() != null ? request.getRetentionPercentage() : new BigDecimal("5.00");
+            if (retPct.compareTo(BigDecimal.ZERO) <= 0 || retPct.compareTo(new BigDecimal("100.00")) > 0) {
+                throw new AppException(ErrorCode.INVALID_REQUEST, "Persentase retensi harus antara 0% dan 100%");
+            }
+            invoice.setRetentionPercentage(retPct);
+
+            LocalDate retDueDate = request.getRetentionDueDate();
+            if (retDueDate == null) {
+                int months = (request.getRetentionMonths() != null && request.getRetentionMonths() > 0) ? request.getRetentionMonths() : 6;
+                retDueDate = date.plusMonths(months);
+            }
+            invoice.setRetentionDueDate(retDueDate);
+        }
 
         // Billing Mode & Termin % Handling
         BillingMode billingMode = request.getBillingMode() != null ? request.getBillingMode() : BillingMode.ITEM_VOLUME;
@@ -287,6 +376,11 @@ public class InvoiceService {
         buildDetails(invoice, request.getDetails(), null);
 
         Invoice saved = invoiceRepository.save(invoice);
+
+        if (applyRetention && saved.getRetentionAmount() != null && saved.getRetentionAmount().compareTo(BigDecimal.ZERO) > 0 && !Boolean.TRUE.equals(saved.getIsRetentionInvoice())) {
+            createOrSyncRetentionCompanionInvoice(saved);
+        }
+
         auditLogService.log(
                 "CREATE_INVOICE",
                 "INVOICE",
@@ -346,6 +440,27 @@ public class InvoiceService {
         invoice.setWorkLocation(request.getWorkLocation());
         invoice.setUpdatedBy(getCurrentUsername());
         invoice.setUpdatedAt(OffsetDateTime.now());
+
+        // Retention setup on Update
+        boolean applyRetention = Boolean.TRUE.equals(request.getApplyRetention());
+        if (applyRetention) {
+            BigDecimal retPct = request.getRetentionPercentage() != null ? request.getRetentionPercentage() : new BigDecimal("5.00");
+            if (retPct.compareTo(BigDecimal.ZERO) <= 0 || retPct.compareTo(new BigDecimal("100.00")) > 0) {
+                throw new AppException(ErrorCode.INVALID_REQUEST, "Persentase retensi harus antara 0% dan 100%");
+            }
+            invoice.setRetentionPercentage(retPct);
+
+            LocalDate retDueDate = request.getRetentionDueDate();
+            if (retDueDate == null) {
+                int months = (request.getRetentionMonths() != null && request.getRetentionMonths() > 0) ? request.getRetentionMonths() : 6;
+                retDueDate = invoice.getDate().plusMonths(months);
+            }
+            invoice.setRetentionDueDate(retDueDate);
+        } else if (!Boolean.TRUE.equals(invoice.getIsRetentionInvoice())) {
+            invoice.setRetentionPercentage(null);
+            invoice.setRetentionAmount(null);
+            invoice.setRetentionDueDate(null);
+        }
 
         // Billing Mode & Termin % Handling on Update
         BillingMode billingMode = request.getBillingMode() != null ? request.getBillingMode() : invoice.getBillingMode();
@@ -409,6 +524,11 @@ public class InvoiceService {
         buildDetails(invoice, request.getDetails(), invoice.getId());
 
         Invoice updated = invoiceRepository.save(invoice);
+
+        if (applyRetention && updated.getRetentionAmount() != null && updated.getRetentionAmount().compareTo(BigDecimal.ZERO) > 0 && !Boolean.TRUE.equals(updated.getIsRetentionInvoice())) {
+            createOrSyncRetentionCompanionInvoice(updated);
+        }
+
         return InvoiceDTO.fromEntity(updated, true);
     }
 
@@ -516,9 +636,15 @@ public class InvoiceService {
             detail.setSortOrder(itemReq.getSortOrder() != null && itemReq.getSortOrder() > 0 ? itemReq.getSortOrder() : order++);
             detail.setNotes(itemReq.getNotes());
 
-            boolean isDeduction = Boolean.TRUE.equals(itemReq.getIsDeduction()) || itemReq.getItemType() == InvoiceItemType.DP_DEDUCTION;
+            boolean isDeduction = Boolean.TRUE.equals(itemReq.getIsDeduction())
+                    || itemReq.getItemType() == InvoiceItemType.DP_DEDUCTION
+                    || itemReq.getItemType() == InvoiceItemType.RETENTION_DEDUCTION;
             detail.setIsDeduction(isDeduction);
             detail.setItemType(itemReq.getItemType() != null ? itemReq.getItemType() : (isDeduction ? InvoiceItemType.DP_DEDUCTION : InvoiceItemType.STANDARD));
+
+            if (itemReq.getItemType() == InvoiceItemType.RETENTION_DEDUCTION) {
+                invoice.setRetentionAmount(itemReq.getUnitPrice().multiply(itemReq.getQuantity()).setScale(2, RoundingMode.HALF_UP));
+            }
 
             // Source Penawaran Detail & Anti-Double-Billing enforcement (only for non-deduction physical items)
             if (!isDeduction && itemReq.getSourcePenawaranDetailId() != null) {
@@ -539,6 +665,9 @@ public class InvoiceService {
                 }
 
                 detail.setSourcePenawaranDetail(pDetail);
+                if (pDetail.getPenawaran() != null) {
+                    detail.setSourcePenawaran(pDetail.getPenawaran());
+                }
                 if (pDetail.getSphKegiatan() != null) {
                     detail.setSphKegiatan(pDetail.getSphKegiatan());
                 }
@@ -560,6 +689,11 @@ public class InvoiceService {
                             .orElseThrow(() -> new AppException(ErrorCode.KEGIATAN_ITEM_NOT_FOUND, "Item kegiatan tidak ditemukan"));
                     detail.setSourceKegiatanItem(kegiatanItem);
                 }
+                if (itemReq.getSourcePenawaranId() != null) {
+                    penawaranRepository.findById(itemReq.getSourcePenawaranId()).ifPresent(detail::setSourcePenawaran);
+                } else if (invoice.getSourcePenawaran() != null) {
+                    detail.setSourcePenawaran(invoice.getSourcePenawaran());
+                }
             }
 
             // Authoritative server calculation
@@ -567,8 +701,122 @@ public class InvoiceService {
             invoice.addDetail(detail);
         }
 
+        // Auto-inject retention deduction if retention is configured and not manually provided in items
+        if (invoice.getRetentionPercentage() != null && invoice.getRetentionPercentage().compareTo(BigDecimal.ZERO) > 0) {
+            boolean hasRetentionDeduction = invoice.getDetails().stream()
+                    .anyMatch(d -> d.getItemType() == InvoiceItemType.RETENTION_DEDUCTION);
+            if (!hasRetentionDeduction) {
+                BigDecimal grossSubtotal = invoice.getDetails().stream()
+                        .filter(d -> !Boolean.TRUE.equals(d.getIsDeduction()))
+                        .map(InvoiceDetail::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal retAmount = grossSubtotal.multiply(invoice.getRetentionPercentage())
+                        .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+                invoice.setRetentionAmount(retAmount);
+
+                InvoiceDetail retDetail = new InvoiceDetail();
+                retDetail.setDescription("Potongan Retensi Pemeliharaan (" +
+                        invoice.getRetentionPercentage().stripTrailingZeros().toPlainString() + "%)");
+                retDetail.setQuantity(BigDecimal.ONE);
+                retDetail.setUnit("Paket");
+                retDetail.setUnitPrice(retAmount);
+                retDetail.setSortOrder(order++);
+                retDetail.setIsDeduction(true);
+                retDetail.setItemType(InvoiceItemType.RETENTION_DEDUCTION);
+                retDetail.calculateAmount();
+                invoice.addDetail(retDetail);
+            }
+        }
+
         if (invoice.getSubtotalDpp() != null && invoice.getSubtotalDpp().compareTo(BigDecimal.ZERO) < 0) {
             throw new AppException(ErrorCode.INVALID_REQUEST, "Subtotal DPP faktur tidak boleh bernilai negatif setelah pemotongan");
+        }
+    }
+
+    private void createOrSyncRetentionCompanionInvoice(Invoice settlementInvoice) {
+        if (settlementInvoice == null || settlementInvoice.getId() == null) {
+            return;
+        }
+
+        List<Invoice> existingList = invoiceRepository.findByParentSettlementInvoiceId(settlementInvoice.getId());
+        Invoice existing = (existingList != null && !existingList.isEmpty()) ? existingList.get(0) : null;
+
+        if (existing != null) {
+            // Hanya perbarui jika masih DRAFT dan belum ada pembayaran
+            if (existing.getStatus() == InvoiceStatus.DRAFT && existing.getPaidAmount().compareTo(BigDecimal.ZERO) == 0) {
+                existing.setDueDate(settlementInvoice.getRetentionDueDate());
+                existing.setRetentionDueDate(settlementInvoice.getRetentionDueDate());
+                existing.setRetentionPercentage(settlementInvoice.getRetentionPercentage());
+                existing.setRetentionAmount(settlementInvoice.getRetentionAmount());
+                existing.getDetails().clear();
+
+                InvoiceDetail d = new InvoiceDetail();
+                d.setDescription("Penagihan Retensi Pemeliharaan (" +
+                        settlementInvoice.getRetentionPercentage().stripTrailingZeros().toPlainString() +
+                        "%) - Faktur " + settlementInvoice.getNumber());
+                d.setQuantity(BigDecimal.ONE);
+                d.setUnit("Retensi");
+                d.setUnitPrice(settlementInvoice.getRetentionAmount());
+                d.setSortOrder(1);
+                d.setIsDeduction(false);
+                d.setItemType(InvoiceItemType.STANDARD);
+                d.calculateAmount();
+                existing.addDetail(d);
+
+                invoiceRepository.save(existing);
+            }
+        } else {
+            // Buat draft faktur retensi baru
+            LocalDate retDate = settlementInvoice.getDate() != null ? settlementInvoice.getDate() : LocalDate.now();
+            String retNumber = numberingService.generateNextNumber(DocumentType.FAKTUR, retDate);
+
+            Invoice retInv = new Invoice();
+            retInv.setNumber(retNumber);
+            retInv.setCustomer(settlementInvoice.getCustomer());
+            retInv.setSourcePenawaran(settlementInvoice.getSourcePenawaran());
+            retInv.setDate(retDate);
+            retInv.setDueDate(settlementInvoice.getRetentionDueDate());
+            retInv.setRetentionDueDate(settlementInvoice.getRetentionDueDate());
+            retInv.setClientPoNumber(settlementInvoice.getClientPoNumber());
+            retInv.setClientSpkNumber(settlementInvoice.getClientSpkNumber());
+            retInv.setBastNumber(settlementInvoice.getBastNumber());
+            retInv.setTaxPpnType(settlementInvoice.getTaxPpnType() != null ? settlementInvoice.getTaxPpnType() : TaxPpnType.NONE);
+            retInv.setTaxPpnRate(settlementInvoice.getTaxPpnRate());
+            retInv.setStatus(InvoiceStatus.DRAFT);
+            retInv.setPaymentStatus(InvoicePaymentStatus.UNPAID);
+            retInv.setPaidAmount(BigDecimal.ZERO);
+            retInv.setBillingMode(BillingMode.ITEM_VOLUME);
+            retInv.setIsRetentionInvoice(true);
+            retInv.setParentSettlementInvoice(settlementInvoice);
+            retInv.setRetentionPercentage(settlementInvoice.getRetentionPercentage());
+            retInv.setRetentionAmount(settlementInvoice.getRetentionAmount());
+            retInv.setNotes("Faktur Penagihan Retensi Pemeliharaan " +
+                    settlementInvoice.getRetentionPercentage().stripTrailingZeros().toPlainString() +
+                    "% atas Faktur Pelunasan " + settlementInvoice.getNumber());
+            retInv.setCreatedBy(getCurrentUsername());
+            retInv.setUpdatedBy(getCurrentUsername());
+
+            InvoiceDetail d = new InvoiceDetail();
+            d.setDescription("Penagihan Retensi Pemeliharaan (" +
+                    settlementInvoice.getRetentionPercentage().stripTrailingZeros().toPlainString() +
+                    "%) - Faktur " + settlementInvoice.getNumber());
+            d.setQuantity(BigDecimal.ONE);
+            d.setUnit("Retensi");
+            d.setUnitPrice(settlementInvoice.getRetentionAmount());
+            d.setSortOrder(1);
+            d.setIsDeduction(false);
+            d.setItemType(InvoiceItemType.STANDARD);
+            d.calculateAmount();
+            retInv.addDetail(d);
+
+            Invoice savedRet = invoiceRepository.save(retInv);
+            auditLogService.log(
+                    "CREATE_RETENTION_DRAFT",
+                    "INVOICE",
+                    savedRet.getId(),
+                    null,
+                    "Draft Faktur Retensi " + savedRet.getNumber() + " dibuat otomatis untuk Faktur Pelunasan " + settlementInvoice.getNumber()
+            );
         }
     }
 

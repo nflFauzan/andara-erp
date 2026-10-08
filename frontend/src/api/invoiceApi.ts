@@ -45,6 +45,17 @@ export const invoiceApi = {
     return response.data.data!;
   },
 
+  async getRetentionMonitoring(): Promise<import('../types/invoice').RetentionMonitoringItem[]> {
+    const response = await api.get<ApiResponse<import('../types/invoice').RetentionMonitoringItem[]>>('/faktur/retensi');
+    return response.data.data!;
+  },
+
+  async getMultiSphBillableItems(penawaranIds: number[]): Promise<PenawaranBillableItem[]> {
+    const response = await api.get<ApiResponse<PenawaranBillableItem[]>>('/faktur/multi-sph-billable', {
+      params: { penawaranIds: penawaranIds.join(',') },
+    });
+    return response.data.data!;
+  },
 
   async createInvoice(data: CreateInvoiceInput): Promise<Invoice> {
     const response = await api.post<ApiResponse<Invoice>>('/faktur', data);

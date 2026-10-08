@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 
 public class PenawaranBillableItemDTO {
 
+    private Long penawaranId;
+    private String penawaranNumber;
     private Long penawaranDetailId;
     private Long sphKegiatanId;
     private String sphKegiatanName;
@@ -141,5 +143,21 @@ public class PenawaranBillableItemDTO {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public Long getPenawaranId() {
+        return penawaranId;
+    }
+
+    public void setPenawaranId(Long penawaranId) {
+        this.penawaranId = penawaranId;
+    }
+
+    public String getPenawaranNumber() {
+        return penawaranNumber;
+    }
+
+    public void setPenawaranNumber(String penawaranNumber) {
+        this.penawaranNumber = penawaranNumber;
     }
 }

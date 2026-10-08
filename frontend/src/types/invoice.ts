@@ -9,6 +9,8 @@ export type InvoiceItemType = 'STANDARD' | 'DP_DEDUCTION' | 'RETENTION_DEDUCTION
 export interface InvoiceDetail {
   id: number;
   invoiceId: number;
+  sourcePenawaranId?: number;
+  sourcePenawaranNumber?: string;
   sourcePenawaranDetailId?: number;
   sphKegiatanId?: number;
   sphKegiatanName?: string;
@@ -38,6 +40,16 @@ export interface Invoice {
   customerPhone?: string;
   sourcePenawaranId?: number;
   sourcePenawaranNumber?: string;
+  isRetentionInvoice?: boolean;
+  applyRetention?: boolean;
+  retentionPercentage?: number;
+  retentionAmount?: number;
+  retentionMonths?: number;
+  retentionDueDate?: string;
+  parentSettlementInvoiceId?: number;
+  parentSettlementInvoiceNumber?: string;
+  retentionInvoiceId?: number;
+  retentionInvoiceNumber?: string;
   billingMode?: BillingMode;
   billingModeLabel?: string;
   terminPercentage?: number;
@@ -90,6 +102,7 @@ export interface InvoicePaymentItem {
 }
 
 export interface CreateInvoiceDetailInput {
+  sourcePenawaranId?: number;
   sourcePenawaranDetailId?: number;
   sphKegiatanId?: number;
   sourceKegiatanId?: number;
@@ -107,10 +120,17 @@ export interface CreateInvoiceDetailInput {
 export interface CreateInvoiceInput {
   customerId: number;
   sourcePenawaranId?: number;
+  sourcePenawaranIds?: number[];
   billingMode?: BillingMode;
   terminPercentage?: number;
   terminName?: string;
   previousDpInvoiceId?: number;
+  applyRetention?: boolean;
+  retentionPercentage?: number;
+  retentionMonths?: number;
+  retentionDueDate?: string;
+  isRetentionInvoice?: boolean;
+  parentSettlementInvoiceId?: number;
   workLocation?: string;
   clientPoNumber?: string;
   clientSpkNumber?: string;
@@ -128,10 +148,15 @@ export interface CreateInvoiceInput {
 
 export interface UpdateInvoiceInput {
   customerId: number;
+  sourcePenawaranIds?: number[];
   billingMode?: BillingMode;
   terminPercentage?: number;
   terminName?: string;
   previousDpInvoiceId?: number;
+  applyRetention?: boolean;
+  retentionPercentage?: number;
+  retentionMonths?: number;
+  retentionDueDate?: string;
   workLocation?: string;
   clientPoNumber?: string;
   clientSpkNumber?: string;
@@ -152,6 +177,8 @@ export interface UpdateInvoiceStatusInput {
 }
 
 export interface PenawaranBillableItem {
+  penawaranId?: number;
+  penawaranNumber?: string;
   penawaranDetailId: number;
   sphKegiatanId?: number;
   sphKegiatanName?: string;
@@ -167,6 +194,28 @@ export interface PenawaranBillableItem {
   fullyBilled: boolean;
   sortOrder: number;
   notes?: string;
+}
+
+export interface RetentionMonitoringItem {
+  invoiceId: number;
+  invoiceNumber: string;
+  customerId?: number;
+  customerCode?: string;
+  customerName?: string;
+  sourcePenawaranId?: number;
+  sourcePenawaranNumber?: string;
+  parentSettlementInvoiceId?: number;
+  parentSettlementInvoiceNumber?: string;
+  retentionPercentage?: number;
+  retentionAmount?: number;
+  retentionDueDate?: string;
+  daysRemaining?: number;
+  overdue: boolean;
+  readyToBill: boolean;
+  status: InvoiceStatus;
+  statusLabel: string;
+  paymentStatus: InvoicePaymentStatus;
+  paymentStatusLabel: string;
 }
 
 export interface BilledTerminItem {

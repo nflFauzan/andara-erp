@@ -10,11 +10,15 @@ import {
   FileCheck2,
   AlertCircle,
   CreditCard,
-  Info
+  Info,
+  ShieldCheck,
+  X,
+  ExternalLink,
+  Clock
 } from 'lucide-react';
 import { invoiceApi } from '../api/invoiceApi';
 import { customerApi } from '../api/customerApi';
-import { Invoice } from '../types/invoice';
+import { Invoice, RetentionMonitoringItem } from '../types/invoice';
 import { Customer } from '../types/customer';
 import { BentoCard } from '@/components/common/BentoCard';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -29,6 +33,26 @@ export const InvoiceListPage: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Retention Monitoring Modal (V-11)
+  const [showRetentionModal, setShowRetentionModal] = useState(false);
+  const [retentionItems, setRetentionItems] = useState<RetentionMonitoringItem[]>([]);
+  const [loadingRetention, setLoadingRetention] = useState(false);
+  const [retentionError, setRetentionError] = useState<string | null>(null);
+
+  const handleOpenRetentionModal = async () => {
+    setShowRetentionModal(true);
+    setLoadingRetention(true);
+    setRetentionError(null);
+    try {
+      const data = await invoiceApi.getRetentionMonitoring();
+      setRetentionItems(data || []);
+    } catch (err: any) {
+      setRetentionError(err.response?.data?.message || 'Gagal memuat monitoring retensi.');
+    } finally {
+      setLoadingRetention(false);
+    }
+  };
 
   // Filters
   const [search, setSearch] = useState('');
@@ -110,13 +134,24 @@ export const InvoiceListPage: React.FC = () => {
           </span>
         }
         actions={
-          <button
-            onClick={() => navigate('/faktur/create')}
-            className="neu-btn-primary"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Buat Faktur Baru</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleOpenRetentionModal}
+              className="neu-btn text-xs py-2 px-3.5 inline-flex items-center gap-1.5 font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 hover:bg-amber-500/20 transition cursor-pointer"
+              title="Pantau retensi masa pemeliharaan proyek & companion draft faktur"
+            >
+              <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <span>Monitoring Retensi</span>
+            </button>
+            <button
+              onClick={() => navigate('/faktur/create')}
+              className="neu-btn-primary"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Buat Faktur Baru</span>
+            </button>
+          </div>
         }
       />
 
@@ -448,6 +483,197 @@ export const InvoiceListPage: React.FC = () => {
           </div>
         )}
       </BentoCard>
+
+      {/* Modal Monitoring Retensi Konstruksi (V-11) */}
+      {showRetentionModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-5xl rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-5 sm:p-6 border-b border-slate-150 dark:border-slate-800 flex items-start justify-between gap-4 bg-slate-50/70 dark:bg-slate-800/40">
+              <div className="flex items-start gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    Monitoring Retensi Masa Pemeliharaan Proyek (V-11)
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                    Pantau sisa hari masa garansi pemeliharaan pekerjaan, nilai dana retensi yang ditahan pemberi kerja, serta status penerbitan faktur tagihan retensi.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowRetentionModal(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Summary KPI Chips */}
+            <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800/80 grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white dark:bg-slate-900">
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Total Proyek Ber-Retensi</p>
+                <p className="text-xl font-black text-amber-950 dark:text-amber-200 mt-0.5">{retentionItems.length} Proyek</p>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">Total Dana Retensi Ditahan</p>
+                <p className="text-xl font-black text-indigo-950 dark:text-indigo-200 mt-0.5">
+                  {formatCurrency(retentionItems.reduce((acc, it) => acc + (it.retentionAmount || 0), 0))}
+                </p>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">Siap Tagih / Jatuh Tempo</p>
+                <p className="text-xl font-black text-rose-950 dark:text-rose-200 mt-0.5">
+                  {retentionItems.filter((it) => it.readyToBill || it.overdue).length} Proyek
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Content / Table */}
+            <div className="p-5 sm:p-6 overflow-y-auto flex-1">
+              {loadingRetention ? (
+                <div className="py-16 text-center flex flex-col items-center justify-center gap-3">
+                  <div className="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs font-semibold text-slate-500">Memuat data monitoring retensi...</span>
+                </div>
+              ) : retentionError ? (
+                <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300 text-xs font-semibold">
+                  {retentionError}
+                </div>
+              ) : retentionItems.length === 0 ? (
+                <div className="py-16 text-center space-y-2">
+                  <ShieldCheck className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Belum ada faktur dengan retensi konstruksi</p>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    Ketika Anda menerbitkan faktur pelunasan/termin akhir dengan opsi "Potong Retensi Pemeliharaan", data monitoring akan muncul di sini secara otomatis.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-[10px]">
+                        <th className="py-3 px-3.5">Faktur Pelunasan Induk</th>
+                        <th className="py-3 px-3.5">Pelanggan</th>
+                        <th className="py-3 px-3.5 text-right">Nilai Retensi</th>
+                        <th className="py-3 px-3.5">Jatuh Tempo Garansi</th>
+                        <th className="py-3 px-3.5 text-center">Status Masa Pemeliharaan</th>
+                        <th className="py-3 px-3.5 text-center">Faktur Tagihan Retensi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-150 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
+                      {retentionItems.map((item) => {
+                        return (
+                          <tr key={item.invoiceId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                            <td className="py-3 px-3.5 font-medium">
+                              {item.parentSettlementInvoiceId ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShowRetentionModal(false);
+                                    navigate(`/faktur/${item.parentSettlementInvoiceId}`);
+                                  }}
+                                  className="font-mono font-bold text-brand-600 dark:text-brand-400 hover:underline text-left block"
+                                >
+                                  {item.parentSettlementInvoiceNumber}
+                                </button>
+                              ) : (
+                                <span className="font-mono text-slate-500">-</span>
+                              )}
+                              {item.sourcePenawaranNumber && (
+                                <span className="text-[10px] text-slate-400 font-mono">SPH: {item.sourcePenawaranNumber}</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-3.5">
+                              <div className="font-bold">{item.customerName || '-'}</div>
+                              <div className="text-[10px] font-mono text-slate-400">{item.customerCode}</div>
+                            </td>
+                            <td className="py-3 px-3.5 text-right font-mono">
+                              <span className="font-black text-amber-600 dark:text-amber-400">
+                                {formatCurrency(item.retentionAmount || 0)}
+                              </span>
+                              <div className="text-[10px] text-slate-400">({item.retentionPercentage || 0}%)</div>
+                            </td>
+                            <td className="py-3 px-3.5 font-medium">
+                              <div>
+                                {item.retentionDueDate
+                                  ? new Date(item.retentionDueDate).toLocaleDateString('id-ID', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    })
+                                  : '-'}
+                              </div>
+                            </td>
+                            <td className="py-3 px-3.5 text-center">
+                              {item.overdue ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+                                  <AlertCircle className="w-3 h-3 text-rose-500" />
+                                  Lewat Tempo ({Math.abs(item.daysRemaining || 0)} hr)
+                                </span>
+                              ) : item.readyToBill ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                                  <Clock className="w-3 h-3 text-amber-500" />
+                                  Jatuh Tempo Hari Ini
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                                  <Clock className="w-3 h-3 text-emerald-500" />
+                                  Garansi ({item.daysRemaining} hr lagi)
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-3.5 text-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowRetentionModal(false);
+                                  navigate(`/faktur/${item.invoiceId}`);
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition"
+                                title="Buka Faktur Retensi"
+                              >
+                                <span className="font-mono">{item.invoiceNumber}</span>
+                                <span className={`text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                                  item.status === 'DRAFT'
+                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                                    : item.paymentStatus === 'PAID'
+                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
+                                }`}>
+                                  {item.paymentStatus === 'PAID' ? 'LUNAS' : item.status}
+                                </span>
+                                <ExternalLink className="w-3 h-3 text-slate-400" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 sm:p-5 border-t border-slate-150 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+              <span>
+                💡 Faktur tagihan retensi otomatis berstatus <strong>DRAFT</strong>. Jika masa pemeliharaan selesai dan BAST 2 telah ditandatangani, buka faktur lalu klik <strong>Terbitkan Faktur</strong>.
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowRetentionModal(false)}
+                className="neu-btn px-5 py-2 font-bold shrink-0 self-end sm:self-auto"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

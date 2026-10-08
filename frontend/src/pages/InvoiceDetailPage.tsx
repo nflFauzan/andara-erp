@@ -15,7 +15,9 @@ import {
   CreditCard,
   ArrowRight,
   ExternalLink,
-  Receipt
+  Receipt,
+  ShieldCheck,
+  FileSpreadsheet
 } from 'lucide-react';
 import { invoiceApi } from '../api/invoiceApi';
 import { Invoice, InvoiceStatus } from '../types/invoice';
@@ -273,6 +275,30 @@ export const InvoiceDetailPage: React.FC = () => {
         </BentoCard>
       )}
 
+      {/* Retention Invoice Notice Banner */}
+      {invoice.isRetentionInvoice && (
+        <BentoCard className="p-4 bg-amber-500/10 border-amber-500/30 text-amber-950 dark:text-amber-100 flex items-start gap-3 print:hidden">
+          <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-bold text-xs uppercase tracking-wider text-amber-700 dark:text-amber-300">
+              Faktur Penagihan Retensi Konstruksi (Masa Pemeliharaan Proyek)
+            </p>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+              Faktur ini merupakan tagihan retensi pemeliharaan yang diterbitkan otomatis dari faktur pelunasan induk{' '}
+              {invoice.parentSettlementInvoiceNumber && (
+                <Link
+                  to={`/faktur/${invoice.parentSettlementInvoiceId}`}
+                  className="font-mono font-bold underline text-amber-700 dark:text-amber-300 hover:text-amber-900"
+                >
+                  {invoice.parentSettlementInvoiceNumber}
+                </Link>
+              )}
+              . Jatuh tempo penagihan telah disesuaikan dengan berakhirnya masa garansi pemeliharaan pekerjaan.
+            </p>
+          </div>
+        </BentoCard>
+      )}
+
       {/* Printable Invoice Sheet (Paper view with official letterhead) */}
       <div className="bg-white text-slate-900 rounded-3xl border border-slate-200/90 shadow-bento p-6 sm:p-10 space-y-8 print:shadow-none print:border-none print:p-0">
         {/* Letterhead Resmi CV. ANDARA dengan Pita Divisi Baja Ringan */}
@@ -335,6 +361,29 @@ export const InvoiceDetailPage: React.FC = () => {
                 )}
               </div>
             )}
+            {Boolean(invoice.retentionPercentage && invoice.retentionPercentage > 0) && !invoice.isRetentionInvoice && (
+              <div className="py-2 px-3 rounded-lg bg-amber-50 border border-amber-200/80 my-1 inline-block text-left sm:text-right">
+                <p className="text-amber-900 font-bold text-xs flex items-center gap-1 sm:justify-end">
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+                  Retensi Pemeliharaan: {invoice.retentionPercentage}% ({formatCurrency(invoice.retentionAmount || 0)})
+                </p>
+                <p className="text-[11px] text-amber-700 mt-0.5">
+                  {invoice.retentionMonths ? `Masa Pemeliharaan: ${invoice.retentionMonths} Bulan • ` : ''}Jatuh Tempo:{' '}
+                  {invoice.retentionDueDate ? new Date(invoice.retentionDueDate).toLocaleDateString('id-ID', { dateStyle: 'medium' }) : '-'}
+                </p>
+                {invoice.retentionInvoiceId && (
+                  <p className="text-[11px] text-amber-800 mt-0.5">
+                    Draft Tagihan Retensi:{' '}
+                    <Link
+                      to={`/faktur/${invoice.retentionInvoiceId}`}
+                      className="font-mono font-bold underline hover:text-amber-950"
+                    >
+                      {invoice.retentionInvoiceNumber || `Faktur #${invoice.retentionInvoiceId}`}
+                    </Link>
+                  </p>
+                )}
+              </div>
+            )}
             {invoice.workLocation && (
               <p className="text-slate-600 flex items-center gap-1 sm:justify-end">
                 <MapPin className="w-3.5 h-3.5 text-slate-400" />
@@ -387,6 +436,12 @@ export const InvoiceDetailPage: React.FC = () => {
                             {isDed && (
                               <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-rose-200 text-rose-800">
                                 {detail.itemType === 'RETENTION_DEDUCTION' ? 'RETENSI' : 'POTONGAN DP'}
+                              </span>
+                            )}
+                            {detail.sourcePenawaranNumber && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <FileSpreadsheet className="w-3 h-3 text-emerald-600" />
+                                SPH: {detail.sourcePenawaranNumber}
                               </span>
                             )}
                           </div>
