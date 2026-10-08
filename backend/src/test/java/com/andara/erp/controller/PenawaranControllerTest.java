@@ -41,12 +41,23 @@ class PenawaranControllerTest {
     @Autowired
     private com.andara.erp.repository.PenawaranRepository penawaranRepository;
 
+    private java.util.Set<Long> initialPenawaranIds;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        initialPenawaranIds = penawaranRepository.findAll().stream()
+                .map(com.andara.erp.entity.Penawaran::getId)
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
     @org.junit.jupiter.api.AfterEach
     void tearDown() {
-        List<com.andara.erp.entity.Penawaran> testPenawaran = penawaranRepository.findAll().stream()
-                .filter(p -> p.getId() > 2)
-                .toList();
-        penawaranRepository.deleteAll(testPenawaran);
+        if (initialPenawaranIds != null) {
+            List<com.andara.erp.entity.Penawaran> testPenawaran = penawaranRepository.findAll().stream()
+                    .filter(p -> !initialPenawaranIds.contains(p.getId()))
+                    .toList();
+            penawaranRepository.deleteAll(testPenawaran);
+        }
     }
 
     @Test

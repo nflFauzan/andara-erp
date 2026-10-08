@@ -7,11 +7,13 @@ import com.andara.erp.dto.customer.CustomerDTO;
 import com.andara.erp.dto.customer.UpdateCustomerRequest;
 import com.andara.erp.entity.Customer;
 import com.andara.erp.repository.CustomerRepository;
+import com.andara.erp.repository.DepositTransactionRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,29 +21,41 @@ import java.util.stream.Collectors;
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final DepositTransactionRepository depositTransactionRepository;
 
-    public CustomerService(CustomerRepository customerRepository) {
+    public CustomerService(CustomerRepository customerRepository, DepositTransactionRepository depositTransactionRepository) {
         this.customerRepository = customerRepository;
+        this.depositTransactionRepository = depositTransactionRepository;
+    }
+
+    private CustomerDTO toDTO(Customer customer) {
+        BigDecimal ledgerBalance = depositTransactionRepository.calculateCurrentBalanceByCustomerId(customer.getId());
+        if (ledgerBalance == null) {
+            ledgerBalance = BigDecimal.ZERO;
+        }
+        CustomerDTO dto = CustomerDTO.fromEntity(customer);
+        dto.setDepositBalance(ledgerBalance);
+        return dto;
     }
 
     @Transactional(readOnly = true)
     public Page<CustomerDTO> getCustomers(String search, Boolean isActive, Pageable pageable) {
         return customerRepository.searchCustomers(search, isActive, pageable)
-                .map(CustomerDTO::fromEntity);
+                .map(this::toDTO);
     }
 
     @Transactional(readOnly = true)
     public CustomerDTO getCustomerById(Long id) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.CUSTOMER_NOT_FOUND, "Customer tidak ditemukan dengan ID: " + id));
-        return CustomerDTO.fromEntity(customer);
+        return toDTO(customer);
     }
 
     @Transactional(readOnly = true)
     public List<CustomerDTO> getActiveCustomers() {
         return customerRepository.findByIsActiveTrueOrderByNameAsc()
                 .stream()
-                .map(CustomerDTO::fromEntity)
+                .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
@@ -64,7 +78,7 @@ public class CustomerService {
         );
 
         Customer saved = customerRepository.save(customer);
-        return CustomerDTO.fromEntity(saved);
+        return toDTO(saved);
     }
 
     @Transactional
@@ -93,7 +107,7 @@ public class CustomerService {
 
         // CRITICAL: depositBalance is NOT updated directly here. It is ledger-controlled only!
         Customer updated = customerRepository.save(customer);
-        return CustomerDTO.fromEntity(updated);
+        return toDTO(updated);
     }
 
     @Transactional
@@ -114,6 +128,6 @@ public class CustomerService {
         customer.setActive(active);
         customer.setUpdatedBy(currentUsername);
         Customer updated = customerRepository.save(customer);
-        return CustomerDTO.fromEntity(updated);
+        return toDTO(updated);
     }
 }

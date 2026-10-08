@@ -23,6 +23,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -66,6 +68,10 @@ class PaymentControllerTest {
 
     private Customer testCustomer;
     private Invoice testInvoice;
+    private Set<Long> initialPaymentIds;
+    private Set<Long> initialReceiptIds;
+    private Set<Long> initialDepositTxIds;
+    private BigDecimal initialCustomerDepositBalance;
 
     @org.junit.jupiter.api.AfterEach
     void tearDown() {
@@ -74,26 +80,50 @@ class PaymentControllerTest {
             paymentAllocationRepository.deleteAll(allocs);
             invoiceRepository.deleteById(testInvoice.getId());
         }
-        List<com.andara.erp.entity.Receipt> testReceipts = receiptRepository.findAll().stream()
-                .filter(r -> r.getId() > 1)
-                .toList();
-        receiptRepository.deleteAll(testReceipts);
 
-        List<Payment> testPayments = paymentRepository.findAll().stream()
-                .filter(p -> p.getId() > 1)
-                .toList();
-        paymentRepository.deleteAll(testPayments);
+        // Only delete receipts created during the test run
+        if (initialReceiptIds != null) {
+            List<com.andara.erp.entity.Receipt> testReceipts = receiptRepository.findAll().stream()
+                    .filter(r -> !initialReceiptIds.contains(r.getId()))
+                    .toList();
+            receiptRepository.deleteAll(testReceipts);
+        }
 
-        List<DepositTransaction> testTxs = depositTransactionRepository.findAll().stream()
-                .filter(d -> d.getId() > 0)
-                .toList();
-        depositTransactionRepository.deleteAll(testTxs);
+        // Only delete payments created during the test run
+        if (initialPaymentIds != null) {
+            List<Payment> testPayments = paymentRepository.findAll().stream()
+                    .filter(p -> !initialPaymentIds.contains(p.getId()))
+                    .toList();
+            paymentRepository.deleteAll(testPayments);
+        }
+
+        // Only delete deposit transactions created during the test run
+        if (initialDepositTxIds != null) {
+            List<DepositTransaction> testTxs = depositTransactionRepository.findAll().stream()
+                    .filter(d -> !initialDepositTxIds.contains(d.getId()))
+                    .toList();
+            depositTransactionRepository.deleteAll(testTxs);
+        }
+
+        // Restore initial customer deposit balance
+        if (testCustomer != null && initialCustomerDepositBalance != null) {
+            customerRepository.findById(testCustomer.getId()).ifPresent(c -> {
+                c.setDepositBalance(initialCustomerDepositBalance);
+                customerRepository.save(c);
+            });
+        }
     }
 
     @BeforeEach
     void setUp() {
+        // Snapshot existing IDs before running test to ensure pre-existing data is preserved
+        initialPaymentIds = paymentRepository.findAll().stream().map(Payment::getId).collect(Collectors.toSet());
+        initialReceiptIds = receiptRepository.findAll().stream().map(com.andara.erp.entity.Receipt::getId).collect(Collectors.toSet());
+        initialDepositTxIds = depositTransactionRepository.findAll().stream().map(DepositTransaction::getId).collect(Collectors.toSet());
+
         // Find existing customer or ensure available
         testCustomer = customerRepository.findById(1L).orElseThrow();
+        initialCustomerDepositBalance = testCustomer.getDepositBalance();
 
         // Create a dedicated invoice for tests
         Invoice invoice = new Invoice();

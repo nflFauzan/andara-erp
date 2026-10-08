@@ -46,18 +46,29 @@ class InvoiceControllerTest {
     @Autowired
     private com.andara.erp.repository.PaymentAllocationRepository paymentAllocationRepository;
 
+    private java.util.Set<Long> initialInvoiceIds;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        initialInvoiceIds = invoiceRepository.findAll().stream()
+                .map(Invoice::getId)
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
     @org.junit.jupiter.api.AfterEach
     void tearDown() {
-        List<Invoice> testInvoices = invoiceRepository.findAll().stream()
-                .filter(inv -> inv.getId() > 2)
-                .toList();
-        for (Invoice inv : testInvoices) {
-            List<com.andara.erp.entity.PaymentAllocation> allocs = paymentAllocationRepository.findByInvoiceId(inv.getId());
-            if (!allocs.isEmpty()) {
-                paymentAllocationRepository.deleteAll(allocs);
+        if (initialInvoiceIds != null) {
+            List<Invoice> testInvoices = invoiceRepository.findAll().stream()
+                    .filter(inv -> !initialInvoiceIds.contains(inv.getId()))
+                    .toList();
+            for (Invoice inv : testInvoices) {
+                List<com.andara.erp.entity.PaymentAllocation> allocs = paymentAllocationRepository.findByInvoiceId(inv.getId());
+                if (!allocs.isEmpty()) {
+                    paymentAllocationRepository.deleteAll(allocs);
+                }
             }
+            invoiceRepository.deleteAll(testInvoices);
         }
-        invoiceRepository.deleteAll(testInvoices);
     }
 
     @Test

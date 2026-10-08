@@ -53,9 +53,14 @@ class ReceiptControllerTest {
 
     private Customer testCustomer;
     private Payment testPayment;
+    private java.util.Set<Long> initialReceiptIds;
 
     @BeforeEach
     void setUp() {
+        initialReceiptIds = receiptRepository.findAll().stream()
+                .map(Receipt::getId)
+                .collect(java.util.stream.Collectors.toSet());
+
         testCustomer = customerRepository.findById(1L).orElseThrow();
 
         // Create a standalone payment for testing receipt generation
@@ -75,11 +80,13 @@ class ReceiptControllerTest {
 
     @AfterEach
     void tearDown() {
-        // Delete receipts associated with test payments
-        List<Receipt> testReceipts = receiptRepository.findAll().stream()
-                .filter(r -> r.getId() > 1) // preserve seed receipt id 1
-                .toList();
-        receiptRepository.deleteAll(testReceipts);
+        // Delete only receipts created during this test run
+        if (initialReceiptIds != null) {
+            List<Receipt> testReceipts = receiptRepository.findAll().stream()
+                    .filter(r -> !initialReceiptIds.contains(r.getId()))
+                    .toList();
+            receiptRepository.deleteAll(testReceipts);
+        }
 
         if (testPayment != null && testPayment.getId() != null) {
             paymentRepository.deleteById(testPayment.getId());

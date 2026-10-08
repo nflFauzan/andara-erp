@@ -29,4 +29,9 @@ export const depositApi = {
     const response = await api.post<ApiResponse<DepositTransaction>>('/deposits/use', data);
     return response.data.data!;
   },
+
+  async reconcileDeposits(): Promise<string[]> {
+    const response = await api.post<ApiResponse<string[]>>('/deposits/reconcile');
+    return response.data.data!;
+  },
 };

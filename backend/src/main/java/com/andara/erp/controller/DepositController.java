@@ -60,4 +60,12 @@ public class DepositController {
         DepositTransactionDTO result = depositService.useDeposit(request, username);
         return ApiResponse.success(result, "Deposit berhasil dialokasikan ke faktur");
     }
+
+    @PostMapping("/reconcile")
+    @PreAuthorize("hasRole('OPERATOR')")
+    public ApiResponse<List<String>> reconcileAllDeposits(Authentication authentication) {
+        String username = authentication != null ? authentication.getName() : "operator";
+        List<String> results = depositService.reconcileAllCustomerDeposits(username);
+        return ApiResponse.success(results, "Rekonsiliasi saldo deposit selesai dieksekusi");
+    }
 }

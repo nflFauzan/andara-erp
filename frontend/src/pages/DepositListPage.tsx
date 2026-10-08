@@ -75,6 +75,28 @@ export const DepositListPage: React.FC = () => {
     loadSummaries();
   }, []);
 
+  const [reconciling, setReconciling] = useState(false);
+  const [reconcileMessage, setReconcileMessage] = useState<string | null>(null);
+
+  const handleReconcile = async () => {
+    setReconciling(true);
+    setReconcileMessage(null);
+    try {
+      const res = await depositApi.reconcileDeposits();
+      if (res && res.length > 0) {
+        setReconcileMessage(`Berhasil menyelaraskan ${res.length} data customer: ${res.join('; ')}`);
+      } else {
+        setReconcileMessage('Semua saldo deposit customer telah sinkron sempurna dengan ledger transaksi.');
+      }
+      await loadSummaries();
+    } catch (err: any) {
+      console.error('Gagal rekonsiliasi deposit:', err);
+      setErrorMsg(err.response?.data?.message || 'Gagal melakukan rekonsiliasi saldo');
+    } finally {
+      setReconciling(false);
+    }
+  };
+
   const loadSummaries = async () => {
     setLoading(true);
     setErrorMsg(null);
@@ -203,15 +225,44 @@ export const DepositListPage: React.FC = () => {
           </span>
         }
         actions={
-          <button
-            onClick={loadSummaries}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white/95 dark:bg-slate-900 hover:bg-blue-50/60 dark:hover:bg-slate-800 border-[1.5px] border-blue-200/90 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition shadow-xs"
-          >
-            <RefreshCw className="w-4 h-4 text-brand-500" />
-            Segarkan Data
-          </button>
+          <div className="flex items-center gap-2">
+            {isOperator && (
+              <button
+                onClick={handleReconcile}
+                disabled={reconciling}
+                className="inline-flex items-center gap-2 px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold transition disabled:opacity-50 shadow-xs"
+                title="Sinkronkan saldo tabel pelanggan dengan riwayat ledger mutasi"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-amber-600 dark:text-amber-400 ${reconciling ? 'animate-spin' : ''}`} />
+                {reconciling ? 'Menyelaraskan...' : 'Rekonsiliasi Saldo'}
+              </button>
+            )}
+            <button
+              onClick={loadSummaries}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white/95 dark:bg-slate-900 hover:bg-blue-50/60 dark:hover:bg-slate-800 border-[1.5px] border-blue-200/90 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition shadow-xs"
+            >
+              <RefreshCw className="w-4 h-4 text-brand-500" />
+              Segarkan Data
+            </button>
+          </div>
         }
       />
+
+      {/* Reconcile Notification Banner */}
+      {reconcileMessage && (
+        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 p-4 rounded-2xl text-xs flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2 font-medium">
+            <RefreshCw className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span>{reconcileMessage}</span>
+          </div>
+          <button
+            onClick={() => setReconcileMessage(null)}
+            className="text-emerald-700 dark:text-emerald-300 hover:opacity-75 ml-2 font-bold"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

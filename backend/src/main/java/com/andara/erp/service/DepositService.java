@@ -310,4 +310,39 @@ public class DepositService {
 
         return dto;
     }
+
+    @Transactional
+    public List<String> reconcileAllCustomerDeposits(String username) {
+        List<Customer> customers = customerRepository.findAll();
+        List<String> results = new ArrayList<>();
+        int count = 0;
+
+        for (Customer customer : customers) {
+            BigDecimal ledgerBalance = depositTransactionRepository.calculateCurrentBalanceByCustomerId(customer.getId());
+            if (ledgerBalance == null) {
+                ledgerBalance = BigDecimal.ZERO;
+            }
+            BigDecimal currentCache = customer.getDepositBalance() != null ? customer.getDepositBalance() : BigDecimal.ZERO;
+
+            if (currentCache.compareTo(ledgerBalance) != 0) {
+                customer.setDepositBalance(ledgerBalance);
+                customerRepository.save(customer);
+                count++;
+                results.add(String.format("Pelanggan %s (%s): Saldo diselaraskan dari Rp %s menjadi Rp %s (sesuai ledger)",
+                        customer.getName(), customer.getCode(), currentCache, ledgerBalance));
+            }
+        }
+
+        if (count > 0) {
+            auditLogService.log(
+                    "RECONCILE_DEPOSIT",
+                    "CUSTOMER",
+                    null,
+                    null,
+                    "Rekonsiliasi saldo deposit: " + count + " pelanggan diselaraskan dengan ledger transaksi oleh " + username
+            );
+        }
+
+        return results;
+    }
 }
