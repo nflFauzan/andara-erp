@@ -841,7 +841,7 @@ export const PenawaranFormPage: React.FC = () => {
 
       {/* Grouped Kegiatan Section */}
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Layers className="w-5 h-5 text-brand-500" />
@@ -889,18 +889,18 @@ export const PenawaranFormPage: React.FC = () => {
               className="overflow-hidden p-0 border border-slate-200/90 dark:border-blue-900/30"
             >
               {/* Kegiatan Header Bar */}
-              <div className="bg-neu-surface dark:bg-slate-900 text-slate-900 dark:text-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neu-border dark:border-blue-900/40 shadow-neu-convex-xs">
-                <div className="flex items-center gap-3 flex-1">
-                  <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-blue-500 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-neu-accent border border-white/30">
+              <div className="bg-neu-surface dark:bg-slate-900 text-slate-900 dark:text-white p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neu-border dark:border-blue-900/40 shadow-neu-convex-xs">
+                <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+                  <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-blue-500 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-neu-accent border border-white/30 mt-0.5 sm:mt-0">
                     {letterLabel}
                   </span>
-                  <div className="flex-1 max-w-xl">
-                    <div className="flex items-center justify-between mb-0.5">
+                  <div className="flex-1 min-w-0 max-w-xl">
+                    <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
                       <label className="text-[10px] text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider block">
                         Nama Kegiatan {letterLabel} <span className="text-rose-500">*</span>
                       </label>
                       {kg.kegiatanCode && (
-                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-900">
+                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-900 truncate">
                           Terkait Proyek: {kg.kegiatanCode}
                         </span>
                       )}
@@ -915,8 +915,8 @@ export const PenawaranFormPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 justify-between sm:justify-end">
-                  <div className="text-right">
+                <div className="flex items-center gap-3 justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 dark:border-slate-800">
+                  <div className="text-left sm:text-right">
                     <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold block">
                       Subtotal {letterLabel}
                     </span>
@@ -938,14 +938,137 @@ export const PenawaranFormPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Items Table for this Kegiatan */}
-              <div className="p-4 sm:p-5 space-y-4">
-                <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 overflow-visible">
+              {/* Items Section for this Kegiatan: Dual-Mode (Mobile Card + Desktop Table) */}
+              <div className="p-3.5 sm:p-5 space-y-4">
+                {/* 1. MOBILE VIEW (< 640px): Card-based Item Editor */}
+                <div className="block sm:hidden space-y-3">
+                  {kg.items.map((it, itIdx) => {
+                    const rowTotal = (Number(it.volume) || 0) * (Number(it.unitPrice) || 0);
+
+                    return (
+                      <div
+                        key={it.tempId}
+                        className="p-3.5 rounded-2xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 space-y-3 shadow-xs relative"
+                      >
+                        {/* Card Header: Nomor Urut & Tombol Hapus */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-mono text-[11px] font-bold flex items-center justify-center">
+                              {itIdx + 1}
+                            </span>
+                            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                              Item Pekerjaan #{itIdx + 1}
+                            </span>
+                          </div>
+
+                          {kg.items.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItemFromKegiatan(kg.tempId, it.tempId)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-lg transition"
+                              title="Hapus baris item"
+                            >
+                              <Trash2 className="w-4 h-4 text-rose-500" />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Deskripsi / Uraian Material (Full Width Smart Input) */}
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                            Nama Pekerjaan / Material <span className="text-rose-500">*</span>
+                          </label>
+                          <ItemSmartInput
+                            value={it.description}
+                            onChange={(val) =>
+                              handleItemFieldChange(kg.tempId, it.tempId, 'description', val)
+                            }
+                            onSelectMasterItem={(mItem) =>
+                              handleSelectMasterItem(kg.tempId, it.tempId, mItem)
+                            }
+                            onCreateNewMasterItem={(typedQuery) => {
+                              setTargetKegiatanTempId(kg.tempId);
+                              setTargetItemTempId(it.tempId);
+                              setPrefillItemName(typedQuery);
+                              setIsAddItemModalOpen(true);
+                            }}
+                            masterItems={masterItems}
+                            placeholder="Ketikan nama pekerjaan / material..."
+                          />
+                        </div>
+
+                        {/* Volume, Satuan, Harga Satuan dalam Grid 12 Kolom */}
+                        <div className="grid grid-cols-12 gap-2">
+                          {/* Volume (4 cols) */}
+                          <div className="col-span-4">
+                            <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1 text-right">
+                              Volume
+                            </label>
+                            <input
+                              type="number"
+                              step="any"
+                              min="0.01"
+                              value={it.volume}
+                              onChange={(e) =>
+                                handleItemFieldChange(kg.tempId, it.tempId, 'volume', Number(e.target.value))
+                              }
+                              className="w-full px-2 py-1.5 text-xs text-right border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-brand-500/30 outline-none font-mono bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100"
+                            />
+                          </div>
+
+                          {/* Satuan (3 cols) */}
+                          <div className="col-span-3">
+                            <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1 text-center">
+                              Satuan
+                            </label>
+                            <input
+                              type="text"
+                              value={it.unit}
+                              onChange={(e) =>
+                                handleItemFieldChange(kg.tempId, it.tempId, 'unit', e.target.value)
+                              }
+                              placeholder="m2"
+                              className="w-full px-1.5 py-1.5 text-xs text-center border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-brand-500/30 outline-none uppercase font-bold bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100"
+                            />
+                          </div>
+
+                          {/* Harga Satuan (5 cols) */}
+                          <div className="col-span-5">
+                            <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1 text-right">
+                              Harga (Rp)
+                            </label>
+                            <input
+                              type="number"
+                              step="any"
+                              min="0"
+                              value={it.unitPrice}
+                              onChange={(e) =>
+                                handleItemFieldChange(kg.tempId, it.tempId, 'unitPrice', Number(e.target.value))
+                              }
+                              className="w-full px-2 py-1.5 text-xs text-right border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-brand-500/30 outline-none font-mono bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Subtotal Item Baris */}
+                        <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Subtotal Item:</span>
+                          <span className="font-mono font-bold text-blue-600 dark:text-amber-400">
+                            {formatRupiah(rowTotal)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 2. DESKTOP & TABLET VIEW (>= 640px): Tabular View */}
+                <div className="hidden sm:block overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800">
                   <table className="w-full text-left text-sm border-collapse">
                     <thead>
                       <tr className="bg-slate-100/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                         <th className="py-2.5 px-3 w-10 text-center">No</th>
-                        <th className="py-2.5 px-3 min-w-[320px]">Nama Pekerjaan / Uraian Material</th>
+                        <th className="py-2.5 px-3 min-w-[300px]">Nama Pekerjaan / Uraian Material</th>
                         <th className="py-2.5 px-3 w-28 text-right">Perkiraan Vol</th>
                         <th className="py-2.5 px-3 w-20 text-center">Satuan</th>
                         <th className="py-2.5 px-3 w-36 text-right">Harga Satuan (Rp)</th>
@@ -1056,14 +1179,14 @@ export const PenawaranFormPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleAddItemToKegiatan(kg.tempId)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-50/70 hover:bg-blue-100/70 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 text-xs font-bold rounded-xl transition shadow-xs"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-blue-50/70 hover:bg-blue-100/70 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 text-xs font-bold rounded-xl transition shadow-xs active:scale-95"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Tambah item untuk kegiatan ini</span>
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-2 bg-white/60 dark:bg-slate-900/60 px-4 py-2 rounded-xl border border-slate-200/80 dark:border-slate-800 self-end sm:self-auto">
+                  <div className="flex items-center justify-between sm:justify-end gap-2 bg-white/60 dark:bg-slate-900/60 px-4 py-2 rounded-xl border border-slate-200/80 dark:border-slate-800 w-full sm:w-auto">
                     <span className="text-xs font-bold text-slate-600 dark:text-slate-300">TOTAL {letterLabel} :</span>
                     <span className="font-mono font-black text-sm text-slate-900 dark:text-white">
                       {formatRupiah(subtotalKg)}
@@ -1077,10 +1200,10 @@ export const PenawaranFormPage: React.FC = () => {
       </div>
 
       {/* Grand Total Summary Card */}
-      <BentoCard className="bg-neu-surface dark:bg-slate-900 text-slate-900 dark:text-white p-6 border border-neu-border dark:border-blue-900/40 shadow-neu-convex-md space-y-4">
+      <BentoCard className="bg-neu-surface dark:bg-slate-900 text-slate-900 dark:text-white p-4 sm:p-6 border border-neu-border dark:border-blue-900/40 shadow-neu-convex-md space-y-4">
         <div className="flex items-center gap-2 border-b border-neu-border dark:border-slate-800 pb-3">
-          <Calculator className="w-5 h-5 text-blue-600 dark:text-brand-400" />
-          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+          <Calculator className="w-5 h-5 text-blue-600 dark:text-brand-400 shrink-0" />
+          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
             Rekapitulasi Total Penawaran SPH
           </h3>
         </div>
@@ -1091,26 +1214,28 @@ export const PenawaranFormPage: React.FC = () => {
             const subtotalKg = calculateKegiatanSubtotal(kg);
 
             return (
-              <div key={kg.tempId} className="flex justify-between items-center text-slate-600 dark:text-slate-300">
-                <span>
+              <div key={kg.tempId} className="flex justify-between items-center text-slate-600 dark:text-slate-300 gap-2">
+                <span className="truncate">
                   TOTAL {letterLabel} ({kg.name || `Kegiatan ${letterLabel}`}) :
                 </span>
-                <span className="font-mono font-semibold">{formatRupiah(subtotalKg)}</span>
+                <span className="font-mono font-semibold shrink-0">{formatRupiah(subtotalKg)}</span>
               </div>
             );
           })}
 
-          <div className="pt-3 border-t border-neu-border dark:border-slate-800 flex justify-between items-center text-base font-bold text-slate-900 dark:text-white">
-            <span className="text-blue-600 dark:text-brand-300">
+          <div className="pt-3 border-t border-neu-border dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-4">
+            <span className="text-xs sm:text-base font-bold text-blue-600 dark:text-brand-300">
               TOTAL KESELURUHAN (A s/d {String.fromCharCode(65 + kegiatanGroups.length - 1)}) :
             </span>
-            <span className="font-mono text-2xl font-black text-blue-600 dark:text-amber-400">{formatRupiah(grandTotalAmount)}</span>
+            <span className="font-mono text-xl sm:text-2xl font-black text-blue-600 dark:text-amber-400 text-left sm:text-right">
+              {formatRupiah(grandTotalAmount)}
+            </span>
           </div>
         </div>
       </BentoCard>
 
       {/* Terms & Conditions */}
-      <BentoCard className="p-6 space-y-3">
+      <BentoCard className="p-4 sm:p-6 space-y-3">
         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
           Syarat & Ketentuan Penawaran
         </label>
@@ -1124,28 +1249,28 @@ export const PenawaranFormPage: React.FC = () => {
       </BentoCard>
 
       {/* Floating Bottom Action Bar */}
-      <div className="bento-card flex items-center justify-between p-4 sticky bottom-4 shadow-bento dark:shadow-bento-dark">
-        <div>
-          <span className="text-xs text-slate-500 dark:text-slate-400 block font-medium">Total Nilai Penawaran</span>
-          <span className="font-mono font-black text-lg text-slate-900 dark:text-white">{formatRupiah(grandTotalAmount)}</span>
+      <div className="bento-card flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 sticky bottom-3 sm:bottom-4 shadow-bento dark:shadow-bento-dark z-20">
+        <div className="flex items-center justify-between sm:block">
+          <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 block font-medium">Total Nilai Penawaran</span>
+          <span className="font-mono font-black text-base sm:text-lg text-slate-900 dark:text-white">{formatRupiah(grandTotalAmount)}</span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => navigate(-1)}
             disabled={loading}
-            className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl transition shadow-xs"
+            className="flex-1 sm:flex-none px-4 py-2.5 sm:py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl transition shadow-xs text-center"
           >
             Batal
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/25 transition disabled:opacity-50"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/25 transition disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            {loading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan SPH' : 'Terbitkan SPH'}
+            <span>{loading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan SPH' : 'Terbitkan SPH'}</span>
           </button>
         </div>
       </div>

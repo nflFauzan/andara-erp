@@ -1311,85 +1311,99 @@ export const InvoiceFormPage: React.FC = () => {
           </div>
 
 
-          {/* Items Table */}
-          <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800">
-            <table className="w-full text-left text-sm border-collapse">
-              <thead>
-                <tr className="bg-slate-100/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                  <th className="py-3 px-3 w-12 text-center">#</th>
-                  <th className="py-3 px-3 min-w-[280px]">Deskripsi Item Penagihan</th>
-                  <th className="py-3 px-3 w-28 text-right">Kuantitas</th>
-                  <th className="py-3 px-3 w-24">Satuan</th>
-                  <th className="py-3 px-3 w-40 text-right">Harga Satuan (Rp)</th>
-                  <th className="py-3 px-3 w-44 text-right">Subtotal</th>
-                  <th className="py-3 px-3 w-12 text-center"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                {items.map((row, index) => {
-                  const lineTotal = (Number(row.quantity) || 0) * (Number(row.unitPrice) || 0);
-                  const isDeduction = Boolean(row.isDeduction);
-                  const isExceeding =
-                    row.maxBillableQuantity !== undefined &&
-                    Number(row.quantity) > row.maxBillableQuantity;
+          {/* Dual-Mode Item Section: Mobile Cards + Desktop Table */}
+          <div className="space-y-3">
+            {/* 1. MOBILE VIEW (< 640px): Card-based Item Editor */}
+            <div className="block sm:hidden space-y-3">
+              {items.map((row, index) => {
+                const lineTotal = (Number(row.quantity) || 0) * (Number(row.unitPrice) || 0);
+                const isDeduction = Boolean(row.isDeduction);
+                const isExceeding =
+                  row.maxBillableQuantity !== undefined &&
+                  Number(row.quantity) > row.maxBillableQuantity;
 
-                  return (
-                    <tr
-                      key={row.tempId}
-                      className={`transition-colors ${
-                        isDeduction
-                          ? 'bg-rose-500/5 dark:bg-rose-500/10 hover:bg-rose-500/10'
-                          : 'hover:bg-white/40 dark:hover:bg-slate-800/40'
-                      }`}
-                    >
-                      <td className="py-3 px-3 text-center text-xs font-mono text-slate-400">
-                        {index + 1}
-                      </td>
-                      <td className="py-3 px-3">
-                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                          {isDeduction && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/20">
-                              {row.itemType === 'RETENTION_DEDUCTION' ? 'POTONGAN RETENSI' : 'POTONGAN DP'}
-                            </span>
-                          )}
-                          {row.sourcePenawaranNumber && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
-                              <FileSpreadsheet className="w-3 h-3 text-emerald-500" />
-                              SPH: {row.sourcePenawaranNumber}
-                            </span>
-                          )}
-                          {row.sphKegiatanName && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
-                              <Layers className="w-3 h-3 text-indigo-500" />
-                              {row.sphKegiatanName}
+                return (
+                  <div
+                    key={row.tempId}
+                    className={`p-3.5 rounded-2xl border space-y-3 shadow-xs relative transition-colors ${
+                      isDeduction
+                        ? 'bg-rose-500/5 dark:bg-rose-500/10 border-rose-300 dark:border-rose-900/60'
+                        : 'bg-white/70 dark:bg-slate-900/70 border-slate-200/80 dark:border-slate-800'
+                    }`}
+                  >
+                    {/* Header: Item # and Badges + Delete */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono text-[11px] font-bold flex items-center justify-center">
+                          {index + 1}
+                        </span>
+                        {isDeduction && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/20">
+                            {row.itemType === 'RETENTION_DEDUCTION' ? 'POTONGAN RETENSI' : 'POTONGAN DP'}
+                          </span>
+                        )}
+                        {row.sourcePenawaranNumber && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                            <FileSpreadsheet className="w-3 h-3 text-emerald-500" />
+                            SPH: {row.sourcePenawaranNumber}
+                          </span>
+                        )}
+                        {row.sphKegiatanName && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
+                            <Layers className="w-3 h-3 text-indigo-500" />
+                            {row.sphKegiatanName}
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={billingMode === 'PERCENTAGE_TERMIN' || items.length <= 1}
+                        onClick={() => handleRemoveItemRow(row.tempId)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition disabled:opacity-20"
+                        title="Hapus baris item"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Description Input */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                        Deskripsi Penagihan <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Deskripsi penagihan jasa / barang..."
+                        value={row.description}
+                        onChange={(e) => handleItemChange(row.tempId, 'description', e.target.value)}
+                        className={`w-full text-xs px-3 py-2 rounded-xl border bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition ${
+                          isDeduction
+                            ? 'border-rose-300 dark:border-rose-900/60 font-semibold text-rose-900 dark:text-rose-200'
+                            : 'border-slate-200 dark:border-slate-800'
+                        }`}
+                      />
+                      {row.maxBillableQuantity !== undefined && (
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1 font-mono">
+                          <span className="text-brand-600 dark:text-brand-400 font-semibold">Tersisa di SPH:</span>
+                          <span>{row.maxBillableQuantity} {row.unit}</span>
+                          {isExceeding && (
+                            <span className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-0.5 ml-1">
+                              <AlertTriangle className="w-3 h-3" /> Melebihi kuota!
                             </span>
                           )}
                         </div>
-                        <input
-                          type="text"
-                          required
-                          placeholder="Deskripsi penagihan jasa / barang..."
-                          value={row.description}
-                          onChange={(e) => handleItemChange(row.tempId, 'description', e.target.value)}
-                          className={`w-full text-sm px-3 py-1.5 rounded-xl border bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition ${
-                            isDeduction
-                              ? 'border-rose-300 dark:border-rose-900/60 font-semibold text-rose-900 dark:text-rose-200'
-                              : 'border-slate-200 dark:border-slate-800'
-                          }`}
-                        />
-                        {row.maxBillableQuantity !== undefined && (
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1 font-mono">
-                            <span className="text-brand-600 dark:text-brand-400 font-semibold">Tersisa di SPH:</span>
-                            <span>{row.maxBillableQuantity} {row.unit}</span>
-                            {isExceeding && (
-                              <span className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-0.5 ml-2">
-                                <AlertTriangle className="w-3 h-3" /> Melebihi kuota!
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-right">
+                      )}
+                    </div>
+
+                    {/* Quantity, Unit, Unit Price in 12-cols Grid */}
+                    <div className="grid grid-cols-12 gap-2">
+                      {/* Quantity (4 cols) */}
+                      <div className="col-span-4">
+                        <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1 text-right">
+                          Kuantitas
+                        </label>
                         <input
                           type="number"
                           step="0.01"
@@ -1400,14 +1414,19 @@ export const InvoiceFormPage: React.FC = () => {
                           onChange={(e) =>
                             handleItemChange(row.tempId, 'quantity', parseFloat(e.target.value) || 0)
                           }
-                          className={`w-full text-right font-mono text-sm px-3 py-1.5 rounded-xl border focus:outline-none focus:ring-2 transition disabled:opacity-70 ${
+                          className={`w-full text-right font-mono text-xs px-2.5 py-1.5 rounded-xl border focus:outline-none focus:ring-2 transition disabled:opacity-70 ${
                             isExceeding
                               ? 'border-rose-500 bg-rose-500/10 focus:ring-rose-500/30 text-rose-600 dark:text-rose-400'
-                              : 'border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:ring-brand-500/30'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-brand-500/30'
                           }`}
                         />
-                      </td>
-                      <td className="py-3 px-3">
+                      </div>
+
+                      {/* Unit (3 cols) */}
+                      <div className="col-span-3">
+                        <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1 text-center">
+                          Satuan
+                        </label>
                         <input
                           type="text"
                           required
@@ -1415,10 +1434,15 @@ export const InvoiceFormPage: React.FC = () => {
                           placeholder="m2, unit"
                           value={row.unit}
                           onChange={(e) => handleItemChange(row.tempId, 'unit', e.target.value)}
-                          className="w-full text-sm px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:opacity-70 transition"
+                          className="w-full text-xs px-1.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-center uppercase font-bold focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:opacity-70 transition"
                         />
-                      </td>
-                      <td className="py-3 px-3 text-right">
+                      </div>
+
+                      {/* Unit Price (5 cols) */}
+                      <div className="col-span-5">
+                        <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1 text-right">
+                          Harga (Rp)
+                        </label>
                         <input
                           type="number"
                           min="0"
@@ -1429,47 +1453,183 @@ export const InvoiceFormPage: React.FC = () => {
                           onChange={(e) =>
                             handleItemChange(row.tempId, 'unitPrice', parseFloat(e.target.value) || 0)
                           }
-                          className="w-full text-right font-mono text-sm px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:opacity-70 transition"
+                          className="w-full text-right font-mono text-xs px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:opacity-70 transition"
                         />
-                      </td>
-                      <td className="py-3 px-3 text-right font-mono font-bold">
-                        <span className={isDeduction ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}>
-                          {isDeduction ? `- ${formatCurrency(lineTotal)}` : formatCurrency(lineTotal)}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <button
-                          type="button"
-                          disabled={billingMode === 'PERCENTAGE_TERMIN' || items.length <= 1}
-                          onClick={() => handleRemoveItemRow(row.tempId)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition disabled:opacity-20"
-                          title="Hapus baris item"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+
+                    {/* Subtotal Item Baris */}
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Subtotal Item:</span>
+                      <span className={`font-mono font-bold ${isDeduction ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>
+                        {isDeduction ? `- ${formatCurrency(lineTotal)}` : formatCurrency(lineTotal)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 2. TABLET & DESKTOP VIEW (>= 640px): Tabular View */}
+            <div className="hidden sm:block overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800">
+              <table className="w-full text-left text-sm border-collapse">
+                <thead>
+                  <tr className="bg-slate-100/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                    <th className="py-3 px-3 w-12 text-center">#</th>
+                    <th className="py-3 px-3 min-w-[280px]">Deskripsi Item Penagihan</th>
+                    <th className="py-3 px-3 w-28 text-right">Kuantitas</th>
+                    <th className="py-3 px-3 w-24">Satuan</th>
+                    <th className="py-3 px-3 w-40 text-right">Harga Satuan (Rp)</th>
+                    <th className="py-3 px-3 w-44 text-right">Subtotal</th>
+                    <th className="py-3 px-3 w-12 text-center"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  {items.map((row, index) => {
+                    const lineTotal = (Number(row.quantity) || 0) * (Number(row.unitPrice) || 0);
+                    const isDeduction = Boolean(row.isDeduction);
+                    const isExceeding =
+                      row.maxBillableQuantity !== undefined &&
+                      Number(row.quantity) > row.maxBillableQuantity;
+
+                    return (
+                      <tr
+                        key={row.tempId}
+                        className={`transition-colors ${
+                          isDeduction
+                            ? 'bg-rose-500/5 dark:bg-rose-500/10 hover:bg-rose-500/10'
+                            : 'hover:bg-white/40 dark:hover:bg-slate-800/40'
+                        }`}
+                      >
+                        <td className="py-3 px-3 text-center text-xs font-mono text-slate-400">
+                          {index + 1}
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            {isDeduction && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/20">
+                                {row.itemType === 'RETENTION_DEDUCTION' ? 'POTONGAN RETENSI' : 'POTONGAN DP'}
+                              </span>
+                            )}
+                            {row.sourcePenawaranNumber && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                                <FileSpreadsheet className="w-3 h-3 text-emerald-500" />
+                                SPH: {row.sourcePenawaranNumber}
+                              </span>
+                            )}
+                            {row.sphKegiatanName && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
+                                <Layers className="w-3 h-3 text-indigo-500" />
+                                {row.sphKegiatanName}
+                              </span>
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Deskripsi penagihan jasa / barang..."
+                            value={row.description}
+                            onChange={(e) => handleItemChange(row.tempId, 'description', e.target.value)}
+                            className={`w-full text-sm px-3 py-1.5 rounded-xl border bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition ${
+                              isDeduction
+                                ? 'border-rose-300 dark:border-rose-900/60 font-semibold text-rose-900 dark:text-rose-200'
+                                : 'border-slate-200 dark:border-slate-800'
+                            }`}
+                          />
+                          {row.maxBillableQuantity !== undefined && (
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1 font-mono">
+                              <span className="text-brand-600 dark:text-brand-400 font-semibold">Tersisa di SPH:</span>
+                              <span>{row.maxBillableQuantity} {row.unit}</span>
+                              {isExceeding && (
+                                <span className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-0.5 ml-2">
+                                  <AlertTriangle className="w-3 h-3" /> Melebihi kuota!
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0.01"
+                            required
+                            disabled={billingMode === 'PERCENTAGE_TERMIN'}
+                            value={row.quantity}
+                            onChange={(e) =>
+                              handleItemChange(row.tempId, 'quantity', parseFloat(e.target.value) || 0)
+                            }
+                            className={`w-full text-right font-mono text-sm px-3 py-1.5 rounded-xl border focus:outline-none focus:ring-2 transition disabled:opacity-70 ${
+                              isExceeding
+                                ? 'border-rose-500 bg-rose-500/10 focus:ring-rose-500/30 text-rose-600 dark:text-rose-400'
+                                : 'border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:ring-brand-500/30'
+                            }`}
+                          />
+                        </td>
+                        <td className="py-3 px-3">
+                          <input
+                            type="text"
+                            required
+                            disabled={billingMode === 'PERCENTAGE_TERMIN'}
+                            placeholder="m2, unit"
+                            value={row.unit}
+                            onChange={(e) => handleItemChange(row.tempId, 'unit', e.target.value)}
+                            className="w-full text-sm px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:opacity-70 transition"
+                          />
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <input
+                            type="number"
+                            min="0"
+                            step="1000"
+                            required
+                            disabled={billingMode === 'PERCENTAGE_TERMIN'}
+                            value={row.unitPrice}
+                            onChange={(e) =>
+                              handleItemChange(row.tempId, 'unitPrice', parseFloat(e.target.value) || 0)
+                            }
+                            className="w-full text-right font-mono text-sm px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:opacity-70 transition"
+                          />
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono font-bold">
+                          <span className={isDeduction ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}>
+                            {isDeduction ? `- ${formatCurrency(lineTotal)}` : formatCurrency(lineTotal)}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <button
+                            type="button"
+                            disabled={billingMode === 'PERCENTAGE_TERMIN' || items.length <= 1}
+                            onClick={() => handleRemoveItemRow(row.tempId)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition disabled:opacity-20"
+                            title="Hapus baris item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Subtotal Summary Bar */}
-          <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800 flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4">
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+          <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium text-center sm:text-left">
               Total <strong>{items.length}</strong> item penagihan
             </span>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+              <div className="flex items-center justify-between sm:justify-start gap-2 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs">
                 <span className="text-slate-500 dark:text-slate-400">DPP / Subtotal:</span>
                 <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{formatCurrency(taxCalculation.subtotalDpp)}</span>
               </div>
-              <div className="flex items-center gap-4 bg-neu-surface dark:bg-slate-900 text-slate-900 dark:text-white px-6 py-3 rounded-2xl shadow-neu-convex-sm border border-neu-border dark:border-blue-900/30">
+              <div className="flex items-center justify-between sm:justify-start gap-3 bg-neu-surface dark:bg-slate-900 text-slate-900 dark:text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl shadow-neu-convex-sm border border-neu-border dark:border-blue-900/30">
                 <span className="text-xs uppercase tracking-wider font-bold text-slate-600 dark:text-slate-300">
                   Total Faktur:
                 </span>
-                <span className="font-mono text-2xl font-black text-blue-600 dark:text-amber-400">
+                <span className="font-mono text-xl sm:text-2xl font-black text-blue-600 dark:text-amber-400">
                   {formatCurrency(totalAmount)}
                 </span>
               </div>
@@ -1621,11 +1781,11 @@ export const InvoiceFormPage: React.FC = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between pt-4 border-t border-slate-200/80 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-slate-200/80 dark:border-slate-800">
           <button
             type="button"
             onClick={() => navigate('/faktur')}
-            className="px-5 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl transition shadow-xs"
+            className="w-full sm:w-auto px-5 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl transition shadow-xs text-center"
           >
             Batal
           </button>
@@ -1633,18 +1793,18 @@ export const InvoiceFormPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 shadow-md shadow-brand-500/25 transition disabled:opacity-50"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 shadow-md shadow-brand-500/25 transition disabled:opacity-50 text-center"
           >
             <Save className="w-4 h-4" />
-            {loading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan Faktur' : 'Terbitkan / Simpan Faktur'}
+            <span>{loading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan Faktur' : 'Terbitkan / Simpan Faktur'}</span>
           </button>
         </div>
       </form>
 
       {/* Modal Tarik dari Penawaran Disetujui */}
       {showPenawaranModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bento-card max-w-4xl w-full p-6 shadow-2xl border border-slate-200 dark:border-blue-900/40 space-y-4 animate-in fade-in zoom-in-95 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+          <div className="bento-card max-w-4xl w-full p-4 sm:p-6 shadow-2xl border border-slate-200 dark:border-blue-900/40 space-y-3 sm:space-y-4 animate-in fade-in zoom-in-95 max-h-[92vh] sm:max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-3 shrink-0">
               <div>
                 <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
@@ -1846,7 +2006,7 @@ export const InvoiceFormPage: React.FC = () => {
             </div>
 
             {/* Billable Items List Grouped by Kegiatan */}
-            <div className="overflow-y-auto flex-1 border border-slate-200/80 dark:border-slate-800 rounded-xl">
+            <div className="overflow-x-auto overflow-y-auto flex-1 border border-slate-200/80 dark:border-slate-800 rounded-xl">
               {loadingBillable ? (
                 <div className="p-12 text-center text-xs text-slate-500 flex flex-col items-center justify-center gap-2">
                   <div className="w-6 h-6 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
@@ -1857,7 +2017,7 @@ export const InvoiceFormPage: React.FC = () => {
                   Tidak ada rincian item atau seluruh item pada penawaran ini telah selesai ditagihkan.
                 </div>
               ) : (
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full min-w-[580px] sm:min-w-full text-left text-xs border-collapse">
                   <thead className="bg-slate-100/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider sticky top-0 z-10">
                     <tr>
                       <th className="p-2.5 w-12 text-center">Pilih</th>
@@ -2045,15 +2205,15 @@ export const InvoiceFormPage: React.FC = () => {
               )}
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t border-slate-200/60 dark:border-slate-800 shrink-0">
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-200/60 dark:border-slate-800 shrink-0">
+              <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
                 Item dan kegiatan yang telah dipilih sebelumnya dikunci otomatis untuk mencegah tagihan ganda.
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                 <button
                   type="button"
                   onClick={() => setShowPenawaranModal(false)}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+                  className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition text-center"
                 >
                   Batal
                 </button>
@@ -2061,10 +2221,10 @@ export const InvoiceFormPage: React.FC = () => {
                   type="button"
                   onClick={handleImportSelectedFromPenawaran}
                   disabled={newSelectedCount === 0}
-                  className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 rounded-xl transition shadow-md shadow-brand-500/25 flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 rounded-xl transition shadow-md shadow-brand-500/25 flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed text-center"
                 >
                   <DownloadCloud className="w-3.5 h-3.5" />
-                  Tambahkan Item Terpilih {newSelectedCount > 0 ? `(${newSelectedCount})` : ''}
+                  <span>Tambahkan Item Terpilih {newSelectedCount > 0 ? `(${newSelectedCount})` : ''}</span>
                 </button>
               </div>
             </div>

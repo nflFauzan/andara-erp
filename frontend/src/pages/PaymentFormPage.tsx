@@ -1077,7 +1077,126 @@ export const PaymentFormPage: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800">
+                {/* 1. MOBILE VIEW (< 640px): Card-based Allocation List */}
+                <div className="block sm:hidden space-y-3">
+                  {invoices.map((inv) => {
+                    const allocData = allocations[inv.id] || { amount: '', notes: '' };
+                    const allocNum = parseFloat(allocData.amount) || 0;
+                    const exceeds = allocNum > inv.outstanding;
+                    const isFullyCovered = allocNum === inv.outstanding && allocNum > 0;
+                    const isPartiallyCovered = allocNum > 0 && allocNum < inv.outstanding;
+
+                    return (
+                      <div
+                        key={inv.id}
+                        className={`p-3.5 rounded-2xl border space-y-3 transition-colors ${
+                          exceeds
+                            ? 'bg-rose-500/5 dark:bg-rose-500/10 border-rose-300 dark:border-rose-900/60'
+                            : isFullyCovered
+                            ? 'bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-900/60'
+                            : 'bg-white/70 dark:bg-slate-900/70 border-slate-200/80 dark:border-slate-800'
+                        }`}
+                      >
+                        {/* Card Header: Nomor Faktur & Status Badge */}
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div>
+                            <span className="font-mono font-bold text-slate-900 dark:text-white text-sm">
+                              {inv.number}
+                            </span>
+                            <span className="text-[11px] text-slate-400 block font-sans">
+                              Tgl: {inv.date} • Total: {formatCurrency(inv.totalAmount)}
+                            </span>
+                          </div>
+                          <div>
+                            {exceeds ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20">
+                                <AlertTriangle className="w-3 h-3" /> Lebih
+                              </span>
+                            ) : isFullyCovered ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                                <Check className="w-3 h-3" /> Lunas
+                              </span>
+                            ) : isPartiallyCovered ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                                Sebagian
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-400 font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800">
+                                Belum dialokasi
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Sisa Tagihan & Quick Action Buttons */}
+                        <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800/80 text-xs">
+                          <div>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold uppercase tracking-wider">
+                              Sisa Tagihan
+                            </span>
+                            <span className="font-mono font-bold text-rose-600 dark:text-rose-400 text-sm">
+                              {formatCurrency(inv.outstanding)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handlePayInvoiceFull(inv)}
+                              className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 transition"
+                            >
+                              Bayar Penuh
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => allocateMaxForInvoice(inv)}
+                              className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-brand-500/15 text-brand-700 dark:text-brand-300 border border-brand-500/20 hover:bg-brand-500/25 transition"
+                            >
+                              Alokasikan Sisa
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Input Alokasi Bayar & Catatan */}
+                        <div className="space-y-2">
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                              Nominal Alokasi Bayar (Rp)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              max={inv.outstanding}
+                              step="any"
+                              placeholder="0"
+                              value={allocData.amount}
+                              onChange={(e) => handleAllocationChange(inv.id, e.target.value)}
+                              className={`w-full px-3 py-2 text-right font-mono font-bold text-sm rounded-xl focus:outline-none focus:ring-2 transition ${
+                                exceeds
+                                  ? 'border border-rose-500 text-rose-700 bg-rose-500/10 focus:ring-rose-500/20'
+                                  : isFullyCovered
+                                  ? 'border border-emerald-500/40 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300 focus:ring-emerald-500/30'
+                                  : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-brand-500/30'
+                              }`}
+                            />
+                          </div>
+
+                          <div>
+                            <input
+                              type="text"
+                              placeholder="Catatan alokasi faktur ini (opsional)..."
+                              value={allocData.notes}
+                              onChange={(e) => handleNotesChange(inv.id, e.target.value)}
+                              className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/30 placeholder:text-slate-400"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 2. TABLET & DESKTOP VIEW (>= 640px): Tabular View */}
+                <div className="hidden sm:block overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800">
                   <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
                     <thead className="bg-slate-100/70 dark:bg-slate-900/70 border-b border-slate-200/80 dark:border-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                       <tr>
@@ -1289,21 +1408,41 @@ export const PaymentFormPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Bottom Action Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-slate-200/80 dark:border-slate-800">
+        <button
+          type="button"
+          onClick={() => navigate('/pembayaran')}
+          className="w-full sm:w-auto px-5 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl transition shadow-xs text-center"
+        >
+          Batal
+        </button>
+
+        <button
+          type="submit"
+          disabled={isSubmitting || isOverAllocated || !selectedCustomerId || totalPaymentNum <= 0}
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/25 transition disabled:opacity-50 disabled:cursor-not-allowed text-center"
+        >
+          <Save className="w-4 h-4" />
+          <span>Simpan & Konfirmasi Pembayaran</span>
+        </button>
+      </div>
+
       {/* Confirmation Modal (Temuan #4) */}
       {showConfirmModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] sm:max-h-[90vh] flex flex-col">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
+            <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-brand-500/10 text-brand-600 dark:text-brand-400 rounded-xl border border-brand-500/20">
+                <div className="p-2 sm:p-2.5 bg-brand-500/10 text-brand-600 dark:text-brand-400 rounded-xl border border-brand-500/20 shrink-0">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                  <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">
                     Konfirmasi Pencatatan Pembayaran
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
                     Pastikan rincian finansial di bawah ini telah sesuai sebelum disimpan
                   </p>
                 </div>
@@ -1311,16 +1450,16 @@ export const PaymentFormPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowConfirmModal(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+            <div className="p-4 sm:p-6 space-y-3 sm:space-y-4 flex-1 overflow-y-auto">
               {/* Meta Grid */}
-              <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800">
                 <div>
                   <span className="text-slate-400 block font-medium">Customer:</span>
                   <span className="font-bold text-slate-800 dark:text-slate-200">
@@ -1452,12 +1591,12 @@ export const PaymentFormPage: React.FC = () => {
             </div>
 
             {/* Modal Actions */}
-            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-end gap-3">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowConfirmModal(false)}
                 disabled={isSubmitting}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl transition"
+                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl transition text-center"
               >
                 Periksa Kembali
               </button>
@@ -1465,17 +1604,17 @@ export const PaymentFormPage: React.FC = () => {
                 type="button"
                 onClick={handleFinalSubmit}
                 disabled={isSubmitting}
-                className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/25 transition disabled:opacity-50"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:py-2 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/25 transition disabled:opacity-50 text-center"
               >
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Menyimpan Transaksi...
+                    <span>Menyimpan Transaksi...</span>
                   </>
                 ) : (
                   <>
                     <Check className="w-4 h-4" />
-                    Ya, Simpan Transaksi
+                    <span>Ya, Simpan Transaksi</span>
                   </>
                 )}
               </button>

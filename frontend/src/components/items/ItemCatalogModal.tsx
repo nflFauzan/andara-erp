@@ -114,22 +114,22 @@ export const ItemCatalogModal: React.FC<ItemCatalogModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
       <div 
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-150"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] sm:max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-slate-900 px-6 py-5 text-white flex items-center justify-between">
+        <div className="bg-slate-900 px-4 sm:px-6 py-3.5 sm:py-5 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center shrink-0">
               <Package className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold">
+              <h2 className="text-base sm:text-lg font-bold">
                 {isEdit ? 'Ubah Data Item Master' : 'Tambah Item Master Baru'}
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-[11px] sm:text-xs text-slate-400">
                 {isEdit 
                   ? 'Perbarui informasi uraian pekerjaan atau material di master catalog' 
                   : 'Item ini akan tersedia di dropdown pemilihan saat pembuatan SPH'}
@@ -139,7 +139,7 @@ export const ItemCatalogModal: React.FC<ItemCatalogModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -151,7 +151,7 @@ export const ItemCatalogModal: React.FC<ItemCatalogModalProps> = ({
             e.stopPropagation();
             handleSubmit(onFormSubmit)(e);
           }}
-          className="p-6 space-y-4"
+          className="p-4 sm:p-6 space-y-3.5 sm:space-y-4 flex-1 overflow-y-auto flex flex-col"
         >
           {/* Row 1: Code & Category */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -302,22 +302,22 @@ export const ItemCatalogModal: React.FC<ItemCatalogModalProps> = ({
           )}
 
           {/* Action Buttons */}
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 shrink-0">
             <button
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+              className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors text-center"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-5 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 active:bg-brand-800 rounded-lg shadow-sm shadow-brand-600/30 flex items-center gap-2 transition-all disabled:opacity-50"
+              className="w-full sm:w-auto px-5 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 active:bg-brand-800 rounded-lg shadow-sm shadow-brand-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50 text-center"
             >
               <CheckCircle2 className="w-4 h-4" />
-              {isLoading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Tambah Item'}
+              <span>{isLoading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Tambah Item'}</span>
             </button>
           </div>
         </form>

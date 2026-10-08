@@ -479,23 +479,23 @@ export const NumberingPage: React.FC = () => {
                 </div>
 
                 {/* Form Action Buttons */}
-                <div className="flex items-center justify-between pt-4 border-t border-neu-border/60">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-neu-border/60">
                   <button
                     type="button"
                     onClick={() => currentConfig && syncFormWithConfig(currentConfig)}
-                    className="neu-btn"
+                    className="neu-btn w-full sm:w-auto text-center justify-center"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    Reset ke Nilai Simpanan
+                    <span>Reset ke Nilai Simpanan</span>
                   </button>
 
                   <button
                     type="submit"
                     disabled={saving}
-                    className="neu-btn-primary"
+                    className="neu-btn-primary w-full sm:w-auto text-center justify-center"
                   >
                     <Save className="w-4 h-4" />
-                    {saving ? 'Menyimpan...' : 'Simpan Format Penomoran'}
+                    <span>{saving ? 'Menyimpan...' : 'Simpan Format Penomoran'}</span>
                   </button>
                 </div>
               </form>

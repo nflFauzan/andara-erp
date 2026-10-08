@@ -245,7 +245,7 @@ export const CustomerSmartInput: React.FC<CustomerSmartInputProps> = ({
       {isOpen && (
         <div
           ref={listRef}
-          className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xl backdrop-blur-md overflow-hidden p-1.5 animate-in fade-in zoom-in-95 duration-150 min-w-[320px]"
+          className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xl backdrop-blur-md overflow-hidden p-1.5 animate-in fade-in zoom-in-95 duration-150 w-full min-w-0 sm:min-w-[320px] max-w-[calc(100vw-2rem)]"
         >
           {filteredCustomers.length > 0 ? (
             <div className="max-h-64 overflow-y-auto space-y-0.5">
