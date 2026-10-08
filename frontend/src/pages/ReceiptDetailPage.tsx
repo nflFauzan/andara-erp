@@ -180,16 +180,19 @@ export const ReceiptDetailPage: React.FC = () => {
 
         {/* Header: Company & Title */}
         <div className="flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 pb-5 mb-6">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-black tracking-tight text-slate-950 uppercase">
-              CV. ANDARA
-            </h2>
-            <p className="text-xs font-medium text-slate-600 tracking-wide">
-              General Contractor, Supplier & Heavy Equipment Rental
-            </p>
-            <p className="text-xs text-slate-500">
-              Jl. Perintis Kemerdekaan KM. 10 No. 45, Tamalanrea, Makassar &bull; Telp: (0411) 892-1234
-            </p>
+          <div className="flex items-center gap-4">
+            <img src="/logo-drr.svg" alt="CV. ANDARA" className="h-16 w-auto object-contain shrink-0" />
+            <div className="space-y-0.5">
+              <h2 className="text-2xl font-black tracking-tight text-slate-950 uppercase">
+                CV. ANDARA
+              </h2>
+              <p className="text-xs font-semibold text-slate-700 tracking-wide">
+                General Contractor &bull; Supplier &bull; Perdagangan Umum &bull; Aplikator
+              </p>
+              <p className="text-xs text-slate-500">
+                Laladon Gede Gg. IV No. 255 Desa Laladon &ndash; Ciomas &ndash; Bogor &bull; Telp: 0878-7044-5159
+              </p>
+            </div>
           </div>
 
           <div className="mt-4 sm:mt-0 text-left sm:text-right space-y-1">

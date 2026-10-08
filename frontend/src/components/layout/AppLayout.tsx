@@ -13,7 +13,6 @@ import {
   Hash,
   Menu,
   X,
-  Building2,
   LogOut,
   Package,
   Sun,
@@ -180,14 +179,14 @@ export const AppLayout: React.FC = () => {
         {/* Header Branding */}
         <div className="h-20 flex items-center justify-between px-6 border-b border-slate-200/50 dark:border-slate-800/60 shrink-0">
           <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-sky-400 flex items-center justify-center font-bold text-white shadow-[0_4px_16px_rgba(37,99,235,0.35)] border border-white/40 shrink-0">
-              <Building2 className="w-5 h-5 drop-shadow-xs" />
+            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center p-1.5 shadow-[0_4px_16px_rgba(14,59,36,0.15)] border border-slate-200/70 dark:border-slate-700/70 shrink-0">
+              <img src="/logo-drr.svg" alt="CV. ANDARA" className="w-full h-full object-contain" />
             </div>
             <div className="min-w-0">
               <h1 className="font-black text-sm tracking-wide text-slate-900 dark:text-white leading-tight">
                 CV. ANDARA
               </h1>
-              <p className="text-[10px] text-blue-600 dark:text-blue-400 font-black tracking-wider uppercase mt-0.5">
+              <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-black tracking-wider uppercase mt-0.5">
                 Operasional & Keuangan
               </p>
             </div>
@@ -353,8 +352,8 @@ export const AppLayout: React.FC = () => {
               </button>
 
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-blue-500 hidden sm:flex items-center justify-center font-bold text-white shadow-blue-500/30 border border-white/30 shrink-0">
-                  <Building2 className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 hidden sm:flex items-center justify-center p-1 shadow-xs border border-slate-200/70 dark:border-slate-700/70 shrink-0">
+                  <img src="/logo-drr.svg" alt="CV. ANDARA" className="w-full h-full object-contain" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">

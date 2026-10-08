@@ -6,7 +6,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import {
-  Building2,
   Lock,
   User as UserIcon,
   Eye,
@@ -86,8 +85,8 @@ export const LoginPage: React.FC = () => {
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 px-4">
         {/* Brand Icon & Heading */}
         <div className="flex flex-col items-center">
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-blue-600 via-blue-500 to-sky-400 flex items-center justify-center text-white shadow-[0_8px_25px_rgba(37,99,235,0.4)] border border-white/40 mb-4 transform hover:scale-105 transition-transform duration-200">
-            <Building2 className="w-8 h-8 drop-shadow-xs" />
+          <div className="w-24 h-18 rounded-2xl bg-white dark:bg-slate-800 p-2.5 flex items-center justify-center shadow-[0_8px_25px_rgba(14,59,36,0.15)] border border-slate-200/80 dark:border-slate-700/80 mb-4 transform hover:scale-105 transition-transform duration-200">
+            <img src="/logo-drr.svg" alt="CV. ANDARA" className="w-full h-full object-contain" />
           </div>
           <h2 className="text-center text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
             CV. ANDARA
