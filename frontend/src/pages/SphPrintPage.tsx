@@ -138,12 +138,21 @@ export const SphPrintPage: React.FC = () => {
         <div className="flex justify-between items-start text-xs sm:text-[10pt] mb-4">
           <div className="space-y-1">
             <div className="flex">
-              <span className="w-24 font-medium">Nomor</span>
+              <span className="w-28 font-medium">Nomor</span>
               <span className="w-4">:</span>
               <span className="font-semibold font-mono">{penawaran.number}</span>
             </div>
+            {penawaran.isAddendum && (
+              <div className="flex">
+                <span className="w-28 font-medium">Addendum Ke</span>
+                <span className="w-4">:</span>
+                <span className="font-semibold font-mono">
+                  {penawaran.addendumNumberIndex || 1} (Ref Induk: {penawaran.parentPenawaranNumber})
+                </span>
+              </div>
+            )}
             <div className="flex">
-              <span className="w-24 font-medium">Lampiran</span>
+              <span className="w-28 font-medium">Lampiran</span>
               <span className="w-4">:</span>
               <span>1 (satu) berkas</span>
             </div>
@@ -170,19 +179,31 @@ export const SphPrintPage: React.FC = () => {
 
         {/* Perihal */}
         <div className="text-xs sm:text-[10pt] flex mb-4">
-          <span className="w-24 font-medium shrink-0">Perihal</span>
+          <span className="w-28 font-medium shrink-0">Perihal</span>
           <span className="w-4 shrink-0">:</span>
           <span className="font-bold underline">
-            {penawaran.notes || 'Perkiraan Harga Pengadaan dan Pemasangan Rangka Atap Baja Ringan'}
+            {penawaran.isAddendum
+              ? `ADDENDUM SURAT PENAWARAN HARGA (PEKERJAAN TAMBAH) - ${penawaran.notes || 'Pekerjaan Tambah'}`
+              : (penawaran.notes || 'Perkiraan Harga Pengadaan dan Pemasangan Rangka Atap Baja Ringan')}
           </span>
         </div>
 
         {/* Paragraf Pembuka Resmi CV. ANDARA */}
         <div className="text-xs sm:text-[9.5pt] text-justify space-y-2 mb-4 leading-normal">
           <p className="font-medium">Dengan Hormat,</p>
-          <p>
-            Kami CV. ANDARA Adalah sebagai Aplikator/Distributor resmi untuk pengadaan dan pemasangan Rangka Atap Baja Ringan Merk <strong>"KCMP TRUSS"</strong>, berdasarkan Surat dukungan / penunjukan PT. KARYA CIPTA METALINDO PERKASA serta Surat dari Dinas Pekerjaan Umum dan Penataan Ruang Kabupaten Bogor perihal Pemberitahuan Hasil Verifikasi Produk Baja Ringan Nomor : <strong>600.2.10.4/5.308-DPUPR Tanggal 17 April 2025</strong>. Dengan ini bermaksud mengajukan Surat Penawaran Harga untuk Pemasangan Rangka Atap Baja Ringan, Atap Onduline Tile, Nok Atas Onduline, Nok Samping Onduline, Listplang Tumpangsari dan Listplang Capit Gunting. Adapun Perkiraan Harga Pengadaan dan Pemasangan Atap adalah Sebagai Berikut:
-          </p>
+          {penawaran.isAddendum ? (
+            <p>
+              Sehubungan dengan pelaksanaan kontrak Surat Penawaran Harga Induk Nomor:{' '}
+              <strong className="font-mono">{penawaran.parentPenawaranNumber}</strong> serta adanya penyesuaian kebutuhan
+              pekerjaan di lapangan, bersama ini kami sampaikan <strong>ADDENDUM SURAT PENAWARAN HARGA</strong> atas
+              pekerjaan tambah/kurang sebagai bagian yang tidak terpisahkan dari kesepakatan induk. Adapun rincian perkiraan
+              harga penambahan pekerjaan adalah sebagai berikut:
+            </p>
+          ) : (
+            <p>
+              Kami CV. ANDARA Adalah sebagai Aplikator/Distributor resmi untuk pengadaan dan pemasangan Rangka Atap Baja Ringan Merk <strong>"KCMP TRUSS"</strong>, berdasarkan Surat dukungan / penunjukan PT. KARYA CIPTA METALINDO PERKASA serta Surat dari Dinas Pekerjaan Umum dan Penataan Ruang Kabupaten Bogor perihal Pemberitahuan Hasil Verifikasi Produk Baja Ringan Nomor : <strong>600.2.10.4/5.308-DPUPR Tanggal 17 April 2025</strong>. Dengan ini bermaksud mengajukan Surat Penawaran Harga untuk Pemasangan Rangka Atap Baja Ringan, Atap Onduline Tile, Nok Atas Onduline, Nok Samping Onduline, Listplang Tumpangsari dan Listplang Capit Gunting. Adapun Perkiraan Harga Pengadaan dan Pemasangan Atap adalah Sebagai Berikut:
+            </p>
+          )}
         </div>
 
         {/* Tabel Pekerjaan Per Kegiatan (Grouped Format Resmi) */}

@@ -31,6 +31,12 @@ public interface PenawaranRepository extends JpaRepository<Penawaran, Long> {
 
     List<Penawaran> findByCustomerIdOrderByDateDesc(Long customerId);
 
+    List<Penawaran> findByParentPenawaranIdOrderByAddendumNumberIndexAsc(Long parentPenawaranId);
+
+    List<Penawaran> findByParentPenawaranIdAndStatusOrderByAddendumNumberIndexAsc(Long parentPenawaranId, PenawaranStatus status);
+
+    long countByParentPenawaranId(Long parentPenawaranId);
+
     long countByCustomerId(Long customerId);
 
     @Query("SELECT COUNT(p) FROM Penawaran p WHERE p.status != 'CANCELLED' AND p.date BETWEEN :startDate AND :endDate")
@@ -89,6 +95,7 @@ public interface PenawaranRepository extends JpaRepository<Penawaran, Long> {
             "JOIN p.customer c " +
             "WHERE (:customerId IS NULL OR p.customer.id = :customerId) " +
             "AND (:status IS NULL OR p.status = :status) " +
+            "AND (:isAddendum IS NULL OR p.isAddendum = :isAddendum) " +
             "AND p.date BETWEEN :startDate AND :endDate " +
             "AND (:searchPattern IS NULL OR (" +
             "   LOWER(p.number) LIKE :searchPattern OR " +
@@ -100,8 +107,20 @@ public interface PenawaranRepository extends JpaRepository<Penawaran, Long> {
             @Param("searchPattern") String searchPattern,
             @Param("customerId") Long customerId,
             @Param("status") PenawaranStatus status,
+            @Param("isAddendum") Boolean isAddendum,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,
             Pageable pageable
     );
+
+    default Page<Penawaran> findWithFilters(
+            String searchPattern,
+            Long customerId,
+            PenawaranStatus status,
+            LocalDate startDate,
+            LocalDate endDate,
+            Pageable pageable
+    ) {
+        return findWithFilters(searchPattern, customerId, status, null, startDate, endDate, pageable);
+    }
 }

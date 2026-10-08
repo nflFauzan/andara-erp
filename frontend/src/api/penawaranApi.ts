@@ -17,6 +17,7 @@ export const penawaranApi = {
     if (params.status) queryParams.status = params.status;
     if (params.startDate) queryParams.startDate = params.startDate;
     if (params.endDate) queryParams.endDate = params.endDate;
+    if (params.isAddendum !== undefined) queryParams.isAddendum = params.isAddendum;
     if (params.page !== undefined) queryParams.page = params.page;
     if (params.size !== undefined) queryParams.size = params.size;
     if (params.sortBy) queryParams.sortBy = params.sortBy;
@@ -40,6 +41,16 @@ export const penawaranApi = {
 
   async createPenawaran(data: CreatePenawaranInput): Promise<Penawaran> {
     const response = await api.post<ApiResponse<Penawaran>>('/penawaran', data);
+    return response.data.data!;
+  },
+
+  async createAddendum(parentId: number, data: CreatePenawaranInput): Promise<Penawaran> {
+    const response = await api.post<ApiResponse<Penawaran>>(`/penawaran/${parentId}/addendum`, data);
+    return response.data.data!;
+  },
+
+  async getAddendums(parentId: number): Promise<Penawaran[]> {
+    const response = await api.get<ApiResponse<Penawaran[]>>(`/penawaran/${parentId}/addendums`);
     return response.data.data!;
   },
 

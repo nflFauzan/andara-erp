@@ -19,12 +19,18 @@ public class PenawaranDTO {
     private LocalDate date;
     private PenawaranStatus status;
     private String statusLabel;
+    private Long parentPenawaranId;
+    private String parentPenawaranNumber;
+    private Boolean isAddendum;
+    private Integer addendumNumberIndex;
     private String notes;
     private String terms;
     private BigDecimal totalAmount;
+    private BigDecimal cumulativeTotalAmount;
     private Integer itemCount;
     private List<PenawaranDetailDTO> details = new ArrayList<>();
     private List<SphKegiatanDTO> kegiatanList = new ArrayList<>();
+    private List<PenawaranDTO> addendums = new ArrayList<>();
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private String createdBy;
@@ -49,9 +55,30 @@ public class PenawaranDTO {
         dto.setDate(entity.getDate());
         dto.setStatus(entity.getStatus());
         dto.setStatusLabel(entity.getStatus() != null ? entity.getStatus().getLabel() : "");
+        if (entity.getParentPenawaran() != null) {
+            dto.setParentPenawaranId(entity.getParentPenawaran().getId());
+            dto.setParentPenawaranNumber(entity.getParentPenawaran().getNumber());
+        }
+        dto.setIsAddendum(entity.getIsAddendum());
+        dto.setAddendumNumberIndex(entity.getAddendumNumberIndex());
         dto.setNotes(entity.getNotes());
         dto.setTerms(entity.getTerms());
         dto.setTotalAmount(entity.getTotalAmount());
+
+        BigDecimal cumulative = entity.getTotalAmount() != null ? entity.getTotalAmount() : BigDecimal.ZERO;
+        if (entity.getAddendums() != null && !entity.getAddendums().isEmpty()) {
+            for (Penawaran a : entity.getAddendums()) {
+                if (a.getStatus() == PenawaranStatus.APPROVED && a.getTotalAmount() != null) {
+                    cumulative = cumulative.add(a.getTotalAmount());
+                }
+            }
+            if (includeDetails) {
+                dto.setAddendums(entity.getAddendums().stream()
+                        .map(a -> PenawaranDTO.fromEntity(a, false))
+                        .collect(Collectors.toList()));
+            }
+        }
+        dto.setCumulativeTotalAmount(cumulative);
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
         dto.setCreatedBy(entity.getCreatedBy());
@@ -226,5 +253,53 @@ public class PenawaranDTO {
 
     public void setKegiatanList(List<SphKegiatanDTO> kegiatanList) {
         this.kegiatanList = kegiatanList;
+    }
+
+    public Long getParentPenawaranId() {
+        return parentPenawaranId;
+    }
+
+    public void setParentPenawaranId(Long parentPenawaranId) {
+        this.parentPenawaranId = parentPenawaranId;
+    }
+
+    public String getParentPenawaranNumber() {
+        return parentPenawaranNumber;
+    }
+
+    public void setParentPenawaranNumber(String parentPenawaranNumber) {
+        this.parentPenawaranNumber = parentPenawaranNumber;
+    }
+
+    public Boolean getIsAddendum() {
+        return isAddendum != null && isAddendum;
+    }
+
+    public void setIsAddendum(Boolean isAddendum) {
+        this.isAddendum = isAddendum != null ? isAddendum : false;
+    }
+
+    public Integer getAddendumNumberIndex() {
+        return addendumNumberIndex != null ? addendumNumberIndex : 0;
+    }
+
+    public void setAddendumNumberIndex(Integer addendumNumberIndex) {
+        this.addendumNumberIndex = addendumNumberIndex;
+    }
+
+    public List<PenawaranDTO> getAddendums() {
+        return addendums;
+    }
+
+    public void setAddendums(List<PenawaranDTO> addendums) {
+        this.addendums = addendums;
+    }
+
+    public BigDecimal getCumulativeTotalAmount() {
+        return cumulativeTotalAmount;
+    }
+
+    public void setCumulativeTotalAmount(BigDecimal cumulativeTotalAmount) {
+        this.cumulativeTotalAmount = cumulativeTotalAmount;
     }
 }

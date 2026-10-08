@@ -18,7 +18,8 @@ import {
   Percent,
   CheckCircle2,
   PieChart,
-  ShieldCheck
+  ShieldCheck,
+  GitBranch
 } from 'lucide-react';
 import { invoiceApi } from '../api/invoiceApi';
 import { customerApi } from '../api/customerApi';
@@ -1666,41 +1667,74 @@ export const InvoiceFormPage: React.FC = () => {
             {/* SPH Select Bar */}
             <div className="flex flex-col gap-3 shrink-0 bg-white/50 dark:bg-slate-900/50 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
               {!isMultiSphMode ? (
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                  <div className="flex-1 space-y-1">
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                      Pilih Dokumen SPH Acuan:
-                    </label>
-                    <select
-                      value={selectedModalPenawaranId}
-                      onChange={(e) => setSelectedModalPenawaranId(e.target.value ? Number(e.target.value) : '')}
-                      className="w-full text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
-                    >
-                      {approvedPenawaranList.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.number} - {p.date} ({p.itemCount} item, {formatCurrency(p.totalAmount)})
-                        </option>
-                      ))}
-                    </select>
+                <>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <div className="flex-1 space-y-1">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                        Pilih Dokumen SPH Acuan:
+                      </label>
+                      <select
+                        value={selectedModalPenawaranId}
+                        onChange={(e) => setSelectedModalPenawaranId(e.target.value ? Number(e.target.value) : '')}
+                        className="w-full text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                      >
+                        {approvedPenawaranList.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.number} - {p.date} ({p.itemCount} item, {formatCurrency(p.totalAmount)})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-center">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectAllBillable(true)}
+                        className="px-3 py-1.5 text-xs font-bold text-brand-700 dark:text-brand-300 bg-brand-500/10 border border-brand-500/25 rounded-xl hover:bg-brand-500/20 transition shadow-xs"
+                      >
+                        Pilih Semua Item
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectAllBillable(false)}
+                        className="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition shadow-xs"
+                      >
+                        Kosongkan
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2 self-end sm:self-center">
-                    <button
-                      type="button"
-                      onClick={() => handleSelectAllBillable(true)}
-                      className="px-3 py-1.5 text-xs font-bold text-brand-700 dark:text-brand-300 bg-brand-500/10 border border-brand-500/25 rounded-xl hover:bg-brand-500/20 transition shadow-xs"
-                    >
-                      Pilih Semua Item
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSelectAllBillable(false)}
-                      className="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition shadow-xs"
-                    >
-                      Kosongkan
-                    </button>
-                  </div>
-                </div>
+                  {/* Prompt jika SPH Induk memiliki Addendum yang disetujui */}
+                  {(() => {
+                    const relatedAddendums = approvedPenawaranList.filter(
+                      (p) => p.parentPenawaranId === Number(selectedModalPenawaranId)
+                    );
+                    if (relatedAddendums.length === 0) return null;
+                    return (
+                      <div className="mt-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div className="flex items-center gap-2">
+                          <GitBranch className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                          <span className="text-amber-900 dark:text-amber-200">
+                            SPH ini memiliki <strong>{relatedAddendums.length} SPH Addendum</strong> (pekerjaan tambah) yang telah disetujui.
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsMultiSphMode(true);
+                            setSelectedMultiSphIds([
+                              Number(selectedModalPenawaranId),
+                              ...relatedAddendums.map((a) => a.id),
+                            ]);
+                          }}
+                          className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition shadow-xs shrink-0"
+                        >
+                          Sertakan Item Addendum ke Tagihan &rarr;
+                        </button>
+                      </div>
+                    );
+                  })()}
+                </>
               ) : (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">

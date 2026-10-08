@@ -39,12 +39,18 @@ export interface Penawaran {
   date: string;
   status: PenawaranStatus;
   statusLabel: string;
+  parentPenawaranId?: number;
+  parentPenawaranNumber?: string;
+  isAddendum?: boolean;
+  addendumNumberIndex?: number;
   notes?: string;
   terms?: string;
   totalAmount: number;
+  cumulativeTotalAmount?: number;
   itemCount: number;
   details: PenawaranDetail[];
   kegiatanList?: SphKegiatan[];
+  addendums?: Penawaran[];
   createdAt?: string;
   updatedAt?: string;
   createdBy?: string;
@@ -74,6 +80,9 @@ export interface CreateSphKegiatanInput {
 
 export interface CreatePenawaranInput {
   customerId: number;
+  parentPenawaranId?: number;
+  isAddendum?: boolean;
+  addendumNumberIndex?: number;
   number?: string;
   date?: string;
   notes?: string;
@@ -100,6 +109,7 @@ export interface PenawaranQueryParams {
   search?: string;
   customerId?: number;
   status?: PenawaranStatus;
+  isAddendum?: boolean;
   startDate?: string;
   endDate?: string;
   page?: number;

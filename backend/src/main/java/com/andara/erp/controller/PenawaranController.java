@@ -32,6 +32,7 @@ public class PenawaranController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Long customerId,
             @RequestParam(required = false) PenawaranStatus status,
+            @RequestParam(required = false) Boolean isAddendum,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(defaultValue = "0") int page,
@@ -41,7 +42,7 @@ public class PenawaranController {
     ) {
         Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<PenawaranDTO> result = penawaranService.getPenawaranList(search, customerId, status, startDate, endDate, pageable);
+        Page<PenawaranDTO> result = penawaranService.getPenawaranList(search, customerId, status, isAddendum, startDate, endDate, pageable);
         return ApiResponse.success(result);
     }
 
@@ -57,6 +58,12 @@ public class PenawaranController {
         return ApiResponse.success(list);
     }
 
+    @GetMapping("/{parentId}/addendums")
+    public ApiResponse<List<PenawaranDTO>> getAddendums(@PathVariable Long parentId) {
+        List<PenawaranDTO> list = penawaranService.getAddendumsByParentId(parentId);
+        return ApiResponse.success(list);
+    }
+
     @PostMapping
     public ResponseEntity<ApiResponse<PenawaranDTO>> createPenawaran(
             @Valid @RequestBody CreatePenawaranRequest request
@@ -65,6 +72,19 @@ public class PenawaranController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(created, "Penawaran berhasil dibuat"));
+    }
+
+    @PostMapping("/{parentId}/addendum")
+    public ResponseEntity<ApiResponse<PenawaranDTO>> createAddendum(
+            @PathVariable Long parentId,
+            @Valid @RequestBody CreatePenawaranRequest request
+    ) {
+        request.setParentPenawaranId(parentId);
+        request.setIsAddendum(true);
+        PenawaranDTO created = penawaranService.createPenawaran(request);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success(created, "SPH Addendum berhasil dibuat"));
     }
 
     @PutMapping("/{id}")

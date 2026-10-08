@@ -22,6 +22,20 @@ public class Penawaran {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_penawaran_id")
+    private Penawaran parentPenawaran;
+
+    @Column(name = "is_addendum", nullable = false)
+    private Boolean isAddendum = false;
+
+    @Column(name = "addendum_number_index")
+    private Integer addendumNumberIndex = 0;
+
+    @OneToMany(mappedBy = "parentPenawaran")
+    @OrderBy("addendumNumberIndex ASC, id ASC")
+    private List<Penawaran> addendums = new ArrayList<>();
+
     @Column(nullable = false)
     private LocalDate date;
 
@@ -256,5 +270,37 @@ public class Penawaran {
             }
         }
         recalculateTotalAmount();
+    }
+
+    public Penawaran getParentPenawaran() {
+        return parentPenawaran;
+    }
+
+    public void setParentPenawaran(Penawaran parentPenawaran) {
+        this.parentPenawaran = parentPenawaran;
+    }
+
+    public Boolean getIsAddendum() {
+        return isAddendum != null && isAddendum;
+    }
+
+    public void setIsAddendum(Boolean isAddendum) {
+        this.isAddendum = isAddendum != null ? isAddendum : false;
+    }
+
+    public Integer getAddendumNumberIndex() {
+        return addendumNumberIndex != null ? addendumNumberIndex : 0;
+    }
+
+    public void setAddendumNumberIndex(Integer addendumNumberIndex) {
+        this.addendumNumberIndex = addendumNumberIndex;
+    }
+
+    public List<Penawaran> getAddendums() {
+        return addendums;
+    }
+
+    public void setAddendums(List<Penawaran> addendums) {
+        this.addendums = addendums;
     }
 }

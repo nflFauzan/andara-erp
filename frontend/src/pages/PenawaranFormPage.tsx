@@ -11,7 +11,8 @@ import {
   Layers,
   CheckCircle2,
   FolderPlus,
-  FolderDown
+  FolderDown,
+  GitBranch,
 } from 'lucide-react';
 import { penawaranApi } from '../api/penawaranApi';
 import { customerApi } from '../api/customerApi';
@@ -20,6 +21,7 @@ import { kegiatanApi } from '../api/kegiatanApi';
 import { Customer, CreateCustomerInput, UpdateCustomerInput } from '../types/customer';
 import { Kegiatan } from '../types/kegiatan';
 import { ItemCatalog, CreateItemCatalogInput, UpdateItemCatalogInput } from '../types/itemCatalog';
+import { Penawaran } from '../types/penawaran';
 import { ItemCatalogModal } from '../components/items/ItemCatalogModal';
 import { CustomerModal } from '../components/customer/CustomerModal';
 import { ImportKegiatanModal } from '../components/penawaran/ImportKegiatanModal';
@@ -57,8 +59,11 @@ export const PenawaranFormPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const customerIdFromQuery = searchParams.get('customerId');
   const kegiatanIdFromQuery = searchParams.get('kegiatanId');
+  const parentIdFromQuery = searchParams.get('parentId');
   const isEdit = Boolean(id);
   const queryClient = useQueryClient();
+
+  const [parentPenawaran, setParentPenawaran] = useState<Penawaran | null>(null);
 
   // Fetch active customers via TanStack Query for seamless real-time synchronization
   const { data: customers = [], refetch: refetchCustomers } = useQuery<Customer[]>({
@@ -174,6 +179,45 @@ export const PenawaranFormPage: React.FC = () => {
         });
     }
   }, [kegiatanIdFromQuery, isEdit]);
+
+  // Pre-fill parent SPH if parentId is in query params (Addendum Mode)
+  useEffect(() => {
+    if (parentIdFromQuery && !isEdit) {
+      penawaranApi
+        .getPenawaranById(Number(parentIdFromQuery))
+        .then((parent) => {
+          setParentPenawaran(parent);
+          setSelectedCustomerId(parent.customerId);
+          setNotes(`Addendum / Pekerjaan Tambah atas Surat Penawaran Harga No. ${parent.number}`);
+          if (parent.terms) {
+            setTerms(parent.terms);
+          }
+          setKegiatanGroups([
+            {
+              tempId: `kg-addendum-1`,
+              name: `Pekerjaan Tambah (Addendum atas SPH ${parent.number})`,
+              sortOrder: 1,
+              items: [
+                {
+                  tempId: `item-${Date.now()}-1`,
+                  description: '',
+                  volume: 1,
+                  unit: 'ls',
+                  unitPrice: 0,
+                  sortOrder: 1,
+                },
+              ],
+            },
+          ]);
+          setFeedbackMsg(`Mode SPH Addendum aktif: Terhubung ke SPH Induk '${parent.number}'.`);
+          setTimeout(() => setFeedbackMsg(null), 5000);
+        })
+        .catch((err) => {
+          console.error('Failed to load parent penawaran for addendum', err);
+          setErrorMsg(err.response?.data?.message || 'Gagal memuat data SPH Induk untuk addendum.');
+        });
+    }
+  }, [parentIdFromQuery, isEdit]);
 
   // Fetch Master Catalog Items
   const { data: masterItems = [], refetch: refetchMasterItems } = useQuery({
@@ -569,6 +613,16 @@ export const PenawaranFormPage: React.FC = () => {
           items: flatItems,
         });
         navigate(`/penawaran/${id}`);
+      } else if (parentIdFromQuery) {
+        const created = await penawaranApi.createAddendum(Number(parentIdFromQuery), {
+          customerId: Number(selectedCustomerId),
+          date,
+          notes,
+          terms,
+          kegiatan: payloadKegiatan,
+          items: flatItems,
+        });
+        navigate(`/penawaran/${created.id}`);
       } else {
         const created = await penawaranApi.createPenawaran({
           customerId: Number(selectedCustomerId),
@@ -605,12 +659,29 @@ export const PenawaranFormPage: React.FC = () => {
       <PageHeader
         icon={Calculator}
         backUrl="/penawaran"
-        title={isEdit ? 'Ubah Surat Penawaran Harga (SPH)' : 'Buat Surat Penawaran Harga (SPH) Baru'}
-        subtitle="Kelompokkan item penawaran berdasarkan nama kegiatan/pekerjaan untuk diterbitkan ke pelanggan."
+        title={
+          isEdit
+            ? 'Ubah Surat Penawaran Harga (SPH)'
+            : parentPenawaran
+            ? `Buat SPH Addendum untuk ${parentPenawaran.number}`
+            : 'Buat Surat Penawaran Harga (SPH) Baru'
+        }
+        subtitle={
+          parentPenawaran
+            ? `Variation Order / Penambahan Pekerjaan untuk SPH Induk ${parentPenawaran.number}`
+            : 'Kelompokkan item penawaran berdasarkan nama kegiatan/pekerjaan untuk diterbitkan ke pelanggan.'
+        }
         badge={
-          <span className="text-[11px] bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold px-2.5 py-0.5 rounded-full border border-brand-500/20">
-            Multi-Kegiatan
-          </span>
+          parentPenawaran ? (
+            <span className="text-[11px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-2.5 py-0.5 rounded-full border border-amber-500/20 inline-flex items-center gap-1">
+              <GitBranch className="w-3 h-3" />
+              SPH Addendum
+            </span>
+          ) : (
+            <span className="text-[11px] bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold px-2.5 py-0.5 rounded-full border border-brand-500/20">
+              Multi-Kegiatan
+            </span>
+          )
         }
         actions={
           <div className="flex items-center gap-2.5">
@@ -628,11 +699,49 @@ export const PenawaranFormPage: React.FC = () => {
               className="inline-flex items-center justify-center gap-2 px-6 py-2 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/25 transition disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
-              {loading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan SPH' : 'Terbitkan SPH'}
+              {loading
+                ? 'Menyimpan...'
+                : isEdit
+                ? 'Simpan Perubahan SPH'
+                : parentPenawaran
+                ? 'Terbitkan SPH Addendum'
+                : 'Terbitkan SPH'}
             </button>
           </div>
         }
       />
+
+      {/* Addendum Context Banner */}
+      {parentPenawaran && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 text-amber-900 dark:text-amber-200 border border-amber-500/30 text-xs font-medium flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
+              <GitBranch className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-bold text-sm text-slate-900 dark:text-white">
+                Pembuatan SPH Addendum (Variation Order)
+              </p>
+              <p className="text-slate-600 dark:text-slate-300 mt-0.5">
+                Dokumen ini merupakan addendum resmi atas SPH Induk{' '}
+                <strong className="text-amber-700 dark:text-amber-300 font-mono">
+                  {parentPenawaran.number}
+                </strong>
+                . Nilai dasar kontrak induk:{' '}
+                <strong className="text-slate-900 dark:text-white font-mono">
+                  {formatRupiah(parentPenawaran.totalAmount)}
+                </strong>
+                .
+              </p>
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <span className="text-[11px] font-bold bg-amber-500/20 text-amber-800 dark:text-amber-300 px-3 py-1 rounded-full border border-amber-500/30">
+              Customer Terkunci
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Feedback Messages */}
       {feedbackMsg && (
@@ -662,17 +771,36 @@ export const PenawaranFormPage: React.FC = () => {
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
               Customer / Pelanggan <span className="text-rose-500">*</span>
             </label>
-            <CustomerSmartInput
-              selectedCustomerId={selectedCustomerId}
-              onSelectCustomer={(cust) => setSelectedCustomerId(cust ? cust.id : '')}
-              onCreateNewCustomer={(typedQuery) => {
-                setPrefillCustomerName(typedQuery);
-                setIsCustomerModalOpen(true);
-              }}
-              customers={customers}
-              placeholder="Ketik nama, kode, atau instansi customer..."
-            />
-            {selectedCustomerObj && (
+            {parentPenawaran ? (
+              <div className="p-3 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800 dark:text-slate-100">
+                    {selectedCustomerObj?.name || parentPenawaran.customerName}
+                  </span>
+                  <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded font-semibold">
+                    Terkunci ke SPH Induk
+                  </span>
+                </div>
+                {selectedCustomerObj?.address && (
+                  <p className="text-slate-500 text-[11px] mt-0.5">{selectedCustomerObj.address}</p>
+                )}
+                {selectedCustomerObj?.phone && (
+                  <p className="text-slate-500 text-[11px]">Telp: {selectedCustomerObj.phone}</p>
+                )}
+              </div>
+            ) : (
+              <CustomerSmartInput
+                selectedCustomerId={selectedCustomerId}
+                onSelectCustomer={(cust) => setSelectedCustomerId(cust ? cust.id : '')}
+                onCreateNewCustomer={(typedQuery) => {
+                  setPrefillCustomerName(typedQuery);
+                  setIsCustomerModalOpen(true);
+                }}
+                customers={customers}
+                placeholder="Ketik nama, kode, atau instansi customer..."
+              />
+            )}
+            {!parentPenawaran && selectedCustomerObj && (
               <div className="mt-2.5 p-3 bg-white/50 dark:bg-slate-900/50 rounded-xl border border-slate-200/80 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 space-y-0.5">
                 <p className="font-bold text-slate-800 dark:text-slate-100">{selectedCustomerObj.name}</p>
                 {selectedCustomerObj.address && <p>{selectedCustomerObj.address}</p>}

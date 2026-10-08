@@ -13,7 +13,8 @@ import {
   AlertCircle,
   Lock,
   History,
-  Receipt
+  Receipt,
+  GitBranch
 } from 'lucide-react';
 import { penawaranApi } from '../api/penawaranApi';
 import { customerApi } from '../api/customerApi';
@@ -138,7 +139,17 @@ export const PenawaranDetailPage: React.FC = () => {
         backUrl="/penawaran"
         title={penawaran.number}
         subtitle={`Dibuat pada ${new Date(penawaran.date).toLocaleDateString('id-ID', { dateStyle: 'long' })}`}
-        badge={<StatusBadge status={penawaran.status} />}
+        badge={
+          <div className="flex items-center gap-2">
+            <StatusBadge status={penawaran.status} />
+            {penawaran.isAddendum && (
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-flex items-center gap-1">
+                <GitBranch className="w-3 h-3" />
+                Addendum #{penawaran.addendumNumberIndex || 1}
+              </span>
+            )}
+          </div>
+        }
         actions={
           <div className="flex flex-wrap items-center gap-2 print:hidden">
             {/* Print Button */}
@@ -160,6 +171,18 @@ export const PenawaranDetailPage: React.FC = () => {
               <History className="w-4 h-4 text-slate-500" />
               Audit Trail
             </button>
+
+            {/* Buat SPH Addendum Button when Approved & not Addendum */}
+            {isApproved && !penawaran.isAddendum && (
+              <button
+                onClick={() => navigate(`/penawaran/create?parentId=${penawaran.id}`)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-amber-800 dark:text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 shadow-xs transition"
+                title="Buat SPH Addendum / Pekerjaan Tambah atas kontrak ini"
+              >
+                <GitBranch className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                Buat SPH Addendum
+              </button>
+            )}
 
             {/* Buat Faktur Penjualan Button when Approved */}
             {isApproved && (
@@ -305,6 +328,149 @@ export const PenawaranDetailPage: React.FC = () => {
         </BentoCard>
       )}
 
+      {/* SPH Addendum Context Banner (If current doc is Addendum) */}
+      {penawaran.isAddendum && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs print:hidden">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
+              <GitBranch className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                SPH Addendum ke-{penawaran.addendumNumberIndex || 1} (Variation Order)
+              </p>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                Surat penawaran ini merupakan pekerjaan tambah resmi yang terhubung dengan SPH Induk{' '}
+                <strong className="text-amber-700 dark:text-amber-300 font-mono">
+                  {penawaran.parentPenawaranNumber}
+                </strong>
+                .
+              </p>
+            </div>
+          </div>
+          {penawaran.parentPenawaranId && (
+            <button
+              onClick={() => navigate(`/penawaran/${penawaran.parentPenawaranId}`)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shrink-0 transition"
+            >
+              Lihat SPH Induk ({penawaran.parentPenawaranNumber}) &rarr;
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Addendum History & Contract Ceiling Card for Parent SPH */}
+      {!penawaran.isAddendum && (
+        <BentoCard className="p-6 space-y-4 print:hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <GitBranch className="w-4 h-4 text-amber-500" />
+                Riwayat SPH Addendum & Akumulasi Plafon Kontrak (V-12)
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Pekerjaan tambah / variation order resmi yang diterbitkan untuk menyempurnakan kontrak ini.
+              </p>
+            </div>
+            {isApproved && (
+              <button
+                onClick={() => navigate(`/penawaran/create?parentId=${penawaran.id}`)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-800 dark:text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 transition self-start sm:self-auto shrink-0"
+              >
+                <GitBranch className="w-3.5 h-3.5" />
+                + Tambah SPH Addendum
+              </button>
+            )}
+          </div>
+
+          {/* Metric Summary */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                Nilai Kontrak Utama (SPH Induk)
+              </span>
+              <span className="text-base font-extrabold font-mono text-slate-900 dark:text-white mt-1 block">
+                {formatCurrency(penawaran.totalAmount)}
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20">
+              <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider block">
+                Total Addendum Disetujui
+              </span>
+              <span className="text-base font-extrabold font-mono text-amber-700 dark:text-amber-300 mt-1 block">
+                {formatCurrency(
+                  Math.max(
+                    0,
+                    (penawaran.cumulativeTotalAmount || penawaran.totalAmount) - penawaran.totalAmount
+                  )
+                )}
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20">
+              <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block">
+                Plafon Total Akumulasi Kontrak
+              </span>
+              <span className="text-base font-extrabold font-mono text-emerald-700 dark:text-emerald-400 mt-1 block">
+                {formatCurrency(penawaran.cumulativeTotalAmount || penawaran.totalAmount)}
+              </span>
+            </div>
+          </div>
+
+          {/* Addendum List Table */}
+          {penawaran.addendums && penawaran.addendums.length > 0 ? (
+            <div className="border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border-b border-slate-200/80 dark:border-slate-800 font-bold uppercase text-[10px] tracking-wider">
+                  <tr>
+                    <th className="py-2.5 px-3">No. SPH Addendum</th>
+                    <th className="py-2.5 px-3">Index</th>
+                    <th className="py-2.5 px-3">Tanggal</th>
+                    <th className="py-2.5 px-3 text-right">Nilai Pekerjaan Tambah</th>
+                    <th className="py-2.5 px-3 text-center">Status</th>
+                    <th className="py-2.5 px-3 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                  {penawaran.addendums.map((add) => (
+                    <tr key={add.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                      <td className="py-2.5 px-3 font-mono font-bold text-slate-800 dark:text-slate-200">
+                        {add.number}
+                      </td>
+                      <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400">
+                        ADD-{String(add.addendumNumberIndex || 1).padStart(2, '0')}
+                      </td>
+                      <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400">
+                        {new Date(add.date).toLocaleDateString('id-ID')}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 dark:text-white">
+                        {formatCurrency(add.totalAmount)}
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        <StatusBadge status={add.status} />
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        <button
+                          onClick={() => navigate(`/penawaran/${add.id}`)}
+                          className="px-2.5 py-1 text-[11px] font-bold text-brand-600 hover:text-brand-700 bg-brand-500/10 hover:bg-brand-500/20 rounded-lg transition"
+                        >
+                          Lihat Detail &rarr;
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="py-4 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/20 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+              Belum ada SPH Addendum yang dibuat untuk penawaran ini.
+            </div>
+          )}
+        </BentoCard>
+      )}
+
       {/* Printable Document Sheet (Paper view with official letterhead) */}
       <div className="bg-white text-slate-900 rounded-3xl border border-slate-200/90 shadow-bento p-6 sm:p-10 space-y-8 print:shadow-none print:border-none print:p-0">
         {/* Letterhead Resmi CV. ANDARA */}
@@ -330,6 +496,11 @@ export const PenawaranDetailPage: React.FC = () => {
             <p className="text-slate-500">
               Status Resmi: <span className="font-bold uppercase text-brand-700">{penawaran.status}</span>
             </p>
+            {penawaran.isAddendum && (
+              <p className="text-amber-800 font-bold text-[11px]">
+                SPH Addendum #{penawaran.addendumNumberIndex || 1} (Ref SPH Induk: {penawaran.parentPenawaranNumber})
+              </p>
+            )}
             <p className="text-slate-400 text-[11px] pt-1">
               Dibuat oleh: {penawaran.createdBy || 'operator'}
             </p>

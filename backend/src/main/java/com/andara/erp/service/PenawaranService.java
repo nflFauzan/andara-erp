@@ -54,6 +54,7 @@ public class PenawaranService {
             String search,
             Long customerId,
             PenawaranStatus status,
+            Boolean isAddendum,
             LocalDate startDate,
             LocalDate endDate,
             Pageable pageable
@@ -69,6 +70,7 @@ public class PenawaranService {
                 searchPattern,
                 customerId,
                 status,
+                isAddendum,
                 effectiveStart,
                 effectiveEnd,
                 pageable
@@ -81,7 +83,34 @@ public class PenawaranService {
     public PenawaranDTO getPenawaranById(Long id) {
         Penawaran penawaran = penawaranRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PENAWARAN_NOT_FOUND, "Penawaran dengan ID " + id + " tidak ditemukan"));
-        return PenawaranDTO.fromEntity(penawaran, true);
+        PenawaranDTO dto = PenawaranDTO.fromEntity(penawaran, true);
+
+        // Fetch addendums if this is a parent quotation
+        List<Penawaran> addendums = penawaranRepository.findByParentPenawaranIdOrderByAddendumNumberIndexAsc(id);
+        if (!addendums.isEmpty()) {
+            dto.setAddendums(addendums.stream()
+                    .map(a -> PenawaranDTO.fromEntity(a, false))
+                    .collect(Collectors.toList()));
+
+            BigDecimal cumulative = penawaran.getTotalAmount() != null ? penawaran.getTotalAmount() : BigDecimal.ZERO;
+            for (Penawaran a : addendums) {
+                if (a.getStatus() == PenawaranStatus.APPROVED && a.getTotalAmount() != null) {
+                    cumulative = cumulative.add(a.getTotalAmount());
+                }
+            }
+            dto.setCumulativeTotalAmount(cumulative);
+        }
+
+        return dto;
+    }
+
+    @Transactional(readOnly = true)
+    public List<PenawaranDTO> getAddendumsByParentId(Long parentId) {
+        penawaranRepository.findById(parentId)
+                .orElseThrow(() -> new AppException(ErrorCode.PENAWARAN_NOT_FOUND, "SPH Induk tidak ditemukan"));
+        return penawaranRepository.findByParentPenawaranIdOrderByAddendumNumberIndexAsc(parentId).stream()
+                .map(a -> PenawaranDTO.fromEntity(a, false))
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -102,12 +131,41 @@ public class PenawaranService {
 
         LocalDate date = request.getDate() != null ? request.getDate() : LocalDate.now();
 
+        Penawaran parentPenawaran = null;
+        boolean isAddendum = Boolean.TRUE.equals(request.getIsAddendum()) || request.getParentPenawaranId() != null;
+        int addendumIndex = 0;
+
+        if (isAddendum && request.getParentPenawaranId() != null) {
+            parentPenawaran = penawaranRepository.findById(request.getParentPenawaranId())
+                    .orElseThrow(() -> new AppException(ErrorCode.PENAWARAN_NOT_FOUND, "SPH Induk tidak ditemukan"));
+
+            if (parentPenawaran.getStatus() != PenawaranStatus.APPROVED) {
+                throw new AppException(ErrorCode.INVALID_REQUEST,
+                        "SPH Addendum hanya dapat dibuat dari SPH Induk yang telah berstatus DISETUJUI (APPROVED)");
+            }
+
+            if (!parentPenawaran.getCustomer().getId().equals(customer.getId())) {
+                throw new AppException(ErrorCode.INVALID_REQUEST, "Customer SPH Addendum harus sama dengan customer SPH Induk");
+            }
+
+            long currentCount = penawaranRepository.countByParentPenawaranId(parentPenawaran.getId());
+            addendumIndex = request.getAddendumNumberIndex() != null && request.getAddendumNumberIndex() > 0
+                    ? request.getAddendumNumberIndex()
+                    : (int) currentCount + 1;
+        }
+
         // Concurrency-safe auto-number generation or manual validation
         String number;
         if (request.getNumber() != null && !request.getNumber().trim().isEmpty()) {
             number = request.getNumber().trim();
             if (penawaranRepository.existsByNumber(number)) {
                 throw new AppException(ErrorCode.CONFLICT, "Nomor penawaran '" + number + "' sudah terdaftar");
+            }
+        } else if (parentPenawaran != null) {
+            // Auto-format addendum number: [parentNumber]/ADD-01
+            number = parentPenawaran.getNumber() + "/ADD-" + String.format("%02d", addendumIndex);
+            if (penawaranRepository.existsByNumber(number)) {
+                number = parentPenawaran.getNumber() + "/ADD-" + String.format("%02d", addendumIndex) + "-" + System.currentTimeMillis() % 1000;
             }
         } else {
             number = numberingService.generateNextNumber(DocumentType.PENAWARAN, date);
@@ -122,10 +180,27 @@ public class PenawaranService {
         penawaran.setTerms(request.getTerms());
         penawaran.setCreatedBy(getCurrentUsername());
 
+        if (parentPenawaran != null) {
+            penawaran.setParentPenawaran(parentPenawaran);
+            penawaran.setIsAddendum(true);
+            penawaran.setAddendumNumberIndex(addendumIndex);
+        }
+
         // Process details and kegiatan
         buildKegiatanAndDetails(penawaran, request.getKegiatan(), request.getItems());
 
         Penawaran saved = penawaranRepository.save(penawaran);
+
+        if (parentPenawaran != null) {
+            auditLogService.log(
+                    "CREATE_ADDENDUM",
+                    "PENAWARAN",
+                    saved.getId(),
+                    null,
+                    "SPH Addendum " + saved.getNumber() + " dibuat atas SPH Induk " + parentPenawaran.getNumber()
+            );
+        }
+
         return PenawaranDTO.fromEntity(saved, true);
     }
 
@@ -216,6 +291,13 @@ public class PenawaranService {
             throw new AppException(
                     ErrorCode.INVALID_REQUEST,
                     "Hanya penawaran berstatus DRAFT yang dapat dihapus. Untuk membatalkan penawaran aktif, ubah status menjadi CANCELLED."
+            );
+        }
+
+        if (penawaranRepository.countByParentPenawaranId(id) > 0) {
+            throw new AppException(
+                    ErrorCode.INVALID_REQUEST,
+                    "SPH Induk tidak dapat dihapus karena memiliki riwayat SPH Addendum"
             );
         }
 
