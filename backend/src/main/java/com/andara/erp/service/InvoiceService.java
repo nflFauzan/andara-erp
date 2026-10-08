@@ -151,7 +151,12 @@ public class InvoiceService {
             }
             if (detail.getKegiatan() != null) {
                 dto.setKegiatanId(detail.getKegiatan().getId());
+                dto.setKegiatanCode(detail.getKegiatan().getCode());
                 dto.setKegiatanName(detail.getKegiatan().getName());
+            } else if (detail.getSphKegiatan() != null && detail.getSphKegiatan().getKegiatan() != null) {
+                dto.setKegiatanId(detail.getSphKegiatan().getKegiatan().getId());
+                dto.setKegiatanCode(detail.getSphKegiatan().getKegiatan().getCode());
+                dto.setKegiatanName(detail.getSphKegiatan().getKegiatan().getName());
             }
             if (detail.getKegiatanItem() != null) {
                 dto.setKegiatanItemId(detail.getKegiatanItem().getId());
@@ -683,6 +688,8 @@ public class InvoiceService {
                 }
                 if (pDetail.getKegiatan() != null) {
                     detail.setSourceKegiatan(pDetail.getKegiatan());
+                } else if (pDetail.getSphKegiatan() != null && pDetail.getSphKegiatan().getKegiatan() != null) {
+                    detail.setSourceKegiatan(pDetail.getSphKegiatan().getKegiatan());
                 }
                 if (pDetail.getKegiatanItem() != null) {
                     detail.setSourceKegiatanItem(pDetail.getKegiatanItem());

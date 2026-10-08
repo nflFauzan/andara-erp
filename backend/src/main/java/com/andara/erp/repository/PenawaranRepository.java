@@ -29,6 +29,12 @@ public interface PenawaranRepository extends JpaRepository<Penawaran, Long> {
 
     boolean existsByNumber(String number);
 
+    @Query("SELECT DISTINCT p FROM Penawaran p " +
+            "WHERE EXISTS (SELECT 1 FROM SphKegiatan sk WHERE sk.penawaran = p AND sk.kegiatan.id = :kegiatanId) " +
+            "   OR EXISTS (SELECT 1 FROM PenawaranDetail d WHERE d.penawaran = p AND (d.kegiatan.id = :kegiatanId OR (d.sphKegiatan IS NOT NULL AND d.sphKegiatan.kegiatan.id = :kegiatanId))) " +
+            "ORDER BY p.date DESC")
+    List<Penawaran> findPenawaranByKegiatanId(@Param("kegiatanId") Long kegiatanId);
+
     List<Penawaran> findByCustomerIdOrderByDateDesc(Long customerId);
 
     List<Penawaran> findByParentPenawaranIdOrderByAddendumNumberIndexAsc(Long parentPenawaranId);

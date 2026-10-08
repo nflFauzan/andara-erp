@@ -183,6 +183,7 @@ export interface PenawaranBillableItem {
   sphKegiatanId?: number;
   sphKegiatanName?: string;
   kegiatanId?: number;
+  kegiatanCode?: string;
   kegiatanName?: string;
   kegiatanItemId?: number;
   description: string;

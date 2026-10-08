@@ -10,6 +10,7 @@ public class PenawaranBillableItemDTO {
     private Long sphKegiatanId;
     private String sphKegiatanName;
     private Long kegiatanId;
+    private String kegiatanCode;
     private String kegiatanName;
     private Long kegiatanItemId;
     private String description;
@@ -55,6 +56,14 @@ public class PenawaranBillableItemDTO {
 
     public void setKegiatanId(Long kegiatanId) {
         this.kegiatanId = kegiatanId;
+    }
+
+    public String getKegiatanCode() {
+        return kegiatanCode;
+    }
+
+    public void setKegiatanCode(String kegiatanCode) {
+        this.kegiatanCode = kegiatanCode;
     }
 
     public String getKegiatanName() {

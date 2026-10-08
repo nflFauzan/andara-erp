@@ -26,7 +26,10 @@ public interface InvoiceDetailRepository extends JpaRepository<InvoiceDetail, Lo
     );
 
     @Query("SELECT DISTINCT d.invoice FROM InvoiceDetail d " +
-            "WHERE (d.sourceKegiatan.id = :kegiatanId OR d.sourcePenawaranDetail.kegiatan.id = :kegiatanId) " +
+            "WHERE (d.sourceKegiatan.id = :kegiatanId " +
+            "   OR (d.sourcePenawaranDetail IS NOT NULL AND d.sourcePenawaranDetail.kegiatan.id = :kegiatanId) " +
+            "   OR (d.sourcePenawaranDetail IS NOT NULL AND d.sourcePenawaranDetail.sphKegiatan IS NOT NULL AND d.sourcePenawaranDetail.sphKegiatan.kegiatan.id = :kegiatanId) " +
+            "   OR (d.sphKegiatan IS NOT NULL AND d.sphKegiatan.kegiatan.id = :kegiatanId)) " +
             "ORDER BY d.invoice.date DESC")
     List<com.andara.erp.entity.Invoice> findInvoicesByKegiatanId(@Param("kegiatanId") Long kegiatanId);
 }

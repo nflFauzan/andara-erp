@@ -52,6 +52,9 @@ public class InvoiceDetailDTO {
         if (detail.getSourceKegiatan() != null) {
             dto.setSourceKegiatanId(detail.getSourceKegiatan().getId());
             dto.setSourceKegiatanName(detail.getSourceKegiatan().getName());
+        } else if (detail.getSphKegiatan() != null && detail.getSphKegiatan().getKegiatan() != null) {
+            dto.setSourceKegiatanId(detail.getSphKegiatan().getKegiatan().getId());
+            dto.setSourceKegiatanName(detail.getSphKegiatan().getKegiatan().getName());
         }
         if (detail.getSourceKegiatanItem() != null) {
             dto.setSourceKegiatanItemId(detail.getSourceKegiatanItem().getId());
