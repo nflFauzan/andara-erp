@@ -18,6 +18,10 @@ public class SphKegiatan {
     @JoinColumn(name = "penawaran_id", nullable = false)
     private Penawaran penawaran;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "kegiatan_id")
+    private Kegiatan kegiatan;
+
     @Column(nullable = false, length = 500)
     private String name;
 
@@ -85,6 +89,9 @@ public class SphKegiatan {
         if (this.penawaran != null) {
             item.setPenawaran(this.penawaran);
         }
+        if (this.kegiatan != null && item.getKegiatan() == null) {
+            item.setKegiatan(this.kegiatan);
+        }
         recalculateSubtotal();
     }
 
@@ -108,6 +115,21 @@ public class SphKegiatan {
 
     public void setPenawaran(Penawaran penawaran) {
         this.penawaran = penawaran;
+    }
+
+    public Kegiatan getKegiatan() {
+        return kegiatan;
+    }
+
+    public void setKegiatan(Kegiatan kegiatan) {
+        this.kegiatan = kegiatan;
+        if (kegiatan != null && items != null) {
+            for (PenawaranDetail item : items) {
+                if (item.getKegiatan() == null) {
+                    item.setKegiatan(kegiatan);
+                }
+            }
+        }
     }
 
     public String getName() {

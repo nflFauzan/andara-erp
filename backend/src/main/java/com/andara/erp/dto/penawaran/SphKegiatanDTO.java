@@ -13,6 +13,8 @@ public class SphKegiatanDTO {
     private String name;
     private Integer sortOrder;
     private BigDecimal subtotal;
+    private Long kegiatanId;
+    private String kegiatanCode;
     private List<PenawaranDetailDTO> items = new ArrayList<>();
 
     public SphKegiatanDTO() {
@@ -29,6 +31,11 @@ public class SphKegiatanDTO {
         dto.setName(entity.getName());
         dto.setSortOrder(entity.getSortOrder());
         dto.setSubtotal(entity.getSubtotal());
+
+        if (entity.getKegiatan() != null) {
+            dto.setKegiatanId(entity.getKegiatan().getId());
+            dto.setKegiatanCode(entity.getKegiatan().getCode());
+        }
 
         if (entity.getItems() != null) {
             dto.setItems(entity.getItems().stream()
@@ -85,5 +92,21 @@ public class SphKegiatanDTO {
 
     public void setItems(List<PenawaranDetailDTO> items) {
         this.items = items;
+    }
+
+    public Long getKegiatanId() {
+        return kegiatanId;
+    }
+
+    public void setKegiatanId(Long kegiatanId) {
+        this.kegiatanId = kegiatanId;
+    }
+
+    public String getKegiatanCode() {
+        return kegiatanCode;
+    }
+
+    public void setKegiatanCode(String kegiatanCode) {
+        this.kegiatanCode = kegiatanCode;
     }
 }

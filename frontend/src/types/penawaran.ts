@@ -24,6 +24,8 @@ export interface PenawaranDetail {
 export interface SphKegiatan {
   id: number;
   penawaranId: number;
+  kegiatanId?: number;
+  kegiatanCode?: string;
   name: string;
   sortOrder: number;
   subtotal: number;
@@ -48,6 +50,7 @@ export interface Penawaran {
   totalAmount: number;
   cumulativeTotalAmount?: number;
   itemCount: number;
+  kegiatanCount?: number;
   details: PenawaranDetail[];
   kegiatanList?: SphKegiatan[];
   addendums?: Penawaran[];

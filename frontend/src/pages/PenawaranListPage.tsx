@@ -329,8 +329,13 @@ export const PenawaranListPage: React.FC = () => {
                         <div className="font-black text-slate-900 dark:text-slate-100 text-xs">{p.customerName}</div>
                         <div className="text-[10.5px] text-slate-400 font-mono font-bold mt-0.5">{p.customerCode}</div>
                       </td>
-                      <td className="py-3.5 px-4 text-xs font-bold text-slate-700 dark:text-slate-300">
-                        {p.details?.length || 0} Item Kegiatan
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
+                          {p.kegiatanCount ?? (p.itemCount > 0 ? 1 : 0)} Kegiatan
+                        </div>
+                        <div className="text-[10.5px] text-slate-400 font-medium mt-0.5">
+                          {p.itemCount ?? 0} Item Pekerjaan
+                        </div>
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         <div className="font-mono font-black text-slate-900 dark:text-slate-100">

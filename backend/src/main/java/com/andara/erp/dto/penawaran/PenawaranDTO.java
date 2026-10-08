@@ -28,6 +28,7 @@ public class PenawaranDTO {
     private BigDecimal totalAmount;
     private BigDecimal cumulativeTotalAmount;
     private Integer itemCount;
+    private Integer kegiatanCount;
     private List<PenawaranDetailDTO> details = new ArrayList<>();
     private List<SphKegiatanDTO> kegiatanList = new ArrayList<>();
     private List<PenawaranDTO> addendums = new ArrayList<>();
@@ -85,18 +86,24 @@ public class PenawaranDTO {
         dto.setUpdatedBy(entity.getUpdatedBy());
 
         if (entity.getKegiatanList() != null && !entity.getKegiatanList().isEmpty()) {
+            dto.setKegiatanCount(entity.getKegiatanList().size());
             int count = entity.getKegiatanList().stream()
                     .mapToInt(k -> k.getItems() != null ? k.getItems().size() : 0)
                     .sum();
+            if (count == 0 && entity.getDetails() != null) {
+                count = entity.getDetails().size();
+            }
             dto.setItemCount(count);
             if (includeDetails) {
                 dto.setKegiatanList(entity.getKegiatanList().stream()
                         .map(SphKegiatanDTO::fromEntity)
                         .collect(Collectors.toList()));
             }
-        } else if (entity.getDetails() != null) {
+        } else if (entity.getDetails() != null && !entity.getDetails().isEmpty()) {
+            dto.setKegiatanCount(1);
             dto.setItemCount(entity.getDetails().size());
         } else {
+            dto.setKegiatanCount(0);
             dto.setItemCount(0);
         }
 
@@ -205,6 +212,14 @@ public class PenawaranDTO {
 
     public void setItemCount(Integer itemCount) {
         this.itemCount = itemCount;
+    }
+
+    public Integer getKegiatanCount() {
+        return kegiatanCount;
+    }
+
+    public void setKegiatanCount(Integer kegiatanCount) {
+        this.kegiatanCount = kegiatanCount;
     }
 
     public List<PenawaranDetailDTO> getDetails() {

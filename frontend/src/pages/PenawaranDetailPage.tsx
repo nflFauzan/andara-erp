@@ -518,7 +518,13 @@ export const PenawaranDetailPage: React.FC = () => {
             <p className="font-bold uppercase tracking-wider text-slate-400 text-[10px]">Status & Referensi:</p>
             <p className="text-sm font-bold text-slate-900 font-mono">Kode Customer: {penawaran.customerCode}</p>
             <p className="text-slate-500">
-              Total Rincian: <span className="font-bold text-slate-700">{penawaran.details?.length || 0} Item</span>
+              Total Rincian:{' '}
+              <span className="font-bold text-slate-700">
+                {penawaran.kegiatanCount && penawaran.kegiatanCount > 1
+                  ? `${penawaran.kegiatanCount} Kegiatan • `
+                  : ''}
+                {penawaran.itemCount || penawaran.details?.length || 0} Item
+              </span>
             </p>
             <p className="text-slate-500">
               Status Resmi: <span className="font-bold uppercase text-brand-700">{penawaran.status}</span>

@@ -247,6 +247,8 @@ export const PenawaranFormPage: React.FC = () => {
             setKegiatanGroups(
               data.kegiatanList.map((k, kIdx) => ({
                 tempId: `kg-${k.id || kIdx + 1}`,
+                kegiatanId: k.kegiatanId,
+                kegiatanCode: k.kegiatanCode,
                 name: k.name,
                 sortOrder: k.sortOrder || kIdx + 1,
                 items: (k.items || []).map((it, itIdx) => ({

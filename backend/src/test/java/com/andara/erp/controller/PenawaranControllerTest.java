@@ -69,7 +69,9 @@ class PenawaranControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content.length()", greaterThanOrEqualTo(1)));
+                .andExpect(jsonPath("$.data.content.length()", greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.content[0].kegiatanCount", notNullValue()))
+                .andExpect(jsonPath("$.data.content[0].itemCount", notNullValue()));
     }
 
     @Test

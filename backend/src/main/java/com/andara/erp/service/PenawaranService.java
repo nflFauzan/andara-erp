@@ -341,6 +341,7 @@ public class PenawaranService {
             int kOrder = 1;
             for (SphKegiatan srcK : source.getKegiatanList()) {
                 SphKegiatan newK = new SphKegiatan(srcK.getName(), srcK.getSortOrder() != null ? srcK.getSortOrder() : kOrder++);
+                newK.setKegiatan(srcK.getKegiatan());
                 int itemOrder = 1;
                 if (srcK.getItems() != null && !srcK.getItems().isEmpty()) {
                     for (PenawaranDetail srcItem : srcK.getItems()) {
@@ -405,6 +406,9 @@ public class PenawaranService {
             int kOrder = 1;
             for (CreateSphKegiatanRequest kReq : kegiatanRequests) {
                 SphKegiatan k = new SphKegiatan(kReq.getName().trim(), kReq.getSortOrder() != null && kReq.getSortOrder() > 0 ? kReq.getSortOrder() : kOrder++);
+                if (kReq.getKegiatanId() != null) {
+                    kegiatanRepository.findById(kReq.getKegiatanId()).ifPresent(k::setKegiatan);
+                }
                 int itemOrder = 1;
                 if (kReq.getItems() != null && !kReq.getItems().isEmpty()) {
                     for (CreatePenawaranDetailRequest itemReq : kReq.getItems()) {
@@ -421,6 +425,9 @@ public class PenawaranService {
         } else {
             // Backward-compatible fallback for flat items: wrap in single default group
             SphKegiatan defaultK = new SphKegiatan("Pekerjaan Utama", 1);
+            if (!itemRequests.isEmpty() && itemRequests.get(0).getKegiatanId() != null) {
+                kegiatanRepository.findById(itemRequests.get(0).getKegiatanId()).ifPresent(defaultK::setKegiatan);
+            }
             int itemOrder = 1;
             for (CreatePenawaranDetailRequest itemReq : itemRequests) {
                 PenawaranDetail detail = createDetailEntity(itemReq, itemOrder++);
