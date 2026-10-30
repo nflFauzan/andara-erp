@@ -22,7 +22,7 @@ import {
 import { customerApi, CustomerQueryParams } from '../api/customerApi';
 import { Customer, CreateCustomerInput, UpdateCustomerInput } from '../types/customer';
 import { CustomerModal } from '../components/customer/CustomerModal';
-import { formatRupiah } from '../lib/utils';
+import { formatRupiah, cn } from '../lib/utils';
 import { BentoCard } from '@/components/common/BentoCard';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatusBadge } from '@/components/common/StatusBadge';
@@ -254,9 +254,139 @@ export const CustomerListPage: React.FC = () => {
         </div>
       </BentoCard>
 
-      {/* Customer Data Table */}
+      {/* Customer Data Table (Desktop) & Cards (Mobile) */}
       <BentoCard className="overflow-hidden p-0">
-        <div className="overflow-x-auto">
+        {/* Mobile Card List (< md) */}
+        <div className="block md:hidden p-3 space-y-3">
+          {isLoading ? (
+            <div className="py-10 text-center text-slate-400">
+              <div className="w-6 h-6 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-xs font-semibold">Memuat data customer...</p>
+            </div>
+          ) : isError ? (
+            <div className="py-8 text-center text-rose-500 text-sm font-semibold">
+              Terjadi kesalahan saat memuat data customer. Silakan refresh halaman.
+            </div>
+          ) : customers.length === 0 ? (
+            <div className="py-10 text-center text-slate-400">
+              <Users className="w-10 h-10 text-slate-300 dark:text-slate-600 stroke-[1.5] mx-auto mb-2" />
+              <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">Tidak ada customer ditemukan</p>
+              <p className="text-xs text-slate-400 mt-1">
+                {searchTerm ? 'Coba ubah kata kunci pencarian.' : 'Klik "Tambah Customer" untuk memulai.'}
+              </p>
+            </div>
+          ) : (
+            customers.map((cust) => (
+              <div
+                key={cust.id}
+                className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-xs space-y-3"
+              >
+                {/* Top: Code & Status */}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-xs font-black px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg border border-blue-500/20">
+                    {cust.code}
+                  </span>
+                  <StatusBadge status={cust.active ? 'AKTIF' : 'NONAKTIF'} size="sm" />
+                </div>
+
+                {/* Customer & Company Name */}
+                <div>
+                  <Link
+                    to={`/customers/${cust.id}`}
+                    className="text-sm font-black text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition"
+                  >
+                    {cust.name}
+                  </Link>
+                  {cust.companyName && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5 flex items-center gap-1.5">
+                      <Building className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>{cust.companyName}</span>
+                    </p>
+                  )}
+                </div>
+
+                {/* PIC & Phone Link */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600 dark:text-slate-300 pt-1 border-t border-slate-100 dark:border-slate-700/50">
+                  {cust.picName && (
+                    <div className="flex items-center gap-1.5 font-bold">
+                      <UserIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>{cust.picName}</span>
+                    </div>
+                  )}
+                  {cust.phone && (
+                    <a
+                      href={`tel:${cust.phone}`}
+                      className="flex items-center gap-1.5 font-mono text-blue-600 dark:text-blue-400 font-bold hover:underline"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      <span>{cust.phone}</span>
+                    </a>
+                  )}
+                  {cust.email && (
+                    <a
+                      href={`mailto:${cust.email}`}
+                      className="flex items-center gap-1.5 text-slate-500 hover:underline truncate"
+                    >
+                      <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate">{cust.email}</span>
+                    </a>
+                  )}
+                </div>
+
+                {/* Saldo Deposit & Action Buttons */}
+                <div className="flex items-center justify-between gap-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/50">
+                  <div className="text-left">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block leading-tight">
+                      Deposit
+                    </span>
+                    <span className={cn(
+                      "font-mono font-black text-xs",
+                      cust.depositBalance > 0 ? "text-purple-600 dark:text-purple-400 font-bold" : "text-slate-500"
+                    )}>
+                      {formatRupiah(cust.depositBalance)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <Link
+                      to={`/customers/${cust.id}`}
+                      className="px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition shadow-xs flex items-center gap-1 min-h-[36px]"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Detail</span>
+                    </Link>
+
+                    <button
+                      onClick={() => handleOpenEditModal(cust)}
+                      className="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition min-w-[36px] min-h-[36px] flex items-center justify-center cursor-pointer"
+                      title="Edit Data"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        toggleStatusMutation.mutate({ id: cust.id, active: !cust.active })
+                      }
+                      className={cn(
+                        "p-2 rounded-xl transition min-w-[36px] min-h-[36px] flex items-center justify-center cursor-pointer",
+                        cust.active
+                          ? "bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100"
+                          : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100"
+                      )}
+                      title={cust.active ? "Nonaktifkan Customer" : "Aktifkan Customer"}
+                    >
+                      {cust.active ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table View (>= md) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse text-sm text-slate-600 dark:text-slate-300">
             <thead>
               <tr className="bg-neu-canvas border-b border-neu-border/60 text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">

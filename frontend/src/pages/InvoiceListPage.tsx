@@ -24,6 +24,7 @@ import { BentoCard } from '@/components/common/BentoCard';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { useAuth } from '../context/AuthContext';
+import { formatRupiah, cn } from '@/lib/utils';
 
 export const InvoiceListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -316,8 +317,103 @@ export const InvoiceListPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-sm">
+          <>
+            {/* Mobile Card List (< md) */}
+            <div className="block md:hidden p-3 space-y-3">
+              {invoiceList.map((inv) => (
+                <div
+                  key={inv.id}
+                  className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-xs space-y-3"
+                >
+                  {/* Top: Invoice No & Payment Status Badge */}
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/faktur/${inv.id}`)}
+                      className="font-mono font-black text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer text-left"
+                    >
+                      {inv.number}
+                    </button>
+                    <StatusBadge status={inv.paymentStatus} size="sm" />
+                  </div>
+
+                  {/* Customer & Due Date */}
+                  <div>
+                    <p className="text-sm font-black text-slate-900 dark:text-white">
+                      {inv.customerName || `Customer #${inv.customerId}`}
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      <span>{new Date(inv.date).toLocaleDateString('id-ID')}</span>
+                      {inv.dueDate && (
+                        <>
+                          <span>&bull;</span>
+                          <span className={cn(
+                            "font-semibold",
+                            new Date(inv.dueDate) < new Date() && inv.paymentStatus !== 'PAID'
+                              ? "text-rose-600 dark:text-rose-400"
+                              : "text-slate-500"
+                          )}>
+                            Tempo: {new Date(inv.dueDate).toLocaleDateString('id-ID')}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* SPH & Document Status Info */}
+                  <div className="flex items-center justify-between gap-2 text-xs pt-1 border-t border-slate-100 dark:border-slate-700/50">
+                    <span className="text-slate-500 dark:text-slate-400 truncate">
+                      {inv.penawaranNumber ? `SPH: ${inv.penawaranNumber}` : 'Faktur Mandiri'}
+                    </span>
+                    <StatusBadge status={inv.status} size="sm" />
+                  </div>
+
+                  {/* Financial Breakdown & Actions */}
+                  <div className="flex items-center justify-between gap-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/50">
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                        Nilai Tagihan
+                      </div>
+                      <div className="font-mono font-bold text-xs text-slate-700 dark:text-slate-300">
+                        {formatRupiah(inv.totalAmount)}
+                      </div>
+                      {inv.remainingAmount > 0 && (
+                        <div className="text-[10px] font-mono font-black text-rose-600 dark:text-rose-400">
+                          Sisa: {formatRupiah(inv.remainingAmount)}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/faktur/${inv.id}`)}
+                        className="px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition shadow-xs flex items-center gap-1 min-h-[36px] cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Rincian</span>
+                      </button>
+
+                      {isOperator && inv.paymentStatus !== 'PAID' && inv.status === 'ISSUED' && (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/pembayaran/create?invoiceId=${inv.id}`)}
+                          className="px-2.5 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition shadow-xs flex items-center gap-1 min-h-[36px] cursor-pointer"
+                          title="Catat Pembayaran"
+                        >
+                          <CreditCard className="w-3.5 h-3.5" />
+                          <span>Bayar</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View (>= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="bg-neu-canvas border-b border-neu-border/60 text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   <th className="py-3.5 px-4">Nomor Faktur</th>
@@ -456,7 +552,8 @@ export const InvoiceListPage: React.FC = () => {
               </tbody>
             </table>
           </div>
-        )}
+        </>
+      )}
 
         {/* Pagination */}
         {!loading && totalPages > 1 && (

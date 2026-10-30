@@ -64,6 +64,8 @@ export const KegiatanModal: React.FC<KegiatanModalProps> = ({
   });
 
   useEffect(() => {
+    if (!isOpen) return;
+
     if (kegiatan) {
       reset({
         customerId: kegiatan.customerId,
@@ -85,7 +87,7 @@ export const KegiatanModal: React.FC<KegiatanModalProps> = ({
         status: 'ACTIVE',
       });
     }
-  }, [kegiatan, defaultCustomerId, activeCustomers, reset, isOpen]);
+  }, [isOpen, kegiatan, defaultCustomerId]);
 
   if (!isOpen) return null;
 

@@ -23,7 +23,7 @@ import { kegiatanApi, KegiatanQueryParams } from '../api/kegiatanApi';
 import { customerApi } from '../api/customerApi';
 import { Kegiatan, CreateKegiatanInput, UpdateKegiatanInput, KegiatanStatus } from '../types/kegiatan';
 import { KegiatanModal } from '../components/kegiatan/KegiatanModal';
-import { formatRupiah } from '../lib/utils';
+import { formatRupiah, cn } from '../lib/utils';
 import { BentoCard } from '@/components/common/BentoCard';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatusBadge } from '@/components/common/StatusBadge';
@@ -279,9 +279,102 @@ export const KegiatanListPage: React.FC = () => {
         </div>
       </BentoCard>
 
-      {/* Kegiatan Data Table */}
+      {/* Kegiatan Data Table (Desktop) & Cards (Mobile) */}
       <BentoCard className="overflow-hidden p-0">
-        <div className="overflow-x-auto">
+        {/* Mobile Card List (< md) */}
+        <div className="block md:hidden p-3 space-y-3">
+          {isLoading ? (
+            <div className="py-10 text-center text-slate-400">
+              <div className="w-6 h-6 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-xs font-semibold">Memuat data kegiatan...</p>
+            </div>
+          ) : isError ? (
+            <div className="py-8 text-center text-rose-500 text-sm font-semibold">
+              Terjadi kesalahan saat memuat data kegiatan. Silakan refresh halaman.
+            </div>
+          ) : kegiatanList.length === 0 ? (
+            <div className="py-10 text-center text-slate-400">
+              <HardHat className="w-10 h-10 text-slate-300 dark:text-slate-600 stroke-[1.5] mx-auto mb-2" />
+              <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">Tidak ada kegiatan ditemukan</p>
+              <p className="text-xs text-slate-400 mt-1">Klik "Tambah Kegiatan" untuk mencatat proyek baru.</p>
+            </div>
+          ) : (
+            kegiatanList.map((k) => (
+              <div
+                key={k.id}
+                className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-xs space-y-3"
+              >
+                {/* Top: Code, Date & Status */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-black px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg border border-blue-500/20">
+                      {k.code}
+                    </span>
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      {new Date(k.createdAt).toLocaleDateString('id-ID')}
+                    </span>
+                  </div>
+                  <StatusBadge status={k.status} size="sm" />
+                </div>
+
+                {/* Project Name & Location */}
+                <div>
+                  <Link
+                    to={`/kegiatan/${k.id}`}
+                    className="text-sm font-black text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition"
+                  >
+                    {k.name}
+                  </Link>
+                  {k.location && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                      <span>{k.location}</span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Customer Badge */}
+                <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 pt-1 border-t border-slate-100 dark:border-slate-700/50">
+                  <Building className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="font-bold truncate">{k.customerName || `Customer #${k.customerId}`}</span>
+                </div>
+
+                {/* Financial KPI & Actions */}
+                <div className="flex items-center justify-between gap-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/50">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block leading-tight">
+                      Total Nilai ({k.itemCount || 0} Item)
+                    </span>
+                    <span className="font-mono font-black text-xs text-emerald-600 dark:text-emerald-400">
+                      {formatRupiah(k.totalAmount)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <Link
+                      to={`/kegiatan/${k.id}`}
+                      className="px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition shadow-xs flex items-center gap-1 min-h-[36px]"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Rincian</span>
+                    </Link>
+
+                    <button
+                      onClick={() => handleOpenEditModal(k)}
+                      className="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition min-w-[36px] min-h-[36px] flex items-center justify-center cursor-pointer"
+                      title="Edit Kegiatan"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table View (>= md) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse text-sm text-slate-600 dark:text-slate-300">
             <thead>
               <tr className="bg-slate-50/90 dark:bg-slate-900/90 border-b-[1.5px] border-blue-100 dark:border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">

@@ -59,6 +59,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
   });
 
   useEffect(() => {
+    if (!isOpen) return;
+
     if (customer) {
       reset({
         code: customer.code,
@@ -84,7 +86,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
         active: true,
       });
     }
-  }, [customer, reset, isOpen, initialName]);
+  }, [isOpen, customer, initialName]);
 
   if (!isOpen) return null;
 

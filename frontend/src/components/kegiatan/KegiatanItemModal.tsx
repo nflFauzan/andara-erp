@@ -60,6 +60,8 @@ export const KegiatanItemModal: React.FC<KegiatanItemModalProps> = ({
   const calculatedSubtotal = Math.max(0, watchVolume * watchUnitPrice);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     if (item) {
       reset({
         description: item.description,
@@ -79,7 +81,7 @@ export const KegiatanItemModal: React.FC<KegiatanItemModalProps> = ({
         notes: '',
       });
     }
-  }, [item, reset, isOpen]);
+  }, [isOpen, item]);
 
   if (!isOpen) return null;
 

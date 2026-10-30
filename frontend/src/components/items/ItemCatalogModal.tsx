@@ -71,6 +71,8 @@ export const ItemCatalogModal: React.FC<ItemCatalogModalProps> = ({
   });
 
   useEffect(() => {
+    if (!isOpen) return;
+
     if (item) {
       reset({
         code: item.code || '',
@@ -92,7 +94,7 @@ export const ItemCatalogModal: React.FC<ItemCatalogModalProps> = ({
         active: true,
       });
     }
-  }, [item, reset, isOpen, initialName]);
+  }, [isOpen, item, initialName]);
 
   if (!isOpen) return null;
 
