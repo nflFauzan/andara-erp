@@ -363,7 +363,7 @@ export const InvoiceListPage: React.FC = () => {
                   {/* SPH & Document Status Info */}
                   <div className="flex items-center justify-between gap-2 text-xs pt-1 border-t border-slate-100 dark:border-slate-700/50">
                     <span className="text-slate-500 dark:text-slate-400 truncate">
-                      {inv.penawaranNumber ? `SPH: ${inv.penawaranNumber}` : 'Faktur Mandiri'}
+                      {inv.sourcePenawaranNumber ? `SPH: ${inv.sourcePenawaranNumber}` : 'Faktur Mandiri'}
                     </span>
                     <StatusBadge status={inv.status} size="sm" />
                   </div>
@@ -377,9 +377,9 @@ export const InvoiceListPage: React.FC = () => {
                       <div className="font-mono font-bold text-xs text-slate-700 dark:text-slate-300">
                         {formatRupiah(inv.totalAmount)}
                       </div>
-                      {inv.remainingAmount > 0 && (
+                      {inv.outstanding > 0 && (
                         <div className="text-[10px] font-mono font-black text-rose-600 dark:text-rose-400">
-                          Sisa: {formatRupiah(inv.remainingAmount)}
+                          Sisa: {formatRupiah(inv.outstanding)}
                         </div>
                       )}
                     </div>

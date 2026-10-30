@@ -102,6 +102,9 @@ export const SphPrintPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-100 py-6 sm:py-10 print:bg-white print:py-0">
+      <style>
+        {`@page { size: A4 portrait; margin: 10mm 12mm; }`}
+      </style>
       {/* Top Floating Control Toolbar (Hidden in Print) */}
       <div className="max-w-4xl mx-auto px-4 mb-6 print:hidden">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
@@ -294,14 +297,14 @@ export const SphPrintPage: React.FC = () => {
         </p>
 
         {/* Paragraf Penutup Resmi CV. ANDARA */}
-        <div className="text-xs sm:text-[9.5pt] text-justify space-y-2 mb-8 leading-normal">
+        <div className="text-xs sm:text-[9.5pt] text-justify space-y-2 mb-8 leading-normal break-inside-avoid print:break-inside-avoid">
           <p>
             Demikian Perkiraan Harga Pengadaan dan Pemasangan Atap, bahan -bahan disesuaikan dengan kesepakatan dan apabila ada informasi yang perlu diketahui mengenai penawaran ini lebih lanjut maka Bapak/Ibu dapat menghubungi kami di Tlp/WA <strong>0812-8011-0053 a/n Eko Sudaryanto (Direktur)</strong> atau <strong>0812-9221-1334 a/n Asep Adung (Komanditer)</strong>. Atas Perhatiannya kami ucapkan terimakasih.
           </p>
         </div>
 
         {/* Tanda Tangan Resmi Direktur CV. ANDARA */}
-        <div className="flex justify-end text-xs sm:text-[10pt]">
+        <div className="flex justify-end text-xs sm:text-[10pt] break-inside-avoid print:break-inside-avoid">
           <div className="text-center w-64 space-y-1">
             <p>Yang mengajukan,</p>
             <p className="font-bold">CV. ANDARA</p>

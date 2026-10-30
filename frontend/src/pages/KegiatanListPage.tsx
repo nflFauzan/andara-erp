@@ -23,7 +23,7 @@ import { kegiatanApi, KegiatanQueryParams } from '../api/kegiatanApi';
 import { customerApi } from '../api/customerApi';
 import { Kegiatan, CreateKegiatanInput, UpdateKegiatanInput, KegiatanStatus } from '../types/kegiatan';
 import { KegiatanModal } from '../components/kegiatan/KegiatanModal';
-import { formatRupiah, cn } from '../lib/utils';
+import { formatRupiah } from '../lib/utils';
 import { BentoCard } from '@/components/common/BentoCard';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatusBadge } from '@/components/common/StatusBadge';
@@ -343,7 +343,7 @@ export const KegiatanListPage: React.FC = () => {
                 <div className="flex items-center justify-between gap-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/50">
                   <div>
                     <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block leading-tight">
-                      Total Nilai ({k.itemCount || 0} Item)
+                      Total Nilai ({k.itemsCount || 0} Item)
                     </span>
                     <span className="font-mono font-black text-xs text-emerald-600 dark:text-emerald-400">
                       {formatRupiah(k.totalAmount)}

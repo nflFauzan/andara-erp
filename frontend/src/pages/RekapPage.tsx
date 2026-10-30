@@ -380,39 +380,41 @@ export const RekapPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <PageHeader
-        title="Rekap Transaksi & Analitik Terpadu"
-        subtitle="Monitoring data teragregasi per customer, kegiatan proyek, SPH, faktur penjualan, aging piutang, dan kas."
-        badge={
-          <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
-            <FileSpreadsheet className="w-3.5 h-3.5" />
-            Laporan Keuangan
-          </span>
-        }
-        actions={
-          <div className="flex items-center gap-2 print:hidden">
-            <button
-              type="button"
-              onClick={handleExportExcel}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-navy-700 bg-white dark:bg-navy-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-xs transition hover:border-emerald-400 group"
-              title="Unduh laporan dalam format Multi-Sheet Microsoft Excel (.xls)"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
-              <span>Ekspor Excel (.xls)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsPrintModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition hover:shadow-indigo-500/25"
-              title="Buka pratinjau format cetak resmi berstandar surat CV. ANDARA"
-            >
-              <Printer className="w-4 h-4" />
-              <span>Cetak / PDF Formal</span>
-            </button>
-          </div>
-        }
-      />
+      {/* Main Interactive Dashboard View (Hidden during Print when Modal / Drawer is Open) */}
+      <div className={isPrintModalOpen || Boolean(statementCustomer) ? 'print:hidden space-y-6' : 'space-y-6'}>
+        {/* Header Banner */}
+        <PageHeader
+          title="Rekap Transaksi & Analitik Terpadu"
+          subtitle="Monitoring data teragregasi per customer, kegiatan proyek, SPH, faktur penjualan, aging piutang, dan kas."
+          badge={
+            <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              Laporan Keuangan
+            </span>
+          }
+          actions={
+            <div className="flex items-center gap-2 print:hidden">
+              <button
+                type="button"
+                onClick={handleExportExcel}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-navy-700 bg-white dark:bg-navy-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-xs transition hover:border-emerald-400 group"
+                title="Unduh laporan dalam format Multi-Sheet Microsoft Excel (.xls)"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+                <span>Ekspor Excel (.xls)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPrintModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition hover:shadow-indigo-500/25"
+                title="Buka pratinjau format cetak resmi berstandar surat CV. ANDARA"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Cetak / PDF Formal</span>
+              </button>
+            </div>
+          }
+        />
 
 
       {/* Control Card: Tabs & Universal Filter Bar */}
@@ -1591,6 +1593,7 @@ export const RekapPage: React.FC = () => {
           onNavigate={(path) => navigate(path)}
         />
       )}
+      </div>
 
       {/* Customer Financial Statement Drawer */}
       {statementCustomer && (

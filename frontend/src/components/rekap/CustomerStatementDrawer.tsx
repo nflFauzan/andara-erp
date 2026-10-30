@@ -36,6 +36,7 @@ import { CustomerStatement, CustomerStatementItem, StatementItemType } from '@/t
 import { Kegiatan } from '@/types/kegiatan';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { exportCustomerStatementToExcel } from '@/utils/excelExport';
+import { AndaraLetterhead } from '@/components/common/AndaraLetterhead';
 
 interface CustomerStatementDrawerProps {
   customerId: number | null;
@@ -206,64 +207,78 @@ export const CustomerStatementDrawer: React.FC<CustomerStatementDrawerProps> = (
   const realizationPct = totalInvoice > 0 ? Math.min(100, Math.round((totalPaid / totalInvoice) * 100)) : 100;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/50 backdrop-blur-sm animate-fade-in flex justify-end">
-      <div className="w-full max-w-5xl bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 h-full flex flex-col shadow-2xl animate-slide-in">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/50 backdrop-blur-sm animate-fade-in flex justify-end print:static print:inset-auto print:bg-white print:overflow-visible print:p-0 print:m-0 print:w-full customer-statement-drawer">
+      <style>
+        {`@page { size: A4 portrait; margin: 8mm 10mm; }`}
+      </style>
+      <div className="w-full max-w-5xl bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 h-full flex flex-col shadow-2xl animate-slide-in print:shadow-none print:border-none print:max-w-none print:w-full print:h-auto print:bg-white print:p-0 print:m-0">
         
+        {/* Printable Official Letterhead (Visible ONLY in Print) */}
+        <div className="hidden print:block p-6 pb-2 border-b-2 border-black bg-white">
+          <AndaraLetterhead showDivisiStrip={true} />
+          <div className="text-center mt-3 mb-2">
+            <h2 className="text-sm font-black uppercase tracking-wider text-black">
+              BUKU BESAR &amp; PERNYATAAN REKENING CUSTOMER (STATEMENT OF ACCOUNT)
+            </h2>
+            <p className="text-[8pt] text-slate-600">CV. ANDARA &bull; Sistem Manajemen Operasional &amp; Transaksi</p>
+          </div>
+        </div>
+
         {/* ========================================================================= */}
         {/* 1. TOP HEADER - Clean, Sharp, Friendly */}
         {/* ========================================================================= */}
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/80 backdrop-blur-md flex items-start justify-between gap-4 sticky top-0 z-20">
+        <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/80 backdrop-blur-md flex items-start justify-between gap-4 sticky top-0 z-20 print:static print:border-b print:bg-white print:p-4">
           <div className="flex items-start gap-4">
-            <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-xl font-black text-white shadow-md shadow-blue-500/20 shrink-0">
+            <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-xl font-black text-white shadow-md shadow-blue-500/20 shrink-0 print:hidden">
               {statement?.customerName ? statement.customerName.charAt(0).toUpperCase() : (customerName ? customerName.charAt(0).toUpperCase() : 'C')}
             </div>
             <div>
               <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight print:text-black">
                   {statement?.customerName || customerName || 'Buku Besar & Riwayat Customer'}
                 </h2>
                 {statement?.customerCode && (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800 print:border-black print:text-black">
                     {statement.customerCode}
                   </span>
                 )}
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 print:hidden">
                   Customer Financial Statement
                 </span>
               </div>
 
               {/* Meta details with high readability */}
-              <div className="flex items-center gap-4 mt-2 text-xs text-slate-600 dark:text-slate-400 flex-wrap font-medium">
+              <div className="flex items-center gap-4 mt-2 text-xs text-slate-600 dark:text-slate-400 flex-wrap font-medium print:text-black">
                 {statement?.company && (
-                  <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-semibold">
-                    <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                    <span>{statement.company}</span>
+                  <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-semibold print:text-black">
+                    <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 print:hidden" />
+                    <span>Perusahaan: {statement.company}</span>
                   </div>
                 )}
                 {statement?.phone && (
                   <div className="flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-slate-500" />
-                    <span>{statement.phone}</span>
+                    <Phone className="w-3.5 h-3.5 text-slate-500 print:hidden" />
+                    <span>Telp: {statement.phone}</span>
                   </div>
                 )}
                 {statement?.email && (
                   <div className="flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-slate-500" />
-                    <span>{statement.email}</span>
+                    <Mail className="w-3.5 h-3.5 text-slate-500 print:hidden" />
+                    <span>Email: {statement.email}</span>
                   </div>
                 )}
                 {statement?.address && (
                   <div className="flex items-center gap-1.5 max-w-sm truncate" title={statement.address}>
-                    <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                    <span className="truncate">{statement.address}</span>
+                    <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 print:hidden" />
+                    <span className="truncate">Alamat: {statement.address}</span>
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Action buttons (Hidden in Print) */}
+          <div className="flex items-center gap-2 shrink-0 print:hidden">
             <button
               onClick={() => navigate(`/customers/${customerId}`)}
               className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 text-xs font-semibold transition-all flex items-center gap-1.5 shadow-xs"

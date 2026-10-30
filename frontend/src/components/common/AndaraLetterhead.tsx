@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { ANDARA_LETTERHEAD_BASE64 } from '@/assets/letterheadBase64';
 
 interface AndaraLetterheadProps {
   /**
@@ -12,14 +13,19 @@ export const AndaraLetterhead: React.FC<AndaraLetterheadProps> = ({
   showDivisiStrip = false,
   className = '',
 }) => {
+  const [imgSrc, setImgSrc] = useState<string>(ANDARA_LETTERHEAD_BASE64);
+
   return (
     <div className={`w-full font-sans select-none ${className}`}>
-      {/* Kop Surat Resmi CV. ANDARA (Ekstraksi 100% dari dokumen asli) */}
+      {/* Kop Surat Resmi CV. ANDARA (Ekstraksi 100% dari dokumen asli, embedded base64 anti-pecah di Android/mobile print) */}
       <div className="w-full">
         <img
-          src="/header-andara.jpg"
+          src={imgSrc}
+          onError={() => setImgSrc('/header-andara.jpg')}
           alt="Kop Resmi CV. ANDARA"
           className="w-full h-auto object-contain block"
+          style={{ maxHeight: '120px' }}
+          loading="eager"
         />
       </div>
 

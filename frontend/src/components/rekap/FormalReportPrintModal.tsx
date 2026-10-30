@@ -602,8 +602,11 @@ export const FormalReportPrintModal: React.FC<FormalReportPrintModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 print:p-0 print:bg-white print:static">
-      <div className="bg-white dark:bg-navy-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-navy-700 w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden print:border-none print:shadow-none print:max-w-none print:max-h-none print:rounded-none">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 print:p-0 print:m-0 print:bg-white print:static print:w-full formal-report-print-modal">
+      <style>
+        {`@page { size: ${orientation === 'landscape' ? 'A4 landscape' : 'A4 portrait'}; margin: 8mm 10mm; }`}
+      </style>
+      <div className="bg-white dark:bg-navy-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-navy-700 w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden print:border-none print:shadow-none print:max-w-none print:max-h-none print:rounded-none print:w-full print:m-0 print:p-0">
         
         {/* Modal Controls Header (Hidden in Print) */}
         <div className="print:hidden p-4 border-b border-slate-200 dark:border-navy-700 flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-navy-800">
@@ -703,13 +706,12 @@ export const FormalReportPrintModal: React.FC<FormalReportPrintModalProps> = ({
         </div>
 
         {/* Formal Printable Document Sheet */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-200/60 dark:bg-navy-950/70 flex justify-center print:p-0 print:bg-white print:overflow-visible">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-200/60 dark:bg-navy-950/70 flex justify-center print:p-0 print:m-0 print:bg-white print:overflow-visible print:w-full">
           <div
-            className={`bg-white text-black p-6 sm:p-8 shadow-xl print:shadow-none print:p-0 w-full font-sans print:w-full ${
+            className={`bg-white text-black p-6 sm:p-8 shadow-xl print:shadow-none print:p-0 w-full font-sans print:w-full print:max-w-none ${
               orientation === 'landscape' ? 'max-w-[1050px]' : 'max-w-[800px]'
             }`}
             style={{
-              minHeight: '297mm',
               backgroundColor: '#ffffff',
               color: '#000000',
             }}
@@ -781,20 +783,20 @@ export const FormalReportPrintModal: React.FC<FormalReportPrintModalProps> = ({
             )}
 
             {/* 5. Tabel Data Transaksi Resmi */}
-            <div className="mb-6 overflow-x-auto">
-              <table className="w-full text-left border-collapse border border-slate-300 print:text-[8pt]">
+            <div className="mb-6 overflow-x-auto print:overflow-visible print:w-full">
+              <table className="w-full text-left border-collapse border border-slate-300 print:text-[8pt] print:w-full">
                 {renderTableContent()}
               </table>
             </div>
 
             {/* 6. Catatan Legal & Integritas Dokumen */}
-            <div className="text-[7.5pt] text-slate-500 italic mb-8">
+            <div className="text-[7.5pt] text-slate-500 italic mb-8 break-inside-avoid print:break-inside-avoid">
               * Dokumen ini digenerate secara resmi melalui Sistem Manajemen Operasional &amp; Transaksi CV. ANDARA. Seluruh perhitungan nilai nominal dan tanggal transaksi tercatat secara otomatis pada database perusahaan.
             </div>
 
             {/* 7. Blok Pengesahan & Tanda Tangan Resmi */}
             {showSignatures && (
-              <div className="pt-2 text-[9pt] break-inside-avoid">
+              <div className="pt-2 text-[9pt] break-inside-avoid print:break-inside-avoid">
                 <div className="text-right text-slate-700 mb-2 font-medium">
                   Bogor / Bandung, {printDateStr}
                 </div>

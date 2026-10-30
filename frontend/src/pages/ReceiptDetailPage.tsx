@@ -99,6 +99,9 @@ export const ReceiptDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <style>
+        {`@page { size: A4 portrait; margin: 12mm 15mm; }`}
+      </style>
       {/* Top Action Bar (Hidden during Print) */}
       <div className="no-print">
         <PageHeader
@@ -307,7 +310,7 @@ export const ReceiptDetailPage: React.FC = () => {
           </div>
 
           {/* Signature Block */}
-          <div className="w-full sm:w-64 text-center space-y-1">
+          <div className="w-full sm:w-64 text-center space-y-1 break-inside-avoid print:break-inside-avoid">
             <div className="text-xs text-slate-700">
               Makassar, {receipt.date}
             </div>

@@ -172,6 +172,9 @@ export const InvoicePrintPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-100 py-6 sm:py-10 print:bg-white print:py-0 print:m-0">
+      <style>
+        {`@page { size: A4 portrait; margin: 8mm 10mm; }`}
+      </style>
       {/* Top Floating Control Toolbar (Hidden in Print) */}
       <div className="max-w-4xl mx-auto px-4 mb-6 print:hidden">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
@@ -637,7 +640,7 @@ export const InvoicePrintPage: React.FC = () => {
           </table>
 
           {/* Bagian Bawah: Informasi Rekening Bank & Tanda Tangan dalam Satu Outer Frame */}
-          <div className="pt-3 pb-3 px-3.5 flex justify-between items-start text-[8.5pt]">
+          <div className="pt-3 pb-3 px-3.5 flex justify-between items-start text-[8.5pt] break-inside-avoid print:break-inside-avoid">
             {/* Sisi Kiri: Rekening Bank & Kotak Nominal Rp (Double Border) */}
             <div className="w-[58%] space-y-1">
               <p className="text-black font-normal">

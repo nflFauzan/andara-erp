@@ -133,7 +133,8 @@ export const InvoiceDetailPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Top Header & Navigation */}
-      <PageHeader
+      <div className="no-print">
+        <PageHeader
         icon={FileText}
         backUrl="/faktur"
         title={invoice.number}
@@ -244,6 +245,7 @@ export const InvoiceDetailPage: React.FC = () => {
           </div>
         }
       />
+      </div>
 
       {/* Messages */}
       {successMsg && (

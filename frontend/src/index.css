@@ -615,10 +615,10 @@
   background: rgba(71, 85, 105, 0.9);
 }
 
-/* Print Overrides */
+/* Print Overrides & Bulletproof Document Layout */
 @page {
   size: auto;
-  margin: 10mm 12mm;
+  margin: 8mm 10mm;
 }
 
 @media print {
@@ -629,20 +629,62 @@
     print-color-adjust: exact !important;
   }
 
+  html,
   body {
     background: #ffffff !important;
     color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
   }
 
+  /* Universal Hide for Non-Print Elements */
   .no-print,
   nav,
   aside,
-  header {
+  header,
+  [aria-label="Navigasi Utama Mobile"],
+  [aria-label="Mobile Navigation Drawer"],
+  .mobile-bottom-nav,
+  .mobile-menu-drawer,
+  button:not(.allow-print) {
+    display: none !important;
+  }
+
+  /* Main viewport print reset */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  /* Modal Print Isolation: When a formal report modal is open, completely hide the background dashboard */
+  body:has(.formal-report-print-modal) main > div > *:not(.formal-report-print-modal) {
+    display: none !important;
+  }
+  body:has(.formal-report-print-modal) header,
+  body:has(.formal-report-print-modal) aside,
+  body:has(.formal-report-print-modal) nav {
+    display: none !important;
+  }
+
+  /* Customer Statement Drawer Print Isolation */
+  body:has(.customer-statement-drawer) main > div > *:not(.customer-statement-drawer) {
+    display: none !important;
+  }
+  body:has(.customer-statement-drawer) header,
+  body:has(.customer-statement-drawer) aside,
+  body:has(.customer-statement-drawer) nav {
     display: none !important;
   }
 
   table {
     page-break-inside: auto !important;
+    border-collapse: collapse !important;
+    width: 100% !important;
   }
 
   thead {
