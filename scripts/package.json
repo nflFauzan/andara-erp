@@ -1,0 +1,14 @@
+{
+  "name": "andara-manual-generator",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "capture": "node manual/capture-screenshots.mjs",
+    "build": "node manual/build-pdf.mjs",
+    "all": "node manual/capture-screenshots.mjs && node manual/build-pdf.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  }
+}
+

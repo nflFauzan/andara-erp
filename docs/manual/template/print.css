@@ -1,0 +1,439 @@
+/* ==========================================================================
+   CSS PAGED MEDIA STYLESHEET: BUKU PANDUAN PENGGUNA CV. ANDARA
+   Format: A4 Portrait, High-DPI Print Ready, Clean Page Breaks
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --primary-navy: #1E3A8A;
+  --primary-dark: #0F172A;
+  --accent-gold: #D97706;
+  --accent-gold-light: #FEF3C7;
+  --accent-emerald: #059669;
+  --accent-emerald-light: #D1FAE5;
+  --accent-rose: #E11D48;
+  --accent-rose-light: #FFE4E6;
+  --slate-50: #F8FAFC;
+  --slate-100: #F1F5F9;
+  --slate-200: #E2E8F0;
+  --slate-300: #CBD5E1;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1E293B;
+  --slate-900: #0F172A;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 18mm 14mm 18mm 14mm;
+  @top-right {
+    content: "Sistem Manajemen CV. ANDARA";
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 8pt;
+    font-weight: 600;
+    color: #64748B;
+  }
+  @bottom-left {
+    content: "Dokumen Resmi Serah Terima (BAST) • Rahasia & Terbatas";
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 7.5pt;
+    color: #94A3B8;
+  }
+  @bottom-right {
+    content: "Halaman " counter(page);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 8pt;
+    font-weight: 700;
+    color: var(--primary-navy);
+  }
+}
+
+@page :first {
+  margin: 0;
+  @top-right { content: normal; }
+  @bottom-left { content: normal; }
+  @bottom-right { content: normal; }
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 9.5pt;
+  line-height: 1.55;
+  color: var(--slate-800);
+  background-color: #FFFFFF;
+  margin: 0;
+  padding: 0;
+}
+
+/* ==========================================================================
+   PAGE BREAK CONTROLS
+   ========================================================================== */
+.page-break {
+  page-break-before: always;
+  break-before: page;
+}
+
+.avoid-break {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* ==========================================================================
+   COVER PAGE
+   ========================================================================== */
+.cover-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 50mm 20mm 30mm 20mm;
+  background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 65%, #1E40AF 100%);
+  color: #FFFFFF;
+  page-break-after: always;
+  break-after: page;
+  position: relative;
+  overflow: hidden;
+}
+
+.cover-header {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 20px;
+}
+
+.cover-badge {
+  display: inline-block;
+  background: rgba(217, 119, 6, 0.25);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #FCD34D;
+  padding: 4px 14px;
+  border-radius: 9999px;
+  font-size: 8.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 15px;
+}
+
+.cover-title {
+  font-size: 26pt;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #FFFFFF;
+  margin: 0 0 10px 0;
+  letter-spacing: -0.5px;
+}
+
+.cover-subtitle {
+  font-size: 13pt;
+  font-weight: 500;
+  color: #93C5FD;
+  margin: 0 0 15px 0;
+  line-height: 1.4;
+}
+
+.cover-project {
+  font-size: 11pt;
+  font-weight: 700;
+  color: #F8FAFC;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.cover-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 20px;
+}
+
+.cover-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  font-size: 8.5pt;
+}
+
+.cover-meta-item strong {
+  display: block;
+  color: #94A3B8;
+  text-transform: uppercase;
+  font-size: 7pt;
+  letter-spacing: 0.8px;
+  margin-bottom: 3px;
+}
+
+.cover-meta-item span {
+  font-weight: 600;
+  color: #F1F5F9;
+}
+
+/* ==========================================================================
+   HEADINGS & TYPOGRAPHY
+   ========================================================================== */
+h1.chapter-title {
+  font-size: 16pt;
+  font-weight: 800;
+  color: var(--primary-navy);
+  border-bottom: 2px solid var(--primary-navy);
+  padding-bottom: 6px;
+  margin-top: 0;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+h1.chapter-title span.chapter-tag {
+  font-size: 8pt;
+  font-weight: 700;
+  background: var(--slate-100);
+  color: var(--slate-700);
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--slate-200);
+}
+
+h2 {
+  font-size: 12pt;
+  font-weight: 700;
+  color: var(--slate-900);
+  margin-top: 16px;
+  margin-bottom: 8px;
+  border-left: 3.5px solid var(--accent-gold);
+  padding-left: 8px;
+}
+
+h3 {
+  font-size: 10.5pt;
+  font-weight: 700;
+  color: var(--slate-800);
+  margin-top: 12px;
+  margin-bottom: 6px;
+}
+
+p {
+  margin: 0 0 8px 0;
+  text-align: justify;
+}
+
+strong {
+  font-weight: 700;
+  color: var(--slate-900);
+}
+
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8pt;
+  background: var(--slate-100);
+  border: 1px solid var(--slate-200);
+  padding: 1px 4px;
+  border-radius: 4px;
+  color: var(--primary-navy);
+}
+
+/* ==========================================================================
+   CALLOUT BOXES (TIPS, WARNINGS, GUARDS)
+   ========================================================================== */
+.callout {
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 10px 0;
+  font-size: 8.5pt;
+  line-height: 1.45;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.callout-title {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 7.5pt;
+  letter-spacing: 0.6px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.callout-info {
+  background-color: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-left: 4px solid var(--primary-navy);
+  color: #1E3A8A;
+}
+
+.callout-tip {
+  background-color: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  border-left: 4px solid var(--accent-emerald);
+  color: #065F46;
+}
+
+.callout-warning {
+  background-color: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-left: 4px solid var(--accent-gold);
+  color: #92400E;
+}
+
+.callout-danger {
+  background-color: #FFF1F2;
+  border: 1px solid #FECDD3;
+  border-left: 4px solid var(--accent-rose);
+  color: #9F1239;
+}
+
+/* ==========================================================================
+   TABLES & FIELD DIRECTORY
+   ========================================================================== */
+table.manual-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0 14px 0;
+  font-size: 8pt;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+table.manual-table th {
+  background: var(--slate-800);
+  color: #FFFFFF;
+  font-weight: 700;
+  text-align: left;
+  padding: 6px 10px;
+  border: 1px solid var(--slate-800);
+  text-transform: uppercase;
+  font-size: 7pt;
+  letter-spacing: 0.5px;
+}
+
+table.manual-table td {
+  padding: 6px 10px;
+  border: 1px solid var(--slate-200);
+  vertical-align: top;
+}
+
+table.manual-table tr:nth-child(even) td {
+  background-color: #F8FAFC;
+}
+
+.badge-required {
+  background: #FEE2E2;
+  color: #991B1B;
+  font-size: 6.5pt;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.badge-optional {
+  background: #E2E8F0;
+  color: #475569;
+  font-size: 6.5pt;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.badge-auto {
+  background: #EDE9FE;
+  color: #5B21B6;
+  font-size: 6.5pt;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* ==========================================================================
+   FIGURES & SCREENSHOTS
+   ========================================================================== */
+figure.manual-figure {
+  margin: 10px 0 14px 0;
+  padding: 6px;
+  background: var(--slate-50);
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+  text-align: center;
+}
+
+figure.manual-figure img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 5px;
+  border: 1px solid var(--slate-300);
+  display: block;
+  margin: 0 auto;
+}
+
+figcaption {
+  font-size: 7.5pt;
+  font-weight: 600;
+  color: var(--slate-600);
+  margin-top: 6px;
+  font-style: italic;
+}
+
+/* ==========================================================================
+   NUMBERED STEP LIST
+   ========================================================================== */
+ol.step-list {
+  padding-left: 0;
+  list-style: none;
+  counter-reset: step-counter;
+  margin: 8px 0;
+}
+
+ol.step-list > li {
+  counter-increment: step-counter;
+  position: relative;
+  padding-left: 28px;
+  margin-bottom: 6px;
+  font-size: 9pt;
+  text-align: justify;
+}
+
+ol.step-list > li::before {
+  content: counter(step-counter);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 19px;
+  height: 19px;
+  background-color: var(--primary-navy);
+  color: #FFFFFF;
+  border-radius: 50%;
+  font-size: 7pt;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Numbered visual pointers ①, ②, ③ */
+span.pin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background-color: var(--primary-navy);
+  color: #FFFFFF;
+  border-radius: 50%;
+  font-size: 7pt;
+  font-weight: 800;
+  margin: 0 2px;
+  vertical-align: middle;
+}
+

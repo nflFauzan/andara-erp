@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Buku Panduan Pengguna - Sistem Manajemen CV. ANDARA</title>
+  <link rel="stylesheet" href="print.css">
+</head>
+<body>
+
+  <!-- ==========================================================================
+       HALAMAN COVER RESMI (EXECUTIVE COVER PAGE)
+       ========================================================================== -->
+  <div class="cover-page">
+    <div class="cover-header">
+      <div class="cover-badge">Dokumen Serah Terima Resmi (BAST)</div>
+      <h1 class="cover-title">BUKU PANDUAN PENGGUNA<br>(USER MANUAL)</h1>
+      <div class="cover-subtitle">Pedoman Operasional & Tata Kelola Keuangan Terintegrasi</div>
+      <div class="cover-project">Sistem Manajemen Operasional & Transaksi CV. ANDARA</div>
+    </div>
+
+    <div class="cover-footer">
+      <div class="cover-meta-grid">
+        <div class="cover-meta-item">
+          <strong>Pemilik Sistem & Klien:</strong>
+          <span>CV. ANDARA</span>
+        </div>
+        <div class="cover-meta-item">
+          <strong>Versi Perangkat Lunak:</strong>
+          <span>1.0 Final (Produksi)</span>
+        </div>
+        <div class="cover-meta-item">
+          <strong>Portal Akses Web:</strong>
+          <span>https://cvandaraerp.web.id</span>
+        </div>
+        <div class="cover-meta-item">
+          <strong>Tanggal Rilis Dokumen:</strong>
+          <span>31 Oktober 2026</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       LEMBAR PENGESAHAN DOKUMEN & DAFTAR ISI
+       ========================================================================== -->
+  <div class="page-break">
+    <h1 class="chapter-title">
+      LEMBAR PENGESAHAN & HAK CIPTA
+      <span class="chapter-tag">BAST-AND-2026</span>
+    </h1>
+
+    <p>Buku Panduan Pengguna (*User Manual & Handover Guide*) ini disusun sebagai kelengkapan resmi Berita Acara Serah Terima (BAST) pekerjaan pengembangan perangkat lunak <strong>Sistem Manajemen Operasional & Transaksi CV. ANDARA</strong>. Dokumen ini menjadi rujukan operasional standar (*Standard Operating Procedure / SOP*) bagi seluruh jajaran manajemen, staf kasir/keuangan, dan administrator lapangan.</p>
+
+    <div class="avoid-break" style="margin-top: 25px;">
+      <table class="manual-table" style="text-align: center;">
+        <thead>
+          <tr>
+            <th style="width: 50%; text-align: center;">TIM PENGEMBANG SISTEM</th>
+            <th style="width: 50%; text-align: center;">MANAJEMEN CV. ANDARA</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="height: 90px; vertical-align: bottom; text-align: center;">
+              <strong>( Tim Pengembang Perangkat Lunak )</strong><br>
+              <span style="font-size: 7.5pt; color: #64748B;">Tanggal: 31 Oktober 2026</span>
+            </td>
+            <td style="height: 90px; vertical-align: bottom; text-align: center;">
+              <strong>( Pimpinan / Direktur CV. ANDARA )</strong><br>
+              <span style="font-size: 7.5pt; color: #64748B;">Tanggal: 31 Oktober 2026</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 style="margin-top: 30px;">Daftar Isi Buku Panduan</h2>
+    <table class="manual-table">
+      <thead>
+        <tr>
+          <th style="width: 15%;">Bab</th>
+          <th style="width: 55%;">Topik & Modul Operasional</th>
+          <th style="width: 30%;">Klasifikasi Hak Akses</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Bab 1</strong></td><td>Pendahuluan, Hak Akses & Autentikasi Pengguna</td><td>Operator & Admin</td></tr>
+        <tr><td><strong>Bab 2</strong></td><td>Navigasi Antarmuka & Dashboard Eksekutif</td><td>Operator & Admin</td></tr>
+        <tr><td><strong>Bab 3</strong></td><td>Manajemen Master Data Customer (Pelanggan)</td><td>Operator & Admin</td></tr>
+        <tr><td><strong>Bab 4</strong></td><td>Manajemen Kegiatan/Proyek & Katalog Item Pekerjaan</td><td>Operator & Admin</td></tr>
+        <tr><td><strong>Bab 5</strong></td><td>Pembuatan & Pengelolaan Surat Penawaran Harga (SPH)</td><td>Operator & Admin</td></tr>
+        <tr><td><strong>Bab 6</strong></td><td>Pembuatan Faktur Penjualan (Invoice) & Penagihan Bertahap</td><td>Operator & Admin</td></tr>
+        <tr><td><strong>Bab 7</strong></td><td>Pencatatan Pembayaran Masuk & Alokasi Pelunasan Faktur</td><td><strong style="color: #1E3A8A;">Khusus Operator</strong></td></tr>
+        <tr><td><strong>Bab 8</strong></td><td>Pengelolaan Deposit Pelanggan & Buku Kas (Ledger)</td><td><strong style="color: #1E3A8A;">Khusus Operator</strong></td></tr>
+        <tr><td><strong>Bab 9</strong></td><td>Penerbitan & Cetak Kwitansi Resmi</td><td>Operator & Admin</td></tr>
+        <tr><td><strong>Bab 10</strong></td><td>Rekapitulasi Laporan Keuangan Eksekutif & Ekspor Excel</td><td>Operator & Admin</td></tr>
+        <tr><td><strong>Bab 11</strong></td><td>Konfigurasi Format Penomoran Dokumen Otomatis</td><td>Operator & Admin</td></tr>
+        <tr><td><strong>Bab 12</strong></td><td>Panduan Pemecahan Masalah (Troubleshooting & FAQ)</td><td>Operator & Admin</td></tr>
+        <tr><td><strong>Lampiran</strong></td><td>Ringkasan 8 Studi Kasus Transaksi Riil Lapangan</td><td>Panduan Praktis</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ==========================================================================
+       BAB 1: PENDAHULUAN & AUTENTIKASI PENGGUNA
+       ========================================================================== -->
+  <div class="page-break">
+    <h1 class="chapter-title">
+      BAB 1: PENDAHULUAN & AUTENTIKASI PENGGUNA
+      <span class="chapter-tag">MODUL AKSES</span>
+    </h1>
+
+    <h2>1.1 Ringkasan Sistem & Hak Akses Role</h2>
+    <p>Sistem Manajemen Operasional & Transaksi CV. ANDARA dibangun untuk mendigitalisasi siklus proyek lapangan, penawaran harga, penagihan faktur, pelunasan kas bank, serta pemantauan deposit pelanggan secara real-time. Sistem menerapkan <strong>Role-Based Access Control (RBAC)</strong> dengan 2 level hak akses utama:</p>
+
+    <div class="callout callout-info avoid-break">
+      <div class="callout-title">Matriks Kewenangan Pengguna</div>
+      <ul>
+        <li><strong>Role OPERATOR (Staff Keuangan & Kas):</strong> Memiliki wewenang penuh (Full Access) ke seluruh modul sistem, termasuk pencatatan kas masuk, upload bukti transfer, alokasi faktur, dan pemotongan saldo deposit pelanggan.</li>
+        <li><strong>Role ADMIN (Administrator Operasional):</strong> Memiliki wewenang operasional untuk input proyek, katalog tarif, penawaran harga (SPH), dan faktur. Namun demi kepatuhan finansial (AGENTS.md Bagian 11), Admin <strong>dilarang keras memutasi kas pembayaran atau mengubah saldo deposit</strong>.</li>
+      </ul>
+    </div>
+
+    <h2>1.2 Anatomi Layar Login</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/01_login_page.png" alt="Layar Login CV. ANDARA">
+      <figcaption>Gambar 1.1: Tampilan Layar Autentikasi Utama CV. ANDARA</figcaption>
+    </figure>
+
+    <p>Keterangan Elemen Antarmuka Login:</p>
+    <ul>
+      <li><span class="pin">1</span> <strong>Tombol Toggle Tema:</strong> Berada di sudut kanan atas untuk beralih antara mode terang dan mode gelap.</li>
+      <li><span class="pin">2</span> <strong>Input Nama Pengguna:</strong> Kolom untuk memasukkan username akun terdaftar (misal: <code>operator</code> atau <code>admin</code>).</li>
+      <li><span class="pin">3</span> <strong>Input Kata Sandi:</strong> Kolom password aman dengan ikon mata untuk mengecek karakter sandi.</li>
+      <li><span class="pin">4</span> <strong>Tombol "Masuk ke Sistem":</strong> Menjalankan verifikasi kredensial ke server backend.</li>
+    </ul>
+
+    <h2>1.3 Prosedur Operasional Masuk & Keluar Sistem (SOP)</h2>
+    <ol class="step-list">
+      <li>Buka peramban (Google Chrome / Edge) dan tuju alamat resmi: <code>https://cvandaraerp.web.id</code>.</li>
+      <li>Ketikkan <strong>Nama Pengguna</strong> dan <strong>Kata Sandi</strong> Anda secara tepat.</li>
+      <li>Klik tombol <strong>"Masuk ke Sistem"</strong>. Setelah login valid, Anda langsung diarahkan ke Dashboard.</li>
+      <li>Untuk keluar aman (Logout), klik tombol merah <strong>"Keluar dari Sistem"</strong> di pojok kiri bawah sidebar.</li>
+    </ol>
+
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/02_login_error_validation.png" alt="Validasi Form Login">
+      <figcaption>Gambar 1.2: Peringatan Sistem jika Form Kosong atau Kredensial Tidak Sesuai</figcaption>
+    </figure>
+  </div>
+
+  <!-- ==========================================================================
+       BAB 2: NAVIGASI ANTARMUKA & DASHBOARD EKSEKUTIF
+       ========================================================================== -->
+  <div class="page-break">
+    <h1 class="chapter-title">
+      BAB 2: NAVIGASI ANTARMUKA & DASHBOARD EKSEKUTIF
+      <span class="chapter-tag">MODUL MONITORING</span>
+    </h1>
+
+    <h2>2.1 Ringkasan Dashboard</h2>
+    <p>Dashboard Utama menyajikan ringkasan performa finansial secara komprehensif. Pengguna dapat langsung mengetahui posisi kas riil, total piutang yang belum tertagih, dan saldo deposit titipan pelanggan.</p>
+
+    <h2>2.2 Anatomi Antarmuka Dashboard Operator</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/03_dashboard_operator.png" alt="Dashboard Utama Operator">
+      <figcaption>Gambar 2.1: Tampilan Dashboard Eksekutif Pengguna Role Operator</figcaption>
+    </figure>
+
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/04_dashboard_metrics_detail.png" alt="Detail Kartu KPI Keuangan">
+      <figcaption>Gambar 2.2: Rincian Kartu Metrik KPI Finansial dan Saldo Kas Masuk</figcaption>
+    </figure>
+
+    <h2>2.3 Kamus Metrik Indikator Finansial Dashboard</h2>
+    <table class="manual-table">
+      <thead>
+        <tr>
+          <th>Nama Kartu Indikator</th>
+          <th>Arti & Sumber Data Finansial</th>
+          <th>Dampaknya Bagi Keputusan Manajemen</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Total Omzet Penjualan</strong></td>
+          <td>Akumulasi seluruh nilai faktur yang telah diterbitkan pada tahun berjalan.</td>
+          <td>Mengetahui skala nilai pekerjaan yang sudah selesai dikerjakan dan ditagihkan.</td>
+        </tr>
+        <tr>
+          <td><strong>Total Kas/Bank Diterima</strong></td>
+          <td>Total nominal uang rupiah riil yang sudah masuk ke rekening CV. ANDARA.</td>
+          <td>Mengetahui likuiditas riil kas perusahaan hasil pelunasan faktur pelanggan.</td>
+        </tr>
+        <tr>
+          <td><strong>Total Sisa Piutang (Outstanding)</strong></td>
+          <td>Akumulasi tagihan faktur yang belum lunas (Belum Bayar & Sebagian Bayar).</td>
+          <td>Menjadi prioritas penagihan bagian keuangan kepada pelanggan.</td>
+        </tr>
+        <tr>
+          <td><strong>Saldo Deposit Pelanggan</strong></td>
+          <td>Total dana titipan atau kelebihan bayar klien yang mengendap aman di kas CV. ANDARA.</td>
+          <td>Kewajiban perusahaan yang sewaktu-waktu siap dipotongkan pada faktur berikutnya.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ==========================================================================
+       BAB 3: MANAJEMEN MASTER DATA CUSTOMER
+       ========================================================================== -->
+  <div class="page-break">
+    <h1 class="chapter-title">
+      BAB 3: MANAJEMEN MASTER DATA CUSTOMER
+      <span class="chapter-tag">DATA MASTER</span>
+    </h1>
+
+    <h2>3.1 Ringkasan Modul Pelanggan</h2>
+    <p>Modul Customer mengelola basis data seluruh rekanan, korporasi swasta, instansi pemerintah, dan perorangan. Setiap transaksi proyek, SPH, dan Faktur wajib terikat pada satu Customer.</p>
+
+    <h2>3.2 Anatomi Layar Data Pelanggan</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/05_customer_list.png" alt="Daftar Data Customer">
+      <figcaption>Gambar 3.1: Tabel Data Pelanggan dengan Pencarian Instan dan Monitoring Saldo Deposit</figcaption>
+    </figure>
+
+    <h2>3.3 Formulir Pendaftaran Customer Baru</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/06_customer_create_modal.png" alt="Modal Tambah Customer">
+      <figcaption>Gambar 3.2: Formulir Pop-up Tambah Data Customer Baru</figcaption>
+    </figure>
+
+    <table class="manual-table">
+      <thead>
+        <tr>
+          <th style="width: 25%;">Nama Kolom</th>
+          <th style="width: 15%;">Status</th>
+          <th style="width: 30%;">Contoh Isian</th>
+          <th style="width: 30%;">Penjelasan Fungsi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Nama Customer</strong></td><td><span class="badge-required">Wajib</span></td><td>PT. Mahakarya Citra Sejahtera</td><td>Nama resmi perusahaan/instansi. Tercetak di KOP faktur.</td></tr>
+        <tr><td><strong>Badan Usaha / Brand</strong></td><td><span class="badge-optional">Opsional</span></td><td>Mahakarya Group</td><td>Nama grup usaha atau unit operasional mitra.</td></tr>
+        <tr><td><strong>Kontak PIC</strong></td><td><span class="badge-required">Wajib</span></td><td>Bambang Wijaya</td><td>Nama staf penanggung jawab koordinasi proyek.</td></tr>
+        <tr><td><strong>Telepon / WhatsApp</strong></td><td><span class="badge-required">Wajib</span></td><td>021-5551234 / 08123456789</td><td>Kontak aktif penagihan dan koordinasi lapangan.</td></tr>
+        <tr><td><strong>Email Resmi</strong></td><td><span class="badge-optional">Opsional</span></td><td>procurement@mahakarya.co.id</td><td>Tujuan pengiriman dokumen digital SPH dan Faktur PDF.</td></tr>
+        <tr><td><strong>Alamat Lengkap</strong></td><td><span class="badge-required">Wajib</span></td><td>Gedung Mahakarya Lt. 12, Jakarta</td><td>Alamat domisili resmi penagihan pajak dan invoice.</td></tr>
+        <tr><td><strong>Nomor NPWP</strong></td><td><span class="badge-optional">Opsional</span></td><td>01.234.567.8-012.000</td><td>Nomor identitas wajib pajak badan usaha rekanan.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>3.4 Profil Finansial & Rekam Jejak Pelanggan</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/07_customer_detail_profile.png" alt="Detail Profil Pelanggan">
+      <figcaption>Gambar 3.3: Layar Detail Profil Customer, Riwayat Proyek, dan Saldo Deposit Mengendap</figcaption>
+    </figure>
+  </div>
+
+  <!-- ==========================================================================
+       BAB 4: MANAJEMEN KEGIATAN & KATALOG ITEM
+       ========================================================================== -->
+  <div class="page-break">
+    <h1 class="chapter-title">
+      BAB 4: MANAJEMEN KEGIATAN & KATALOG ITEM
+      <span class="chapter-tag">OPERASIONAL PROYEK</span>
+    </h1>
+
+    <h2>4.1 Konsep Kegiatan & Rincian Item Pekerjaan</h2>
+    <p>Kegiatan adalah payung operasional untuk setiap pekerjaan lapangan. Di dalam kegiatan, staf memasukkan rincian volume fisik dan harga satuan pekerjaan.</p>
+
+    <h2>4.2 Anatomi Layar Kegiatan & Proyek</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/08_kegiatan_list.png" alt="Daftar Kegiatan Proyek">
+      <figcaption>Gambar 4.1: Daftar Proyek Pekerjaan Lapangan dengan Lokasi & Customer</figcaption>
+    </figure>
+
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/09_kegiatan_detail_items.png" alt="Detail Item Pekerjaan Kegiatan">
+      <figcaption>Gambar 4.2: Tabel Rincian Item Pekerjaan, Volume, Satuan, dan Harga Satuan</figcaption>
+    </figure>
+
+    <h2>4.3 Katalog Master Item & Tarif Standar</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/10_item_catalog_list.png" alt="Katalog Master Item dan Tarif">
+      <figcaption>Gambar 4.3: Database Standar Bahan, Sewa Alat, dan Jasa Tenaga Kerja</figcaption>
+    </figure>
+
+    <div class="callout callout-tip avoid-break">
+      <div class="callout-title">Kalkulasi Keuangan Otomatis</div>
+      <p>Sistem backend CV. ANDARA secara otomatis mengunci formula: <code>Subtotal = Volume × Harga Satuan</code>. Hasil perhitungan pada database adalah sumber kebenaran final (*authoritative financial truth*), sehingga input manual dari pengguna dicegah dari risiko kekeliruan perhitungan aritmatika.</p>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       BAB 5: SURAT PENAWARAN HARGA (SPH)
+       ========================================================================== -->
+  <div class="page-break">
+    <h1 class="chapter-title">
+      BAB 5: SURAT PENAWARAN HARGA (SPH)
+      <span class="chapter-tag">PENAWARAN BIAYA</span>
+    </h1>
+
+    <h2>5.1 Alur Pengajuan Surat Penawaran Harga</h2>
+    <p>SPH dibuat untuk memberikan estimasi biaya kepada calon pelanggan sebelum proyek dimulai. SPH ditarik langsung dari Kegiatan yang telah dibuat.</p>
+
+    <h2>5.2 Anatomi Layar Penawaran SPH</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/11_sph_list.png" alt="Daftar Dokumen SPH">
+      <figcaption>Gambar 5.1: Daftar Dokumen SPH dengan Status (Draft, Disetujui, Addendum)</figcaption>
+    </figure>
+
+    <h2>5.3 Formulir Pembuatan SPH Baru</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/12_sph_create_form.png" alt="Form Buat SPH">
+      <figcaption>Gambar 5.2: Formulir Penarikan Item Kegiatan Menjadi Dokumen Penawaran Formal</figcaption>
+    </figure>
+
+    <h2>5.4 Detail SPH & Pratinjau Cetak Formal (Print Preview)</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/13_sph_detail_view.png" alt="Detail SPH">
+      <figcaption>Gambar 5.3: Halaman Detail Dokumen SPH dengan Tombol Cetak PDF dan Opsi Duplikat</figcaption>
+    </figure>
+
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/14_sph_print_preview.png" alt="Format Cetak SPH">
+      <figcaption>Gambar 5.4: Dokumen Cetak Resmi SPH KOP CV. ANDARA Lengkap dengan Kolom Tanda Tangan</figcaption>
+    </figure>
+  </div>
+
+  <!-- ==========================================================================
+       BAB 6: FAKTUR PENJUALAN (INVOICE) & TERMIN
+       ========================================================================== -->
+  <div class="page-break">
+    <h1 class="chapter-title">
+      BAB 6: FAKTUR PENJUALAN & PENAGIHAN BERTAHAP
+      <span class="chapter-tag">PENAGIHAN INVOICE</span>
+    </h1>
+
+    <h2>6.1 Aturan Penagihan Faktur Penjualan</h2>
+    <p>Faktur Penjualan adalah tagihan resmi berkekuatan hukum. Sistem mendukung penerbitan faktur dari SPH yang disetujui, faktur termin/DP bertahap, retensi pemeliharaan 5%, dan konsolidasi multi-SPH dalam satu faktur.</p>
+
+    <h2>6.2 Anatomi Layar Faktur Penjualan</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/15_invoice_list.png" alt="Daftar Faktur Penjualan">
+      <figcaption>Gambar 6.1: Daftar Faktur Penjualan dengan Tagihan, Terbayar, dan Status Pembayaran</figcaption>
+    </figure>
+
+    <h2>6.3 Formulir Pembuatan Faktur (Mode Termin & DP)</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/16_invoice_create_from_sph.png" alt="Form Pembuatan Faktur">
+      <figcaption>Gambar 6.2: Form Penagihan Faktur Mendukung Termin DP & Potongan DP Terdahulu</figcaption>
+    </figure>
+
+    <div class="callout callout-warning avoid-break">
+      <div class="callout-title">Aturan Anti-Penagihan Ganda (Anti-Double Billing)</div>
+      <p>Saat menagih Termin 2 (Progres 50%), centang opsi <strong>"Potong DP Terdahulu"</strong>. Sistem otomatis memuat Faktur DP yang telah terbit sebelumnya dan menambahkan baris potongan (*deduction*) proporsional, sehingga uang muka tidak pernah tertagih ganda kepada pelanggan.</p>
+    </div>
+
+    <h2>6.4 Detail Faktur & Dokumen Cetak Siap Kirim</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/17_invoice_detail_view.png" alt="Detail Faktur Penjualan">
+      <figcaption>Gambar 6.3: Rincian Faktur Penjualan dengan Riwayat Alokasi Pembayaran Kas</figcaption>
+    </figure>
+
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/18_invoice_print_preview.png" alt="Format Cetak Faktur">
+      <figcaption>Gambar 6.4: Dokumen Cetak Invoice Resmi CV. ANDARA dengan Rekening Bank & QR Code</figcaption>
+    </figure>
+  </div>
+
+  <!-- ==========================================================================
+       BAB 7: PEMBAYARAN MASUK & ALOKASI FAKTUR
+       ========================================================================== -->
+  <div class="page-break">
+    <h1 class="chapter-title">
+      BAB 7: PEMBAYARAN MASUK & ALOKASI FAKTUR
+      <span class="chapter-tag">KAS & KEUANGAN</span>
+    </h1>
+
+    <h2>7.1 Wewenang Eksklusif Operator</h2>
+    <p>Pencatatan pembayaran merepresentasikan uang riil yang sudah masuk kas/bank CV. ANDARA. <strong>Hanya akun ber-role OPERATOR yang berhak mencatat mutasi kas pembayaran.</strong></p>
+
+    <h2>7.2 Anatomi Layar Pembayaran Masuk</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/19_payment_list.png" alt="Daftar Pembayaran Masuk">
+      <figcaption>Gambar 7.1: Riwayat Transaksi Kas & Transfer Bank yang Dikonfirmasi</figcaption>
+    </figure>
+
+    <h2>7.3 Formulir Pencatatan Kas Masuk & Alokasi Multi-Faktur</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/20_payment_create_form.png" alt="Form Catat Pembayaran">
+      <figcaption>Gambar 7.2: Formulir Catat Pembayaran dengan Upload Bukti Transfer dan Pilihan Sumber Dana</figcaption>
+    </figure>
+
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/21_payment_allocation_excess.png" alt="Alokasi Pembayaran dan Excess Deposit">
+      <figcaption>Gambar 7.3: Alokasi Pelunasan Faktur dan Otomasi Kelebihan Bayar Masuk Saldo Deposit</figcaption>
+    </figure>
+
+    <div class="callout callout-info avoid-break">
+      <div class="callout-title">Prinsip Kelebihan Pembayaran (Overpayment)</div>
+      <p>Jika klien mentransfer uang melebihi total tagihan (misal tagihan Rp 38.500.000, ditransfer Rp 40.000.000), sistem otomatis melunasi faktur dan selisih lebih <strong>Rp 1.500.000 otomatis menjadi Saldo Deposit Customer</strong> yang tersimpan aman.</p>
+    </div>
+
+    <h2>7.4 Detail Pembayaran</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/22_payment_detail_view.png" alt="Detail Pembayaran Masuk">
+      <figcaption>Gambar 7.4: Rincian Pembayaran Masuk dengan Daftar Faktur yang Terpotong Lunas</figcaption>
+    </figure>
+  </div>
+
+  <!-- ==========================================================================
+       BAB 8: PENGELOLAAN DEPOSIT PELANGGAN & BUKU KAS
+       ========================================================================== -->
+  <div class="page-break">
+    <h1 class="chapter-title">
+      BAB 8: DEPOSIT PELANGGAN & BUKU KAS (LEDGER)
+      <span class="chapter-tag">DEPOSIT LEDGER</span>
+    </h1>
+
+    <h2>8.1 Prinsip Buku Kas Mutasi Deposit</h2>
+    <p>Saldo deposit pelanggan di CV. ANDARA bukan sekadar angka yang diedit manual, melainkan bersumber dari mutasi pembukuan buku kas (ledger-based). Setiap kenaikan atau pemotongan saldo memiliki nomor transaksi yang dapat diaudit.</p>
+
+    <h2>8.2 Anatomi Layar Buku Kas Deposit Customer</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/23_deposit_ledger_list.png" alt="Buku Kas Mutasi Deposit">
+      <figcaption>Gambar 8.1: Buku Kas Mutasi Saldo Deposit Customer (DEPOSIT_IN, DEPOSIT_USED, DEPOSIT_REFUND)</figcaption>
+    </figure>
+
+    <h2>8.3 Pembayaran Kombinasi (Split Funding)</h2>
+    <p>Sistem memungkinkan pembayaran faktur baru dengan menggabungkan <strong>Uang Transfer Baru + Potong Saldo Deposit</strong> yang sudah mengendap milik pelanggan. Staf cukup mencentang opsi "Gunakan Saldo Deposit" pada formulir pembayaran.</p>
+  </div>
+
+  <!-- ==========================================================================
+       BAB 9: PENERBITAN & CETAK KWITANSI RESMI
+       ========================================================================== -->
+  <div class="page-break">
+    <h1 class="chapter-title">
+      BAB 9: PENERBITAN & CETAK KWITANSI RESMI
+      <span class="chapter-tag">BUKTI PELUNASAN</span>
+    </h1>
+
+    <h2>9.1 Otomatisasi Penerbitan Kwitansi</h2>
+    <p>Setiap transaksi pembayaran yang tervalidasi di kas CV. ANDARA akan secara otomatis menerbitkan dokumen Kwitansi resmi dengan nomor bukti unik dan nominal terbilang otomatis dalam bahasa Indonesia.</p>
+
+    <h2>9.2 Anatomi Layar Daftar Kwitansi</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/24_receipt_list.png" alt="Daftar Kwitansi Resmi">
+      <figcaption>Gambar 9.1: Daftar Seluruh Dokumen Kwitansi Tanda Terima Resmi CV. ANDARA</figcaption>
+    </figure>
+
+    <h2>9.3 Format Cetak Kwitansi Resmi</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/25_receipt_detail_print.png" alt="Format Cetak Kwitansi Resmi">
+      <figcaption>Gambar 9.2: Lembar Kwitansi Resmi CV. ANDARA dengan Terbilang Rupiah & Kolom Meterai</figcaption>
+    </figure>
+  </div>
+
+  <!-- ==========================================================================
+       BAB 10: REKAPITULASI LAPORAN & EKSPOR EXCEL
+       ========================================================================== -->
+  <div class="page-break">
+    <h1 class="chapter-title">
+      BAB 10: REKAPITULASI LAPORAN & EKSPOR EXCEL
+      <span class="chapter-tag">LAPORAN KEUANGAN</span>
+    </h1>
+
+    <h2>10.1 Analisis Performa Keuangan</h2>
+    <p>Halaman Rekapitulasi menyajikan rekap omzet, kas masuk, piutang tertunggak (*aging receivables*), dan saldo deposit mengendap dalam rentang tanggal yang dapat disesuaikan.</p>
+
+    <h2>10.2 Anatomi Layar Rekap Keuangan</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/26_rekap_dashboard_filter.png" alt="Rekapitulasi Keuangan dan Filter">
+      <figcaption>Gambar 10.1: Layar Rekap Keuangan dengan Filter Tanggal & Tombol Ekspor Spreadsheet</figcaption>
+    </figure>
+
+    <h2>10.3 Prosedur Ekspor Data ke Excel (.xlsx)</h2>
+    <ol class="step-list">
+      <li>Buka menu <strong>Rekap Keuangan</strong> pada sidebar kiri.</li>
+      <li>Tentukan tanggal mulai dan tanggal akhir periode pembukuan yang ingin direkap.</li>
+      <li>Pilih nama Customer jika ingin melihat rekapitulasi spesifik satu mitra.</li>
+      <li>Klik tombol hijau <strong>"Ekspor Excel (.xlsx)"</strong> di sudut kanan atas. Berkas akan terunduh instan ke komputer Anda.</li>
+    </ol>
+  </div>
+
+  <!-- ==========================================================================
+       BAB 11: KONFIGURASI PENOMORAN DOKUMEN OTOMATIS
+       ========================================================================== -->
+  <div class="page-break">
+    <h1 class="chapter-title">
+      BAB 11: KONFIGURASI PENOMORAN DOKUMEN OTOMATIS
+      <span class="chapter-tag">KONFIGURASI SISTEM</span>
+    </h1>
+
+    <h2>11.1 Pola Format Penomoran Surat Resmi</h2>
+    <p>Sistem menyediakan generator penomoran otomatis untuk Surat Penawaran (SPH), Faktur Penjualan, Pembayaran, dan Kwitansi.</p>
+
+    <h2>11.2 Anatomi Layar Pengaturan Penomoran</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/27_numbering_settings.png" alt="Konfigurasi Penomoran Dokumen">
+      <figcaption>Gambar 11.1: Formulir Format Pola Penomoran Dokumen Otomatis CV. ANDARA</figcaption>
+    </figure>
+
+    <table class="manual-table">
+      <thead>
+        <tr>
+          <th>Pola Variabel</th>
+          <th>Contoh Hasil Render</th>
+          <th>Keterangan</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>{PREFIX}</code></td><td><code>INV-AND</code> / <code>Q-AND</code></td><td>Kode singkatan jenis dokumen resmi CV. ANDARA.</td></tr>
+        <tr><td><code>{YYYY}</code></td><td><code>2026</code></td><td>Tahun 4 digit saat transaksi diterbitkan.</td></tr>
+        <tr><td><code>{MM}</code></td><td><code>10</code></td><td>Bulan 2 digit (01 - 12).</td></tr>
+        <tr><td><code>{ROMAN_MM}</code></td><td><code>X</code></td><td>Bulan dalam format angka Romawi (I s/d XII).</td></tr>
+        <tr><td><code>{COUNTER:4}</code></td><td><code>0001</code>, <code>0002</code></td><td>Nomor urut otomatis 4 digit dengan proteksi anti-nomor ganda.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ==========================================================================
+       BAB 12: TROUBLESHOOTING & PEMBATASAN ROLE
+       ========================================================================== -->
+  <div class="page-break">
+    <h1 class="chapter-title">
+      BAB 12: TROUBLESHOOTING & PEMBATASAN ROLE
+      <span class="chapter-tag">FAQ & STATUS</span>
+    </h1>
+
+    <h2>12.1 Monitoring Kesehatan Server & Database</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/28_system_status.png" alt="Status Server dan Database">
+      <figcaption>Gambar 12.1: Halaman Status Kesehatan Server REST API, Database PostgreSQL, dan Storage R2</figcaption>
+    </figure>
+
+    <h2>12.2 Tampilan Khusus Role ADMIN (Pembatasan Finansial)</h2>
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/29_dashboard_admin.png" alt="Dashboard Role Admin">
+      <figcaption>Gambar 12.2: Tampilan Dashboard Pengguna Role Admin</figcaption>
+    </figure>
+
+    <figure class="manual-figure">
+      <img src="../assets/screenshots/30_admin_restricted_payment.png" alt="Proteksi Akses Pembayaran Admin">
+      <figcaption>Gambar 12.3: Peringatan Kepatuhan Finansial saat Admin Membuka Modul Pembayaran (Read-Only)</figcaption>
+    </figure>
+
+    <div class="callout callout-danger avoid-break">
+      <div class="callout-title">Penegakan Regulasi Finansial (AGENTS.md Bagian 11)</div>
+      <p>Pencatatan pembayaran, pembatalan uang masuk, dan pemotongan saldo deposit dilindungi secara ketat di backend server. Jika pengguna ber-role ADMIN mencoba melakukan mutasi pembayaran via jalur manapun, server akan langsung menolak dengan kode keamanan <code>403 Forbidden</code>.</p>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       LAMPIRAN: 8 STUDI KASUS TRANSAKSI LAPANGAN
+       ========================================================================== -->
+  <div class="page-break">
+    <h1 class="chapter-title">
+      LAMPIRAN: 8 STUDI KASUS TRANSAKSI LAPANGAN
+      <span class="chapter-tag">SOP STUDI KASUS</span>
+    </h1>
+
+    <div class="avoid-break" style="margin-bottom: 15px;">
+      <h3>Kasus 1: 1 SPH → Banyak Faktur (Penagihan Bertahap: DP 30%, Progres 50%, Pelunasan 20%)</h3>
+      <p><strong>Langkah:</strong> Buat Faktur 1 (mode <code>TERMIN_PERCENTAGE</code> 30%). Saat proyek berjalan 50%, terbitkan Faktur 2 (50%) lalu centang <em>Potong DP Terdahulu</em>. Sistem otomatis memotong uang muka proporsional agar tidak tertagih ganda. Faktur 3 diterbitkan untuk pelunasan 20% sisa pekerjaan.</p>
+    </div>
+
+    <div class="avoid-break" style="margin-bottom: 15px;">
+      <h3>Kasus 2: Banyak SPH → 1 Faktur (Konsolidasi Multi-SPH Gabungan)</h3>
+      <p><strong>Langkah:</strong> Satu pelanggan memiliki 3 dokumen SPH pekerjaan terpisah. Saat menagih, buka form Buat Faktur $\rightarrow$ pilih Customer $\rightarrow$ centang item billable dari ketiga SPH tersebut. Terbit 1 lembar tagihan faktur tunggal, namun progres penagihan masing-masing SPH tetap terlacak presisi di database.</p>
+    </div>
+
+    <div class="avoid-break" style="margin-bottom: 15px;">
+      <h3>Kasus 3: 1 Pembayaran Transfer → Melunasi Banyak Faktur Sekaligus</h3>
+      <p><strong>Langkah:</strong> Klien mentransfer dana bulat Rp 50.000.000 untuk 3 faktur terpisah (Rp 10 jt, Rp 15 jt, Rp 25 jt). Operator mencatat 1 pembayaran kas/bank $\rightarrow$ alokasikan nominal ke ketiga faktur di tabel alokasi. Ketiga faktur otomatis berubah status menjadi <strong>LUNAS</strong> secara bersamaan.</p>
+    </div>
+
+    <div class="avoid-break" style="margin-bottom: 15px;">
+      <h3>Kasus 4: 1 Faktur → Banyak Kali Pembayaran (Cicilan Parsial)</h3>
+      <p><strong>Langkah:</strong> Tagihan Rp 60 jt dibayar bertahap 3 kali (Rp 20 jt, Rp 25 jt, Rp 15 jt). Pembayaran 1 mengubah status menjadi <code>SEBAGIAN DIBAYAR</code> (sisa piutang Rp 40 jt). Pembayaran 2 sisa Rp 15 jt. Pembayaran 3 melunasi faktur menjadi <code>LUNAS</code>. Setiap pembayaran menghasilkan kwitansi sah masing-masing.</p>
+    </div>
+
+    <div class="avoid-break" style="margin-bottom: 15px;">
+      <h3>Kasus 5: Pembayaran Lebih (Overpayment) → Otomatis Masuk Saldo Deposit</h3>
+      <p><strong>Langkah:</strong> Tagihan Rp 38,5 jt ditransfer bulat Rp 40 jt. Operator memasukkan nominal uang riil bank Rp 40 jt dan alokasikan Rp 38,5 jt ke faktur. Faktur langsung berstatus LUNAS, dan selisih lebih Rp 1,5 jt otomatis masuk ke saldo deposit pelanggan dengan mutasi <code>DEPOSIT_IN</code>.</p>
+    </div>
+
+    <div class="avoid-break" style="margin-bottom: 15px;">
+      <h3>Kasus 6: Pembayaran Kombinasi (Transfer Bank + Potong Saldo Deposit)</h3>
+      <p><strong>Langkah:</strong> Tagihan Rp 12 jt dibayar dengan kombinasi: transfer baru Rp 10 jt + potong deposit Rp 2 jt. Di form pembayaran, masukkan transfer bank Rp 10 jt dan centang opsi potong deposit Rp 2 jt. Faktur langsung LUNAS dan saldo deposit klien terpotong via <code>DEPOSIT_USED</code>.</p>
+    </div>
+
+    <div class="avoid-break" style="margin-bottom: 15px;">
+      <h3>Kasus 7: Retensi Konstruksi (Masa Pemeliharaan 5% Ditagihkan Terpisah)</h3>
+      <p><strong>Langkah:</strong> Pada faktur pelunasan proyek konstruksi, masukkan retensi 5%. Nilai tagihan fisik menjadi 95% (dibayar lunas klien). Setelah masa garansi 3 bulan usai, operator klik <em>Terbitkan Faktur Retensi</em> untuk menagih sisa 5% tersebut.</p>
+    </div>
+
+    <div class="avoid-break" style="margin-bottom: 15px;">
+      <h3>Kasus 8: Pekerjaan Tambah/Kurang Lapangan (Addendum SPH)</h3>
+      <p><strong>Langkah:</strong> Terbitkan dokumen SPH Addendum berelasi untuk menampung pekerjaan tambahan di lapangan tanpa mengubah histori SPH awal. Saat penagihan faktur, item dari SPH awal dan SPH Addendum dapat ditagihkan bersama-sama.</p>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       COVER BELAKANG RESMI (BACK COVER PAGE)
+       ========================================================================== -->
+  <div class="cover-page page-break" style="background: linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%);">
+    <div class="cover-header">
+      <div class="cover-badge">CV. ANDARA • INFORMASI DUKUNGAN</div>
+      <h2 style="color: #FFFFFF; font-size: 20pt; margin: 0 0 10px 0;">SISTEM MANAJEMEN OPERASIONAL & TRANSAKSI</h2>
+      <p style="color: #93C5FD; font-size: 11pt;">Panduan Resmi Serah Terima Pengembangan Perangkat Lunak</p>
+    </div>
+
+    <div class="cover-footer">
+      <div style="background: rgba(255, 255, 255, 0.05); padding: 18px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 25px;">
+        <h4 style="color: #FCD34D; margin: 0 0 10px 0; font-size: 10pt; text-transform: uppercase;">Kontak Bantuan & Layanan Pemeliharaan:</h4>
+        <p style="color: #E2E8F0; font-size: 8.5pt; margin: 0 0 5px 0;"><strong>Alamat Web Produksi:</strong> https://cvandaraerp.web.id</p>
+        <p style="color: #E2E8F0; font-size: 8.5pt; margin: 0 0 5px 0;"><strong>Pemilik Sistem:</strong> CV. ANDARA</p>
+        <p style="color: #E2E8F0; font-size: 8.5pt; margin: 0 0 5px 0;"><strong>Layanan Pendukung:</strong> Cloudflare R2 Storage, PostgreSQL Database, Spring Boot API, React Vite</p>
+        <p style="color: #E2E8F0; font-size: 8.5pt; margin: 0;"><strong>Masa Pemeliharaan:</strong> Sesuai Kontrak Kesepakatan Pengembangan (Project Agreement 2026)</p>
+      </div>
+
+      <p style="color: #64748B; font-size: 7.5pt; text-align: center; margin: 0;">
+        © 2026 CV. ANDARA. Seluruh hak cipta dilindungi undang-undang.<br>
+        Dokumen ini bersifat rahasia dan diterbitkan khusus untuk internal CV. ANDARA.
+      </p>
+    </div>
+  </div>
+
+</body>
+</html>
+
