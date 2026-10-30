@@ -11,8 +11,6 @@ import {
   FileSpreadsheet,
   Activity,
   Hash,
-  Menu,
-  X,
   LogOut,
   Package,
   Sun,
@@ -24,6 +22,8 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
+import { MobileBottomNavbar } from './MobileBottomNavbar';
+import { MobileMenuDrawer } from './MobileMenuDrawer';
 
 interface NavigationGroup {
   groupName: string;
@@ -37,7 +37,7 @@ interface NavigationGroup {
 }
 
 export const AppLayout: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -154,27 +154,16 @@ export const AppLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-canvas text-slate-900 dark:text-slate-100 flex transition-colors duration-200">
-      {/* Mobile sidebar overlay with frosted blur */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm z-40 lg:hidden transition-opacity"
-          onClick={() => setSidebarOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
       {/* 
-        💎 Semi-Floating Glass Sidebar (Desktop & Mobile Drawer)
+        💎 Semi-Floating Glass Sidebar (Desktop Only)
         Follows Reference Design: Rounded, frosted glass, blue pills for active state
       */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-72 lg:w-76 flex flex-col transition-all duration-300 ease-out",
-        "lg:static lg:translate-x-0 lg:my-3 lg:ml-4 lg:mb-3",
+        "hidden lg:flex flex-col w-76 shrink-0 my-3 ml-4 mb-3",
         "bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl",
         "border border-white/70 dark:border-white/10",
         "shadow-[0_12px_40px_rgba(20,40,80,0.08)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5)]",
-        "lg:rounded-3xl",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        "rounded-3xl"
       )}>
         {/* Header Branding */}
         <div className="h-20 flex items-center justify-between px-6 border-b border-slate-200/50 dark:border-slate-800/60 shrink-0">
@@ -191,13 +180,6 @@ export const AppLayout: React.FC = () => {
               </p>
             </div>
           </div>
-          <button 
-            className="lg:hidden w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition"
-            onClick={() => setSidebarOpen(false)}
-            aria-label="Tutup Menu"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
 
         {/* Navigation Groups */}
@@ -213,7 +195,6 @@ export const AppLayout: React.FC = () => {
                   key={item.name}
                   to={item.href}
                   end={item.href === '/'}
-                  onClick={() => setSidebarOpen(false)}
                   className={({ isActive }) => cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-200 group relative",
                     isActive 
@@ -338,37 +319,26 @@ export const AppLayout: React.FC = () => {
           💎 Floating Glass Topbar (Capsule Design)
           Margin from viewport, sticky, rounded pill, translucent backdrop-blur
         */}
-        <header className="sticky top-3 z-30 mx-4 sm:mx-6 lg:mx-8 my-2">
-          <div className="glass-topbar px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
-            {/* Left: Mobile hamburger & System Branding */}
-            <div className="flex items-center gap-3.5 min-w-0">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden w-9 h-9 rounded-full bg-white/70 dark:bg-slate-800/70 border border-slate-200/60 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300 shadow-xs active:scale-95 transition cursor-pointer"
-                title="Buka Menu"
-                aria-label="Buka Menu"
-              >
-                <Menu className="w-4 h-4" />
-              </button>
-
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 hidden sm:flex items-center justify-center p-1 shadow-xs border border-slate-200/70 dark:border-slate-700/70 shrink-0">
-                  <img src="/logo-drr.svg" alt="CV. ANDARA" className="w-full h-full object-contain" />
+        <header className="sticky top-2 sm:top-3 z-30 mx-3 sm:mx-6 lg:mx-8 my-1.5 sm:my-2">
+          <div className="glass-topbar px-3.5 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-3 sm:gap-4">
+            {/* Left: System Branding */}
+            <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center p-1 shadow-xs border border-slate-200/70 dark:border-slate-700/70 shrink-0">
+                <img src="/logo-drr.svg" alt="CV. ANDARA" className="w-full h-full object-contain" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-xs sm:text-sm tracking-wide text-slate-900 dark:text-white whitespace-nowrap">
+                    CV. ANDARA
+                  </span>
+                  <span className="text-slate-300 dark:text-slate-700 hidden md:inline">|</span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 hidden md:inline truncate">
+                    Sistem Manajemen Operasional & Transaksi
+                  </span>
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-xs sm:text-sm tracking-wide text-slate-900 dark:text-white whitespace-nowrap">
-                      CV. ANDARA
-                    </span>
-                    <span className="text-slate-300 dark:text-slate-700 hidden md:inline">|</span>
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 hidden md:inline truncate">
-                      Sistem Manajemen Operasional & Transaksi
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium hidden lg:block leading-tight">
-                    CV. ANDARA &bull; Keuangan & Operasional Terpadu
-                  </p>
-                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium hidden lg:block leading-tight">
+                  CV. ANDARA &bull; Keuangan & Operasional Terpadu
+                </p>
               </div>
             </div>
 
@@ -392,8 +362,8 @@ export const AppLayout: React.FC = () => {
               {/* Active Operator Session Pill */}
               <div className="glass-pill text-blue-700 dark:text-emerald-400 border-blue-500/20 dark:border-emerald-500/30">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                <span className="text-[11px] font-black uppercase tracking-wider">
-                  Sesi: {user?.role || 'OPERATOR'}
+                <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider">
+                  <span className="hidden sm:inline">Sesi: </span>{user?.role || 'OPERATOR'}
                 </span>
               </div>
 
@@ -410,11 +380,23 @@ export const AppLayout: React.FC = () => {
           </div>
         </header>
 
-        {/* Page Content Viewport */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        {/* Page Content Viewport with pb-28 on mobile for bottom navigation clearance */}
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 pb-28 lg:pb-8 overflow-y-auto">
           <Outlet />
         </main>
       </div>
+
+      {/* 💎 Mobile Floating Curved Bottom Navigation Bar (Ref: User Reference) */}
+      <MobileBottomNavbar
+        onOpenMenu={() => setMobileMenuOpen((prev) => !prev)}
+        isMenuOpen={mobileMenuOpen}
+      />
+
+      {/* 💎 Mobile All Modules Bottom Sheet Drawer */}
+      <MobileMenuDrawer
+        isOpen={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+      />
     </div>
   );
 };

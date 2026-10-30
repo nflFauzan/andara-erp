@@ -54,3 +54,10 @@ postgres_data/
 scratch/
 tmp/
 temp/
+
+# Playwright & Testing / QA Artifacts
+.playwright/
+.playwright-mcp/
+playwright-report/
+test-results/
+screenshots/
